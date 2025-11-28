@@ -3,8 +3,6 @@
 // ===================================================================
 
 console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
-
-(function () {
 	
         // Niveau de zoom du jeu (mis à l'échelle par la résolution logique)
         const BASE_GAME_SCALE = 0.82;
