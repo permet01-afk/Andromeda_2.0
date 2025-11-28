@@ -109,6 +109,10 @@
 
     const NAMEPLATE_OFFSET = 6;
 
+    // Gestion locale des reprises d'attaque (logique Flash)
+    const AUTO_RESUME_INTERVAL_MS = 300;
+    let lastAutoLaserResumeMs = 0;
+
     function computeNameplateY(centerY, spriteHeight) {
         const h = Math.max(10, Math.min(spriteHeight || 10, 60));
         return centerY + h * 0.45 + NAMEPLATE_OFFSET;
@@ -251,15 +255,21 @@
         sendRaw(packet);
     }
 
-    function sendLaserStop(targetId, force = false) {
+    function sendLaserStop(targetId, force = false, keepIntent = false) {
         if (!ws || ws.readyState !== WebSocket.OPEN) return;
         if (targetId == null) return;
         if (!force && rangeProtectedTargetId === targetId) return;
+
         const packet = `G|${targetId}`;
         console.log("[WS] Envoi LASER_STOP →", packet);
+
         if (currentLaserTargetId === targetId) currentLaserTargetId = null;
-        if (attackIntentTargetId === targetId) attackIntentTargetId = null;
-        resetPendingRangeResume(targetId);
+        if (!keepIntent && attackIntentTargetId === targetId) attackIntentTargetId = null;
+
+        if (!keepIntent) {
+            resetPendingRangeResume(targetId);
+        }
+
         sendRaw(packet);
     }
 
@@ -454,7 +464,14 @@
                 pendingRangeResumeTargetId = targetId;
                 pendingRangeResumeMessage = true;
             }
+
             rangeProtectedTargetId = targetId;
+
+            if (currentLaserTargetId === targetId) {
+                // On arrête de tirer mais on conserve l'intention (comme le client Flash)
+                sendLaserStop(targetId, false, true);
+                currentLaserTargetId = null;
+            }
             return; // On ne fait rien, on attend de se rapprocher
         }
 
@@ -520,22 +537,50 @@
             return;
         }
 
-        if (currentLaserTargetId == null) return;
+        const targetId = attackIntentTargetId ?? currentLaserTargetId;
+        if (targetId == null) return;
 
-        let tx, ty;
-        if (heroId !== null && currentLaserTargetId === heroId) {
-            tx = shipX;
-            ty = shipY;
-        } else if (entities[currentLaserTargetId]) {
-            tx = entities[currentLaserTargetId].x;
-            ty = entities[currentLaserTargetId].y;
-        } else {
+        const target = targetId === heroId ? { x: shipX, y: shipY } : entities[targetId];
+        if (!target) {
+            if (currentLaserTargetId === targetId) currentLaserTargetId = null;
+            if (attackIntentTargetId === targetId) attackIntentTargetId = null;
+            resetPendingRangeResume(targetId);
+            return;
+        }
+
+        const dx = target.x - shipX;
+        const dy = target.y - shipY;
+        const dist = Math.hypot(dx, dy);
+        const now = performance.now();
+
+        if (dist > LASER_MAX_RANGE) {
+            // Prépare la reprise auto comme sur le client Flash
+            if (pendingRangeResumeTargetId == null) {
+                pendingRangeResumeTargetId = targetId;
+                pendingRangeResumeMessage = true;
+            }
+            rangeProtectedTargetId = targetId;
+
+            if (currentLaserTargetId === targetId) {
+                sendLaserStop(targetId, false, true);
+            }
             currentLaserTargetId = null;
             return;
         }
 
-        // La portée est validée côté serveur ; on laisse l'attaque active
-        // tant que la cible existe et que le serveur ne la stoppe pas.
+        // Si nous avons une intention mais que le tir est coupé (packet O reçu), on reprend
+        const shouldResume = attackIntentTargetId === targetId && currentLaserTargetId == null;
+        if (shouldResume && now - lastAutoLaserResumeMs >= AUTO_RESUME_INTERVAL_MS) {
+            sendLaserAttack(targetId);
+            lastAutoLaserResumeMs = now;
+
+            if (pendingRangeResumeTargetId === targetId && pendingRangeResumeMessage) {
+                addInfoMessage("The battle continues");
+                pendingRangeResumeMessage = false;
+            }
+            resetPendingRangeResume(targetId);
+            if (rangeProtectedTargetId === targetId) rangeProtectedTargetId = null;
+        }
     }
 	
 	// --- GESTION DES ROTATIONS DE COMBAT (AJOUT) ---
