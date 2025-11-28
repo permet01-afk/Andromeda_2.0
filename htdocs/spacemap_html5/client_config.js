@@ -106,6 +106,7 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
     // -------------------------------------------------
     // --- GROUPE ---
     const groupMembers = {}; // Stocke les membres (id, name, hp, shield...)
+    let groupLeaderId = null; // Id du chef de groupe ("nl" côté serveur)
     let pendingGroupInvite = null; // Stocke une invitation en attente (nom du joueur)
 
     // Ping de groupe (minimap)
@@ -1555,6 +1556,54 @@ loadQuickbarLayout();
         }
     }
 
+    function isConditionCompleted(cond) {
+        if (!cond) return false;
+        if (cond.visibility === 2) return true;
+        if (cond.target > 0 && cond.current >= cond.target) return true;
+        // Si pas de cible, on considère l'état "on" comme critère d'avancement
+        return cond.target === 0 && !!cond.runstate;
+    }
+
+    function getQuestState(quest) {
+        if (!quest) {
+            return {
+                hasRunning: false,
+                readyToTurnIn: false,
+                hasMandatory: false,
+                hasVisible: false
+            };
+        }
+
+        let hasRunning = false;
+        let readyToTurnIn = true;
+        let hasMandatory = false;
+        let hasVisible = false;
+
+        for (const cond of Object.values(quest.flatConditions || {})) {
+            if (cond.visibility !== 0) {
+                hasVisible = true;
+            }
+
+            if (cond.runstate) {
+                hasRunning = true;
+            }
+
+            if (cond.mandatory) {
+                hasMandatory = true;
+                if (!isConditionCompleted(cond)) {
+                    readyToTurnIn = false;
+                }
+            }
+        }
+
+        // Si aucune condition obligatoire n'est définie, on ne force pas l'achèvement
+        if (!hasMandatory) {
+            readyToTurnIn = false;
+        }
+
+        return { hasRunning, readyToTurnIn, hasMandatory, hasVisible };
+    }
+
     // Parse du XML de quête → objet JS
     function parseQuestXmlToQuest(xmlString, category) {
         const quest = {
@@ -1602,6 +1651,7 @@ loadQuickbarLayout();
                         const runstate = (child.getAttribute("on") || "0") === "1";
                         const mandatory = (child.getAttribute("do") || child.getAttribute("do_") || "0") === "1";
                         const visibility = parseInt(child.getAttribute("viz") || "0", 10);
+                        const description = (child.getAttribute("desc") || child.getAttribute("d") || child.textContent || "").trim();
 
                         if (!condMap[id]) {
                             condMap[id] = {
@@ -1613,6 +1663,7 @@ loadQuickbarLayout();
                                 runstate,
                                 mandatory,
                                 visibility,
+                                description,
                                 children: []
                             };
                         } else {
@@ -1624,6 +1675,7 @@ loadQuickbarLayout();
                             c.runstate = runstate;
                             c.mandatory = mandatory;
                             c.visibility = visibility;
+                            c.description = description;
                         }
 
                         if (parentCondId != null && condMap[parentCondId]) {

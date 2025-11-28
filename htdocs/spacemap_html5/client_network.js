@@ -363,6 +363,7 @@ function handlePacket_ps(parts) {
         if (subAction === "grp") {
             // On vide la liste proprement
             for (const k in groupMembers) delete groupMembers[k];
+            groupLeaderId = null;
 
             // CORRECTION CRITIQUE : L'offset de départ
             // parts[0] à parts[3] = en-têtes
@@ -380,7 +381,7 @@ function handlePacket_ps(parts) {
                 
                 if (!isNaN(gId) && gId > 0) {
                     groupMembers[gId] = {
-                        id: gId, 
+                        id: gId,
                         name: gName,
                         hp: parseInt(parts[offset + 2], 10) || 0,
                         maxHp: parseInt(parts[offset + 3], 10) || 100000,
@@ -388,8 +389,11 @@ function handlePacket_ps(parts) {
                         maxShield: parseInt(parts[offset + 5], 10) || 10000,
                         mapId: parseInt(parts[offset + 6], 10) || 0
                     };
+                    if (groupLeaderId === null) {
+                        groupLeaderId = gId;
+                    }
                     // En AS3, chaque membre occupe 19 segments dans le tableau
-                    offset += 19; 
+                    offset += 19;
                 } else {
                     // Si lecture impossible, on avance de 1 pour essayer de retomber sur nos pattes
                     offset++;
@@ -441,6 +445,9 @@ function handlePacket_ps(parts) {
         if (groupMembers[targetId]) {
             addInfoMessage(groupMembers[targetId].name + " a quitté le groupe.");
             delete groupMembers[targetId];
+            if (groupLeaderId === targetId) {
+                groupLeaderId = null;
+            }
             drawGroupWindow();
         }
     }
@@ -468,6 +475,7 @@ function handlePacket_ps(parts) {
 	
 	else if (action === "end") { // Fin du groupe
         for (const k in groupMembers) delete groupMembers[k];
+        groupLeaderId = null;
         addInfoMessage("Groupe dissous.");
         drawGroupWindow();
     }
@@ -475,6 +483,7 @@ function handlePacket_ps(parts) {
         const leaderId = parseInt(parts[3], 10); // 0|ps|nl|ID
         if (groupMembers[leaderId]) {
             addInfoMessage(groupMembers[leaderId].name + " est le chef.");
+            groupLeaderId = leaderId;
         }
     }
 }

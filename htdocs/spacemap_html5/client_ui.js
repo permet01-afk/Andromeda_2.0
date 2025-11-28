@@ -755,11 +755,37 @@ function initGlobalScrollbarStyles() {
 
 
 
-	// ========================================================
+    // ========================================================
     // INTERFACE LABO / VENTE MINERAIS
     // ========================================================
     let labWindowVisible = false; // État de la fenêtre
     let labMode = 'cargo';      // 'cargo' ou 'refine'
+    let lastLabCargoSig = "";
+    let lastLabPriceSig = "";
+
+    const LAB_PRODUCTS = [
+        {
+            id: 11,
+            code: "prometid",
+            name: "Prometid",
+            inputs: { prometium: 20, endurium: 10 },
+            outputUnit: 1
+        },
+        {
+            id: 12,
+            code: "duranium",
+            name: "Duranium",
+            inputs: { terbium: 20, endurium: 10 },
+            outputUnit: 1
+        },
+        {
+            id: 13,
+            code: "promerium",
+            name: "Promerium",
+            inputs: { prometid: 10, duranium: 10, xenomit: 1 },
+            outputUnit: 1
+        }
+    ];
 
     function initLabWindow() {
     const style = document.createElement('style');
@@ -957,19 +983,27 @@ function initGlobalScrollbarStyles() {
     function displayCargoView(container) {
         const cargo = window.oreCargo || {};
         const prices = window.orePrices || {};
-        
+
         let html = `<h3>Stock actuel :</h3>`;
-        
-        for (const key in cargo) {
+
+        const oreKeys = Object.keys(cargo);
+        if (oreKeys.length === 0) {
+            html += `<p style="color:#888;">Aucun minerai reçu du serveur pour l'instant.</p>`;
+        }
+
+        for (const key of oreKeys) {
             const count = cargo[key];
             const price = prices[key] || 0;
             const value = count * price;
-            
+            const isSellable = count > 0 && price > 0;
+            const sellLabel = isSellable ? `Vendre (Valeur: ${value.toLocaleString()} Cr.)` : "Pas de valeur";
+            const disabledAttr = isSellable ? "" : "disabled";
+
             html += `
                 <div class="oreItem">
                     <span class="oreName">${key.toUpperCase()} :</span>
                     <span class="oreCount">${count.toLocaleString()}</span>
-                    <button class="btnAction btnSellOre" data-ore="${key}" data-amount="all">Vendre (Valeur: ${value.toLocaleString()} Cr.)</button>
+                    <button class="btnAction btnSellOre" data-ore="${key}" data-amount="all" ${disabledAttr}>${sellLabel}</button>
                 </div>
             `;
         }
@@ -977,38 +1011,96 @@ function initGlobalScrollbarStyles() {
         container.innerHTML = html;
 
         // --- Logique d'envoi VENDRE ---
-        document.querySelectorAll('.btnSellOre').forEach(button => {
+        container.querySelectorAll('.btnSellOre').forEach(button => {
             button.addEventListener('click', (e) => {
-                const oreType = e.target.getAttribute('data-ore');
+                const oreType = e.currentTarget.getAttribute('data-ore');
                 const amount = cargo[oreType]; // Vendre tout le stock pour cet ore
-                sendSellOre(oreType, amount);
+                if (amount > 0) {
+                    sendSellOre(oreType, amount);
+                }
             });
         });
     }
 
     // Affiche l'interface de production (raffinage)
     function displayRefineView(container) {
-        // NOTE: On simplifie en affichant les produits finis principaux
+        const cargo = window.oreCargo || {};
+
+        const productCards = LAB_PRODUCTS.map(prod => {
+            const canBuildOnce = hasEnoughFor(prod, 1, cargo);
+            const maxAmount = computeMaxCraft(prod, cargo);
+            const buttonDisabled = maxAmount <= 0 ? "disabled" : "";
+            const inputs = Object.entries(prod.inputs)
+                .map(([ore, count]) => `${count} ${ore.toUpperCase()}`)
+                .join(' + ');
+
+            return `
+                <div class="oreItem">
+                    <div class="oreName">${prod.name}</div>
+                    <div class="oreCount">Recette : ${inputs}</div>
+                    <div style="display:flex; gap:8px; align-items:center; margin-top:6px;">
+                        <input type="number" class="refineAmount" data-prod="${prod.id}" value="${canBuildOnce ? Math.min(100, maxAmount) : 0}" min="1" max="${Math.max(1, maxAmount)}" style="width:80px;">
+                        <button class="btnAction doButton btnProduce" data-prod="${prod.id}" ${buttonDisabled}>Produire</button>
+                        <span style="color:${canBuildOnce ? '#0f0' : '#f66'}">${maxAmount > 0 ? `Max ${maxAmount}` : 'Ressources insuffisantes'}</span>
+                    </div>
+                </div>`;
+        }).join('');
+
         container.innerHTML = `
             <h3>Production (Raffinage) :</h3>
-            <p>Prometid (P) : 20 Prometium + 10 Endurium</p>
-            <p>Duranium (D) : 20 Terbium + 10 Endurium</p>
-            <p>Promerium (M) : 10 P + 10 D + 1 Xenomit</p>
-            
-            <input type="number" id="refineAmount" value="100" min="1" style="width: 80px; margin-right: 10px;">
-            <button class="btnAction doButton" id="btnProduce">Produire 100 Promerium</button>
-            <p style="color:red; margin-top: 10px;">(Production non codée côté serveur dans l'émulateur fourni. Envoi de paquet simulé)</p>
+            ${productCards}
         `;
-        
-        // --- Logique d'envoi PROD ---
-        document.getElementById('btnProduce').addEventListener('click', () => {
-            const amount = parseInt(document.getElementById('refineAmount').value, 10);
-            if (amount > 0) {
-                // Envoyer la commande de production de Promerium (ID 13)
-                sendProduce(13, amount); 
-            }
+
+        container.querySelectorAll('.btnProduce').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const prodId = parseInt(e.currentTarget.getAttribute('data-prod'), 10);
+                const input = container.querySelector(`input.refineAmount[data-prod="${prodId}"]`);
+                const amount = parseInt(input.value, 10);
+                const product = LAB_PRODUCTS.find(p => p.id === prodId);
+                if (!product || isNaN(amount) || amount <= 0) return;
+
+                if (!hasEnoughFor(product, amount, cargo)) {
+                    addInfoMessage("Ressources insuffisantes pour produire.");
+                    return;
+                }
+                sendProduce(prodId, amount);
+            });
         });
     }
+
+    function hasEnoughFor(product, amount, cargo) {
+        if (!product || amount <= 0) return false;
+        for (const [ore, count] of Object.entries(product.inputs)) {
+            if ((cargo[ore] || 0) < count * amount) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function computeMaxCraft(product, cargo) {
+        let max = Infinity;
+        for (const [ore, count] of Object.entries(product.inputs)) {
+            const available = cargo[ore] || 0;
+            max = Math.min(max, Math.floor(available / count));
+        }
+        if (!isFinite(max)) return 0;
+        return Math.max(0, max);
+    }
+
+    // Rafraîchit la fenêtre labo quand des données cargo/prix changent
+    function refreshLabWindowIfNeeded() {
+        if (!labWindowVisible) return;
+        const cargoSig = JSON.stringify(window.oreCargo || {});
+        const priceSig = JSON.stringify(window.orePrices || {});
+        if (cargoSig !== lastLabCargoSig || priceSig !== lastLabPriceSig) {
+            lastLabCargoSig = cargoSig;
+            lastLabPriceSig = priceSig;
+            setLabMode(labMode);
+        }
+    }
+
+    setInterval(refreshLabWindowIfNeeded, 1000);
 	
 // -------------------------------------------------
 // FENETRE HTML "PARAMETRES / OPTIONS" (version onglets)
@@ -1956,6 +2048,9 @@ window.toggleSettingsWindow = toggleSettingsWindow;
         const detailTitle = document.getElementById('questDetailTitle');
         const detailCat = document.getElementById('questDetailCategory');
         const objectivesUl = document.getElementById('questObjectives');
+        const btnAccept = document.getElementById('questBtnAccept');
+        const btnCancel = document.getElementById('questBtnCancel');
+        const btnTurnIn = document.getElementById('questBtnTurnIn');
 
         if (!listUl || !detailTitle || !objectivesUl) return;
 
@@ -1966,7 +2061,10 @@ window.toggleSettingsWindow = toggleSettingsWindow;
 
         if (ids.length === 0) {
             detailTitle.textContent = "Aucune quête disponible";
-            detailCat.textContent = "";
+            detailCat.textContent = "Acceptez des missions pour commencer";
+            if (btnAccept) btnAccept.disabled = true;
+            if (btnCancel) btnCancel.disabled = true;
+            if (btnTurnIn) btnTurnIn.disabled = true;
             return;
         }
 
@@ -1996,6 +2094,18 @@ window.toggleSettingsWindow = toggleSettingsWindow;
         detailTitle.textContent = activeQuest.title || ("Quête " + activeQuest.id);
         detailCat.textContent = "Catégorie : " + (activeQuest.category || "std");
 
+        const questState = getQuestState(activeQuest);
+        if (btnAccept) {
+            btnAccept.textContent = questState.hasRunning ? "Continuer" : "Accepter";
+            btnAccept.disabled = questState.hasRunning;
+        }
+        if (btnCancel) {
+            btnCancel.disabled = !questState.hasRunning;
+        }
+        if (btnTurnIn) {
+            btnTurnIn.disabled = !questState.readyToTurnIn;
+        }
+
         const condIds = Object.keys(activeQuest.flatConditions).map(x => parseInt(x, 10)).sort((a, b) => a - b);
 
         for (const condId of condIds) {
@@ -2005,7 +2115,7 @@ window.toggleSettingsWindow = toggleSettingsWindow;
             let cssClass = "";
             if (c.visibility === 0) {
                 cssClass = "questObjectiveHidden";
-            } else if (c.current >= c.target && c.target > 0) {
+            } else if (isConditionCompleted(c)) {
                 cssClass = "questObjectiveDone";
             } else if (c.runstate) {
                 cssClass = "questObjectiveRunning";
@@ -2014,7 +2124,11 @@ window.toggleSettingsWindow = toggleSettingsWindow;
             if (cssClass) li.classList.add(cssClass);
 
             const progress = (c.target > 0) ? `${c.current}/${c.target}` : `${c.current}`;
-            li.textContent = `[#${c.id}] ${progress} (type=${c.typeKey}, mod="${c.modifier}")`;
+            const description = c.description || c.modifier || `type=${c.typeKey}`;
+
+            li.textContent = c.visibility === 0
+                ? "???"
+                : `[#${c.id}] ${description}${progress ? " — " + progress : ""}`;
 
             objectivesUl.appendChild(li);
         }
