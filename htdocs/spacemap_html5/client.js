@@ -5389,6 +5389,7 @@ function handlePacket_7(parts, i) {
 
         const drawLaserStrip = (beam, progress, alphaFactor, startScreenX, startScreenY, endScreenX, endScreenY) => {
             const sprite = getLaserSprite(beam.patternId);
+            const spriteReady = sprite && sprite.complete && sprite.naturalWidth > 0;
             const dx = endScreenX - startScreenX;
             const dy = endScreenY - startScreenY;
             const len = Math.hypot(dx, dy);
@@ -5409,35 +5410,37 @@ function handlePacket_7(parts, i) {
             const headPos = len * progress;
             const trail = spacing * 3;
 
-            for (const seg of drawSegments) {
-                for (let pos = headPos; pos > -trail; pos -= spacing) {
-                    const px = startScreenX + seg.ox + dirX * pos;
-                    const py = startScreenY + seg.oy + dirY * pos;
-                    const fade = Math.max(0, 1 - (headPos - pos) / (spacing * 3));
-                    const localAlpha = alphaFactor * fade;
-                    if (sprite && sprite.complete && sprite.naturalWidth > 0) {
-                        ctx.save();
-                        ctx.globalAlpha = localAlpha;
-                        ctx.translate(px, py);
-                        ctx.rotate(angle);
-                        ctx.drawImage(sprite, -sprite.width / 2, -sprite.height / 2);
-                        ctx.restore();
-                    } else {
-                        ctx.save();
-                        ctx.globalAlpha = localAlpha * 0.6;
-                        ctx.strokeStyle = "#ff0000";
-                        ctx.lineWidth = 2;
-                        ctx.beginPath();
-                        ctx.moveTo(startScreenX + seg.ox, startScreenY + seg.oy);
-                        ctx.lineTo(endScreenX + seg.ox, endScreenY + seg.oy);
-                        ctx.stroke();
-                        ctx.restore();
+            if (beam.patternId !== 5 || !spriteReady) {
+                for (const seg of drawSegments) {
+                    for (let pos = headPos; pos > -trail; pos -= spacing) {
+                        const px = startScreenX + seg.ox + dirX * pos;
+                        const py = startScreenY + seg.oy + dirY * pos;
+                        const fade = Math.max(0, 1 - (headPos - pos) / (spacing * 3));
+                        const localAlpha = alphaFactor * fade;
+                        if (spriteReady) {
+                            ctx.save();
+                            ctx.globalAlpha = localAlpha;
+                            ctx.translate(px, py);
+                            ctx.rotate(angle);
+                            ctx.drawImage(sprite, -sprite.width / 2, -sprite.height / 2);
+                            ctx.restore();
+                        } else {
+                            ctx.save();
+                            ctx.globalAlpha = localAlpha * 0.6;
+                            ctx.strokeStyle = "#ff0000";
+                            ctx.lineWidth = 2;
+                            ctx.beginPath();
+                            ctx.moveTo(startScreenX + seg.ox, startScreenY + seg.oy);
+                            ctx.lineTo(endScreenX + seg.ox, endScreenY + seg.oy);
+                            ctx.stroke();
+                            ctx.restore();
+                        }
                     }
                 }
             }
 
             // Effet SAB : cercles répartis sur le trajet
-            if (beam.patternId === 5 && sprite && sprite.complete && sprite.naturalWidth > 0) {
+            if (beam.patternId === 5 && spriteReady) {
                 const circleSpacing = Math.max(20, sprite.width * 0.9);
                 for (let pos = 0; pos <= headPos; pos += circleSpacing) {
                     const px = startScreenX + dirX * pos;
@@ -5498,16 +5501,18 @@ function handlePacket_7(parts, i) {
             const progress = Math.min(1, (now - beam.createdAt) / duration);
             drawLaserStrip(beam, progress, alpha * 0.9, startScreenX, startScreenY, endScreenX, endScreenY);
 
-            // Lueur légère pour rappeler la trajectoire (moins dominante)
-            ctx.save();
-            ctx.globalAlpha = alpha * 0.2;
-            ctx.strokeStyle = "rgba(255,255,255,0.5)";
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.moveTo(startScreenX, startScreenY);
-            ctx.lineTo(endScreenX, endScreenY);
-            ctx.stroke();
-            ctx.restore();
+            if (!spriteReady) {
+                // Lueur légère pour rappeler la trajectoire (moins dominante)
+                ctx.save();
+                ctx.globalAlpha = alpha * 0.2;
+                ctx.strokeStyle = "rgba(255,255,255,0.5)";
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(startScreenX, startScreenY);
+                ctx.lineTo(endScreenX, endScreenY);
+                ctx.stroke();
+                ctx.restore();
+            }
         }
     }
 
