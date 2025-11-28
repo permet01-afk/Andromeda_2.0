@@ -1,0 +1,172 @@
+.lottery-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.lottery {
+    width: min(1100px, 100%);
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.lottery__header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.lottery__header h1 {
+    margin: 0;
+    font-size: clamp(1.8rem, 2vw + 1rem, 2.35rem);
+}
+
+.lottery__header p {
+    margin: 0;
+    color: var(--color-text-muted);
+    max-width: 60ch;
+}
+
+.lottery__layout {
+    display: grid;
+    gap: 1.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    align-items: stretch;
+}
+
+.lottery-card {
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    box-shadow: var(--shadow-md);
+}
+
+.lottery-card__header h2 {
+    margin: 0;
+    font-size: 1.4rem;
+}
+
+.lottery-card__header p {
+    margin: 0.4rem 0 0;
+    color: var(--color-text-muted);
+}
+
+.lottery-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.lottery-card__body--chart {
+    gap: 1.75rem;
+}
+
+.lottery-chart {
+    background: rgba(8, 12, 24, 0.6);
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    padding: 1.25rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.lottery-chart__canvas {
+    width: 320px;
+    height: 320px;
+}
+
+.lottery-legend {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.75rem;
+}
+
+.lottery-legend li {
+    display: grid;
+    grid-template-columns: 24px 1fr auto;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: var(--radius-md);
+    padding: 0.6rem 0.85rem;
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    background: var(--legend-color, rgba(148, 163, 184, 0.5));
+}
+
+.legend-label {
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.legend-value {
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+.lottery-log {
+    background: rgba(8, 12, 24, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.2rem;
+    min-height: 200px;
+    max-height: 260px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.lottery-log__entry {
+    background: rgba(30, 41, 59, 0.65);
+    border-radius: var(--radius-sm);
+    padding: 0.65rem 0.75rem;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    font-weight: 600;
+}
+
+.lottery-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.4rem;
+    border-radius: var(--radius-md);
+    border: none;
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.95), rgba(59, 130, 246, 0.85));
+    color: #021c2b;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    box-shadow: 0 18px 30px rgba(56, 189, 248, 0.28);
+    transition: transform var(--transition-fast), filter var(--transition-fast);
+}
+
+.lottery-button:hover,
+.lottery-button:focus {
+    transform: translateY(-1px);
+    filter: brightness(1.05);
+}
+
+@media (max-width: 640px) {
+    .lottery-card {
+        padding: 1.5rem;
+    }
+
+    .lottery-chart__canvas {
+        width: 260px;
+        height: 260px;
+    }
+}

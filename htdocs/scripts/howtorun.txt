@@ -1,0 +1,26 @@
+Étapes simples
+
+Créer le fichier
+
+Dans ton dossier du jeu (htdocs), crée un dossier scripts
+
+Dedans, crée un fichier clan_tax_run.php
+
+Configurer le planificateur de tâches Windows
+
+Ouvre : Tâches planifiées (ou “Planificateur de tâches”)
+
+Clique sur Créer une tâche
+
+Onglet Déclencheurs → “Tous les jours” à 08:00
+
+Onglet Actions → “Démarrer un programme”
+
+Programme/script : C:\xampp\php\php.exe
+
+Arguments : "C:\xampp\htdocs\scripts\clan_tax_run.php"
+
+Onglet Conditions → décoche “exécuter uniquement si sur secteur” si tu veux
+
+Valide.
+ Et voilà, Windows exécutera ce script chaque jour à 8h du matin.

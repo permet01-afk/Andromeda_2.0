@@ -1,0 +1,35 @@
+#achievements
+{
+	text-align:center;
+	color:#81B7F2;
+	width: 600px;
+	padding-left: 20px;
+}
+.claim
+{
+	display:block;
+	background-color: #81B73C;
+	color: white;
+	text-decoration: none;
+	font-size: 12px;
+	width: 120px;
+	height: 16px;
+	
+	text-align:center;	
+	border-color:#263543;	
+	border-style: solid;
+	border-top-width:2px;
+	border-bottom-width:2px;
+	border-left-width:2px;
+	border-right-width:2px; 
+	
+	border-top-left-radius: 5px;
+	border-bottom-left-radius: 5px;
+	border-top-right-radius: 5px;
+	border-bottom-right-radius: 5px;
+	opacity:0.8;
+}
+.claim:hover
+{
+	opacity:1;
+}

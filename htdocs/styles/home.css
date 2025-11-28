@@ -1,0 +1,362 @@
+.dashboard {
+    margin: 1rem 0 2rem;
+    color: #e6eefb;
+}
+
+.dashboard-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    text-align: left;
+}
+
+    .dashboard-header h1 {
+        margin: 0;
+        font-size: clamp(1.8rem, 2vw + 1rem, 2.35rem);
+    }
+
+    .dashboard-header p {
+        margin: 0;
+        color: var(--color-text-muted);
+        max-width: 720px;
+    }
+
+/* Grille stable 12 colonnes */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 1.25rem;
+    align-items: start;
+}
+
+/* Chaque carte = 3 colonnes */
+.dashboard-card {
+    grid-column: span 3 / span 3;
+    background: rgba(15, 23, 42, 0.78);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    box-shadow: var(--shadow-md);
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+}
+
+/* Paliers responsifs */
+@media (max-width: 1280px) {
+    .dashboard-card {
+        grid-column: span 4 / span 4;
+    }
+}
+
+@media (max-width: 1024px) {
+    .dashboard-card {
+        grid-column: span 6 / span 6;
+    }
+}
+
+@media (max-width: 640px) {
+    .dashboard-card {
+        grid-column: 1 / -1;
+    }
+}
+
+/* En-têtes de cartes */
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+    .card-header h2 {
+        margin: 0;
+        font-size: 1.25rem;
+    }
+
+.card-link {
+    font-size: 0.95rem;
+    color: var(--color-accent);
+}
+
+    .card-link:hover,
+    .card-link:focus {
+        color: var(--color-accent-strong);
+    }
+
+/* Statistiques du pilote */
+.stat-list {
+    display: grid;
+    gap: 0.75rem;
+    margin: 0;
+}
+
+.stat-row {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 0.75rem;
+    align-items: center;
+    background: rgba(30, 41, 59, 0.55);
+    border-radius: var(--radius-sm);
+    padding: 0.65rem 0.85rem;
+}
+
+    .stat-row dt {
+        font-weight: 600;
+        color: var(--color-text-muted);
+    }
+
+    .stat-row dd {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 600;
+    }
+
+.stat-badge {
+    background: rgba(56, 189, 248, 0.18);
+    color: var(--color-accent);
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+}
+
+.stat-media img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+}
+
+/* Statut du serveur */
+.stat-summary {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+    .stat-summary li {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        background: rgba(30, 41, 59, 0.6);
+        border-radius: var(--radius-sm);
+        padding: 0.75rem 1rem;
+    }
+
+.summary-label {
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+.summary-value {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+}
+
+    .summary-value img {
+        width: 24px;
+        height: 24px;
+    }
+
+.company-breakdown {
+    display: inline-flex;
+    gap: 0.75rem;
+}
+
+.news-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.card-subheader h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.news-stream {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 260px;
+    overflow-y: auto;
+    padding-right: 0.35rem;
+}
+
+.news-item {
+    background: rgba(15, 23, 42, 0.55);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem 1rem;
+    display: grid;
+    gap: 0.35rem;
+}
+
+    .news-item time {
+        font-size: 0.85rem;
+        color: var(--color-text-muted);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+
+/* Onglets et leaderboard */
+.tab-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.tab-controls {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.tab-control {
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    background: rgba(30, 41, 59, 0.6);
+    color: var(--color-text);
+    padding: 0.5rem 0.9rem;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+    .tab-control:hover,
+    .tab-control:focus {
+        background: rgba(30, 41, 59, 0.85);
+        border-color: rgba(148, 163, 184, 0.5);
+    }
+
+    .tab-control.is-active {
+        background: linear-gradient(135deg, rgba(56, 189, 248, 0.8), rgba(14, 165, 233, 0.75));
+        border-color: rgba(56, 189, 248, 0.65);
+        color: #03253a;
+        box-shadow: 0 12px 28px rgba(56, 189, 248, 0.25);
+    }
+
+.tab-panels {
+    position: relative;
+}
+
+.tab-panel {
+    display: none;
+}
+
+    .tab-panel.is-active {
+        display: block;
+    }
+
+/* Leaderboard */
+.leaderboard {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.6rem;
+}
+
+.leaderboard-row {
+    display: grid;
+    grid-template-columns: 52px 48px 48px 1fr minmax(90px, auto);
+    align-items: center;
+    background: rgba(30, 41, 59, 0.55);
+    border-radius: var(--radius-sm);
+    padding: 0.6rem 0.9rem;
+    gap: 0.5rem;
+}
+
+.leaderboard-rank {
+    font-weight: 700;
+    color: var(--color-accent);
+}
+
+.leaderboard-company img,
+.leaderboard-grade img {
+    width: 28px;
+    height: 28px;
+}
+
+.leaderboard-name {
+    font-weight: 600;
+}
+
+.leaderboard-score {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-muted);
+}
+
+/* Journal d'activité */
+.log-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    max-height: 360px;
+    overflow-y: auto;
+    padding-right: 0.35rem;
+}
+
+.log-entry {
+    background: rgba(15, 23, 42, 0.55);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem 1rem;
+    display: grid;
+    gap: 0.35rem;
+}
+
+.log-time {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.log-message {
+    line-height: 1.5;
+}
+
+/* Adaptation mobile */
+@media (max-width: 720px) {
+    .leaderboard-row {
+        grid-template-columns: 48px 40px 40px 1fr;
+        grid-template-areas:
+            "rank company grade score"
+            "rank name name score";
+        row-gap: 0.35rem;
+    }
+
+    .leaderboard-name {
+        grid-column: 2 / span 2;
+    }
+
+    .leaderboard-score {
+        justify-self: end;
+    }
+}
+
+@media (max-width: 600px) {
+    .stat-row {
+        grid-template-columns: 1fr;
+        align-items: flex-start;
+    }
+
+        .stat-row dt {
+            font-size: 0.85rem;
+        }
+
+        .stat-row dd {
+            font-size: 1.05rem;
+        }
+}

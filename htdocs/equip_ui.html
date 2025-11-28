@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Andromeda • Equipment</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root{--bg:#0b1220;--card:#111a2e;--border:#1e2b49;--muted:#9fb2d7;--accent:#2e63ff}
+  *,*::before,*::after{box-sizing:border-box}
+  html,body,button,.wrap,.card,.title,.sectionHead,.tab,.btn,.token,.slot,.actions,label{user-select:none;-webkit-user-select:none}
+  body{margin:0;background:var(--bg);color:#e7ecf7;font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif}
+  .wrap{max-width:1200px;margin:24px auto;padding:0 16px}
+  h1{margin:0 0 14px;font-size:20px}
+
+  .cols{display:grid;grid-template-columns:340px 1fr;gap:16px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px}
+  .title{font-size:16px;margin-bottom:8px}
+  .muted{color:var(--muted)}
+  .rowline{border-top:1px solid var(--border);margin:12px 0}
+  .divider{border-top:1px dashed #2a3b60;margin:12px 0}
+
+  /* Inventory */
+  .sectionHead{display:flex;align-items:center;justify-content:space-between;margin:8px 0 6px}
+  .sectionHead label{font-size:12px;color:var(--muted)}
+  .actions{display:flex;gap:6px}
+  .btn{background:#1b2b4b;border:1px solid #2d3f65;color:#e7ecf7;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px}
+  .btn:hover{background:#243963}
+
+  .invWrap{max-height:260px;overflow:auto;padding-right:4px}
+  .inv{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .token{background:#0d162a;border:1px solid transparent;border-radius:12px;
+         padding:6px;display:flex;align-items:center;justify-content:center;height:72px;cursor:pointer;position:relative}
+  .token img{width:100%;height:100%;object-fit:contain}
+  .badge{position:absolute;top:6px;left:6px;font-size:10px;padding:2px 6px;border-radius:999px;background:#0b1220cc;border:1px solid #2d3f65;font-weight:700;letter-spacing:.5px}
+
+  /* Tabs + Ship */
+  .tabs{display:flex;gap:6px;margin-bottom:8px}
+  .tab{padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:#0d162a;cursor:pointer}
+  .tab.active{background:#182544;border-color:#3350a1}
+
+  .grid{display:grid;grid-template-columns:repeat(10,minmax(34px,1fr));gap:8px}
+  .slot{height:56px;background:#0d162a;border:1px dashed #38507f;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:4px;position:relative;cursor:pointer}
+  .slot.filled{border-style:solid;background:#122243}
+  .slot img{width:100%;height:100%;object-fit:contain}
+  .slot .badge{left:auto;right:6px}
+
+  /* Toast + bar */
+  .toast{position:fixed;right:16px;top:16px;background:#0d162a;border:1px solid var(--border);padding:10px 12px;border-radius:10px;display:none;z-index:1000}
+  .toast.ok{border-color:#0f5132;color:#c9f7df}
+  .toast.err{border-color:#7b2222;color:#ffd7d7}
+  .bar{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Andromeda — Equipment</h1>
+
+  <div class="cols">
+    <!-- INVENTORY -->
+    <div class="card" id="invPanel">
+      <div class="title">Inventory</div>
+
+      <!-- Lasers -->
+      <div class="sectionHead">
+        <label>Lasers</label>
+        <div class="actions">
+          <button class="btn" id="inv-equip-lasers">Equip all</button>
+          <button class="btn" id="inv-remove-lasers">Remove all</button>
+        </div>
+      </div>
+      <div class="invWrap"><div class="inv" id="inv-lasers"></div></div>
+      <div class="divider"></div>
+
+      <!-- Speed -->
+      <div class="sectionHead">
+        <label>Generators — Speed</label>
+        <div class="actions">
+          <button class="btn" id="inv-equip-speed">Equip all</button>
+          <button class="btn" id="inv-remove-speed">Remove all</button>
+        </div>
+      </div>
+      <div class="invWrap"><div class="inv" id="inv-speed"></div></div>
+      <div class="divider"></div>
+
+      <!-- Shield -->
+      <div class="sectionHead">
+        <label>Generators — Shield</label>
+        <div class="actions">
+          <button class="btn" id="inv-equip-shield">Equip all</button>
+          <button class="btn" id="inv-remove-shield">Remove all</button>
+        </div>
+      </div>
+      <div class="invWrap"><div class="inv" id="inv-shield"></div></div>
+      <div class="divider"></div>
+
+      <!-- Extras (no buttons) -->
+      <div class="sectionHead">
+        <label>Extras</label>
+        <div class="actions"></div>
+      </div>
+      <div class="invWrap"><div class="inv" id="inv-extras"></div></div>
+    </div>
+
+    <!-- SHIP + DRONES -->
+    <div class="card" id="rightPanel">
+      <div class="tabs">
+        <div class="tab active" data-tab="A">Config A</div>
+        <div class="tab" data-tab="B">Config B</div>
+      </div>
+
+      <div id="cfgA" class="cfgView"></div>
+      <div id="cfgB" class="cfgView" style="display:none"></div>
+
+      <div class="rowline"></div>
+      <div class="title">Drones</div>
+      <div id="dronesWrap"></div>
+
+      <div class="bar">
+        <button class="btn" id="saveAll">💾 Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const API_PREFIX = '/views/userTabs/api';
+const ICONS_BASE = '/views/userTabs/icons';
+
+let DATA = { items:{}, inventory:[], configs:{}, drones:[] };
+
+/* Nouvel état: drones par config */
+let DRONES_STATE = { A: [], B: [] };
+
+const byId = id => document.getElementById(id);
+function el(tag, attrs={}, ...children){
+  const n=document.createElement(tag);
+  for(const k in attrs){
+    if(k==='class') n.className=attrs[k];
+    else if(k==='dataset') Object.assign(n.dataset, attrs[k]);
+    else if(k.startsWith('on')) n.addEventListener(k.slice(2), attrs[k]);
+    else n.setAttribute(k, attrs[k]);
+  }
+  for(const c of children) n.append(c instanceof Node?c:document.createTextNode(c));
+  return n;
+}
+function toast(msg, ok=false){ const t=byId('toast'); t.textContent=msg; t.className='toast '+(ok?'ok':'err'); t.style.display='block'; setTimeout(()=>t.style.display='none',1500); }
+
+function typeBadge(t){ return t==3?'SPD':(t==4?'SHD':'LF3'); }
+function iconFor(cat,t){
+  if(cat==='laser') return `${ICONS_BASE}/laser.png`;
+  if(cat==='generator') return (+t===4)?`${ICONS_BASE}/shield.png`:`${ICONS_BASE}/speed.png`;
+  return `${ICONS_BASE}/speed.png`;
+}
+function info(it){
+  const t=+it.type||0;
+  const typ=(it.category==='laser')?'Laser':(t===3?'Speed Gen':t===4?'Shield Gen':'Generator');
+  return `${typ} — ${it.name||('ID '+it.id)}`;
+}
+function activeTab(){ return document.querySelector('.tab.active')?.dataset.tab || 'A'; }
+
+/* ---------- DnD globals ---------- */
+let dragSrcCell = null;
+let dragging = false;
+let dragItem = null;
+
+/* ------------ Inventory ------------ */
+function renderInventory(){
+  const invL=byId('inv-lasers');  invL.innerHTML='';
+  const invS=byId('inv-speed');   invS.innerHTML='';
+  const invH=byId('inv-shield');  invH.innerHTML='';
+  const invE=byId('inv-extras');  invE.innerHTML='';
+
+  DATA.items={};
+  for(const it of DATA.inventory){
+    if(!it.icon) it.icon = iconFor(it.category,it.type);
+    DATA.items[it.id]=it;
+    const target =
+      it.category==='laser'      ? invL :
+      (it.category==='generator' && +it.type===3) ? invS :
+      (it.category==='generator' && +it.type===4) ? invH :
+      invE;
+
+    for(let k=0;k<it.qty;k++){
+      const token=el('div',{class:'token',title:info(it)});
+      token.append(
+        el('img',{src:it.icon,alt:it.name||'item'}),
+        el('span',{class:'badge'}, (it.category==='laser')?'LF3':typeBadge(+it.type))
+      );
+
+      token.addEventListener('click',()=>{
+        const tab=activeTab();
+        const mount=(tab==='A')?byId('cfgA'):byId('cfgB');
+        const row = it.category==='laser' ? 'lasers' : it.category==='generator' ? 'generators' : 'extras';
+        const grid = mount.querySelector(`#grid-${tab}-${row}`);
+        if(!grid){ toast('Target area not found.'); return; }
+        const targetCell = [...grid.children].find(c=>!c.classList.contains('filled'));
+        if(!targetCell){ toast('Not enough space.'); return; }
+        placeInSlot(targetCell, it);
+        decrementInventory(it.id);
+      });
+
+      token.draggable = true;
+      token.addEventListener('dragstart',(e)=>{
+        dragItem = { id:it.id, category:it.category, type:+it.type };
+        try{ e.dataTransfer.setData('text/plain','inv'); e.dataTransfer.effectAllowed='copy'; }catch{}
+      });
+      token.addEventListener('dragend',()=>{ dragItem=null; });
+
+      target.appendChild(token);
+    }
+  }
+}
+function decrementInventory(itemId){
+  const it = DATA.inventory.find(x=>x.id==itemId);
+  if(!it) return;
+  it.qty = Math.max(0, it.qty-1);
+  renderInventory();
+}
+function incrementInventory(itemId){
+  const it = DATA.inventory.find(x=>x.id==itemId);
+  if(it){ it.qty += 1; }
+  else{
+    const ref = DATA.items[itemId] || {id:itemId,category:'laser',type:0,name:'',icon:iconFor('laser',0)};
+    DATA.inventory.push({...ref, qty:1});
+  }
+  renderInventory();
+}
+function expandPool(items){
+  const out=[]; for(const it of items) for(let k=0;k<it.qty;k++) out.push(it); return out;
+}
+
+/* ---------- Inventory dropzone ---------- */
+function enableInventoryDropzone(){
+  const panel = byId('invPanel');
+  panel.addEventListener('dragover', (e)=>{
+    if(dragSrcCell){ e.preventDefault(); try{ e.dataTransfer.dropEffect='move'; }catch{} }
+  });
+  panel.addEventListener('drop', (e)=>{
+    e.preventDefault();
+    if(dragSrcCell){
+      clearSlot(dragSrcCell);
+      dragSrcCell = null;
+      dragging = false;
+    }
+  });
+}
+
+/* ------------ Ship / Drones helpers ------------ */
+function slotRender(item){
+  const f=document.createDocumentFragment();
+  if(!item){ f.append(el('span',{class:'muted'},' ')); return f; }
+  const box=el('div',{style:'width:100%;height:100%;position:relative;display:flex;align-items:center;justify-content:center'});
+  box.append(el('img',{src:item.icon||iconFor(item.category,item.type),alt:item.name||('ID '+item.id),title:info(item)}));
+  box.append(el('span',{class:'badge'}, (item.category==='laser')?'LF3':typeBadge(+item.type)));
+  f.append(box); return f;
+}
+function placeInSlot(slotEl,item){
+  slotEl.classList.add('filled');
+  slotEl.innerHTML='';
+  slotEl.append(slotRender(item));
+  slotEl.dataset.item = JSON.stringify({id:item.id,category:item.category,type:item.type,icon:item.icon,name:item.name});
+  attachSlotDrag(slotEl);
+
+  // -- MAJ état drones si c'est un slot de drone
+  if (typeof slotEl.dataset.droneIndex !== 'undefined') {
+    const tab = activeTab();
+    const di = parseInt(slotEl.dataset.droneIndex,10);
+    const si = parseInt(slotEl.dataset.slotIndex,10);
+    if (!Array.isArray(DRONES_STATE[tab][di])) DRONES_STATE[tab][di] = { slots:[0,0] };
+    DRONES_STATE[tab][di].slots[si] = item.id;
+  }
+}
+function clearSlot(slotEl){
+  const it = slotEl.dataset.item ? JSON.parse(slotEl.dataset.item) : null;
+  slotEl.classList.remove('filled');
+  slotEl.innerHTML='';
+  slotEl.append(slotRender(null));
+  slotEl.dataset.item='';
+  slotEl.draggable = false;
+  if(it) incrementInventory(it.id);
+
+  // -- MAJ état drones si c'est un slot de drone
+  if (typeof slotEl.dataset.droneIndex !== 'undefined') {
+    const tab = activeTab();
+    const di = parseInt(slotEl.dataset.droneIndex,10);
+    const si = parseInt(slotEl.dataset.slotIndex,10);
+    if (!Array.isArray(DRONES_STATE[tab][di])) DRONES_STATE[tab][di] = { slots:[0,0] };
+    DRONES_STATE[tab][di].slots[si] = 0;
+  }
+}
+
+/* DnD for slots */
+function attachSlotDrag(cell, acceptFn){
+  cell.draggable = cell.classList.contains('filled');
+  if(!cell._dragSrcBound){
+    cell.addEventListener('dragstart', (e)=>{
+      if(!cell.classList.contains('filled')){ e.preventDefault(); return; }
+      dragging = true;
+      dragSrcCell = cell;
+      try{ e.dataTransfer.setData('text/plain','slot'); e.dataTransfer.effectAllowed='move'; }catch{}
+    });
+    cell.addEventListener('dragend', ()=>{
+      dragging = false;
+      dragSrcCell = null;
+    });
+    cell._dragSrcBound = true;
+  }
+  if(!cell._dropBound){
+    cell.addEventListener('dragover', (e)=>{
+      if(!dragItem) return;
+      if(cell.classList.contains('filled')) return;
+      if(acceptFn && !acceptFn(dragItem)) return;
+      e.preventDefault(); try{ e.dataTransfer.dropEffect='copy'; }catch{}
+    });
+    cell.addEventListener('drop', (e)=>{
+      e.preventDefault();
+      if(!dragItem) return;
+      if(cell.classList.contains('filled')) return;
+      if(acceptFn && !acceptFn(dragItem)) return;
+      const it = DATA.items[dragItem.id] || dragItem;
+      placeInSlot(cell, it);
+      decrementInventory(it.id);
+      dragItem = null;
+    });
+    cell._dropBound = true;
+  }
+}
+
+/* ------------ Ship ------------ */
+function renderShipConfig(name, mount){
+  const cfg = DATA.configs[name] || {name,lasers_slots:10,gen_slots:4,extras_slots:6,slots:[]};
+  mount.innerHTML='';
+  mount.dataset.cfg = name;
+
+  const slots={lasers:[],generators:[],extras:[]};
+  (cfg.slots||[]).forEach(s=>{
+    (slots[s.row_name]=slots[s.row_name]||[])[s.slot_index] =
+      s.item_id ? {id:s.item_id,name:s.item_name,icon:s.item_icon,category:s.item_category,type:s.item_type} : null;
+  });
+
+  function rowUI(title,rowName,max){
+    const head=el('div',{class:'sectionHead'}, el('label',{}, title), el('div'));
+    const grid=el('div',{class:'grid',id:`grid-${name}-${rowName}`});
+    const accept = (item)=>{
+      if(rowName==='lasers') return item.category==='laser';
+      if(rowName==='generators') return item.category==='generator';
+      if(rowName==='extras') return item.category==='extra';
+      return false;
+    };
+    for(let i=0;i<max;i++){
+      const it=(slots[rowName]||[])[i]||null;
+      const cell=el('div',{class:'slot'+(it?' filled':''),dataset:{row:rowName,idx:i}});
+      if(it) cell.dataset.item = JSON.stringify(it);
+      cell.append(slotRender(it));
+      cell.addEventListener('click',()=>{ if(dragging) return; if(cell.classList.contains('filled')) clearSlot(cell); });
+      attachSlotDrag(cell, accept);
+      grid.appendChild(cell);
+    }
+    mount.append(head,grid);
+  }
+
+  rowUI('Lasers','lasers',cfg.lasers_slots);
+  rowUI('Generators','generators',cfg.gen_slots);
+  rowUI('Extras','extras',cfg.extras_slots);
+
+  mount.collect = () => {
+    const ids = row => [...mount.querySelectorAll(`#grid-${name}-${row} .slot`)].map(c=>{
+      if(!c.classList.contains('filled')) return 0;
+      const it = c.dataset.item ? JSON.parse(c.dataset.item) : null;
+      return it ? it.id : 0;
+    });
+    return { name, slots:{ lasers:ids('lasers'), generators:ids('generators'), extras:ids('extras') } };
+  };
+}
+
+/* ------------ Drones: PAR CONFIG ------------ */
+function deepClone(obj){ return JSON.parse(JSON.stringify(obj)); }
+
+function ensureDronesStateFromList(list){
+  // transforme DATA.drones (slots -> item_id) en [{slots:[id0,id1]}, ...]
+  const out = [];
+  (list||[]).forEach(d=>{
+    const s=[0,0];
+    (d.slots||[]).forEach(x=>{
+      if(x && (x.slot_index===0 || x.slot_index===1)) s[x.slot_index] = x.item_id ? Number(x.item_id) : 0;
+    });
+    out.push({slots:s});
+  });
+  return out;
+}
+
+function renderDrones(tabName){
+  const wrap = byId('dronesWrap');
+  wrap.innerHTML = '';
+
+  const list = el('div',{id:'droneList'});
+  wrap.append(list);
+
+  const state = DRONES_STATE[tabName] || [];
+
+  state.forEach((d, idx) => {
+    const rowTitle = el('div',{class:'sectionHead'}, el('label',{}, 'Arès ' + (idx+1)));
+    const row = el('div',{class:'drone-row',style:'display:grid;grid-template-columns:repeat(2,90px);gap:8px;margin-bottom:6px'});
+
+    const accept = (it) => (it.category==='laser') || (it.category==='generator' && +it.type===4);
+
+    for (let si = 0; si < 2; si++) {
+      const itemId = (d.slots||[])[si]||0;
+      const meta = itemId ? (DATA.items[itemId] || {id:itemId,category:'laser',type:0,icon:iconFor('laser',0)}) : null;
+
+      const cell = el('div',{
+        class:'slot' + (meta ? ' filled':''), 
+        dataset:{ droneIndex:idx, slotIndex:si, item: meta? JSON.stringify(meta): '' }
+      });
+      cell.append(slotRender(meta));
+      cell.addEventListener('click',()=>{ if(dragging) return; if(cell.classList.contains('filled')) clearSlot(cell); });
+      attachSlotDrag(cell, accept);
+      row.append(cell);
+    }
+
+    list.append(rowTitle, row);
+  });
+}
+
+/* ------------ LOAD & SAVE ------------ */
+async function loadAll(){
+  const res=await fetch(`${API_PREFIX}/config_load.php`);
+  if(!res.ok){ toast('Load error'); return; }
+  const data=await res.json();
+
+  if(!data.configs || !data.configs.length){
+    data.configs=[{name:'A',lasers_slots:10,gen_slots:4,extras_slots:6,slots:[]},
+                  {name:'B',lasers_slots:10,gen_slots:4,extras_slots:6,slots:[]}];
+  }
+  DATA.inventory=(data.inventory||[]).map(it=>({...it,icon:it.icon||iconFor(it.category,it.type)}));
+  DATA.configs={}; (data.configs||[]).forEach(c=>DATA.configs[c.name]=c);
+  DATA.drones=data.drones||[];
+
+  // init drones par config (A et B identiques au départ)
+  DRONES_STATE.A = ensureDronesStateFromList(DATA.drones);
+  DRONES_STATE.B = deepClone(DRONES_STATE.A);
+
+  renderInventory();
+  renderShipConfig('A',byId('cfgA'));
+  renderShipConfig('B',byId('cfgB'));
+  renderDrones('A'); // onglet A par défaut
+  enableInventoryDropzone();
+}
+
+/* Save: Config A + Config B + Drones A/B */
+async function saveAll(){
+  // synchronise l'état des drones du DOM courant vers DRONES_STATE[activeTab]
+  const tab = activeTab();
+  const rows = [...document.querySelectorAll('#dronesWrap .drone-row')];
+  const cur = [];
+  rows.forEach(r=>{
+    const ids = [...r.children].map(c=>{
+      if(!c.classList.contains('filled')) return 0;
+      const it = c.dataset.item ? JSON.parse(c.dataset.item) : null;
+      return it ? it.id : 0;
+    });
+    cur.push({slots:ids});
+  });
+  DRONES_STATE[tab] = cur;
+
+  const cfgA = byId('cfgA')?.collect ? byId('cfgA').collect() : {name:'A',slots:{lasers:[],generators:[],extras:[]}};
+  const cfgB = byId('cfgB')?.collect ? byId('cfgB').collect() : {name:'B',slots:{lasers:[],generators:[],extras:[]}};
+  const payload = { configs:[cfgA, cfgB], dronesA: DRONES_STATE.A, dronesB: DRONES_STATE.B };
+
+  try{
+    const r = await fetch(`${API_PREFIX}/config_save.php`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    let data = null;
+    try { data = await r.json(); } catch {}
+    if (r.ok && data && data.ok) {
+      toast('Saved successfully', true);
+      await loadAll();
+    } else {
+      const msg = (data && (data.message || data.error)) || `${r.status} ${r.statusText}`;
+      toast(`Save failed: ${msg}`);
+      console.error('Save payload', payload);
+      console.error('Save response', data);
+    }
+  } catch (e){
+    toast(`Save failed: ${e.message}`);
+    console.error(e);
+  }
+}
+
+/* Tabs & inventory actions */
+document.addEventListener('click',(ev)=>{
+  if(!ev.target.classList.contains('tab')) return;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  ev.target.classList.add('active');
+  const n=ev.target.dataset.tab;
+  byId('cfgA').style.display=(n==='A')?'block':'none';
+  byId('cfgB').style.display=(n==='B')?'block':'none';
+  renderDrones(n); // <-- change aussi la vue des drones selon l’onglet
+});
+byId('saveAll').addEventListener('click', saveAll);
+
+function currentMount(){ const t=activeTab(); return t==='A'?byId('cfgA'):byId('cfgB'); }
+byId('inv-equip-lasers').addEventListener('click',()=>equipAllShip(currentMount(),'lasers'));
+byId('inv-remove-lasers').addEventListener('click',()=>removeAllShip(currentMount(),'lasers'));
+byId('inv-equip-speed').addEventListener('click',()=>equipAllShip(currentMount(),'generators',it=>+it.type===3));
+byId('inv-remove-speed').addEventListener('click',()=>removeAllShip(currentMount(),'generators',it=>+it.type===3));
+byId('inv-equip-shield').addEventListener('click',()=>equipAllShip(currentMount(),'generators',it=>+it.type===4));
+byId('inv-remove-shield').addEventListener('click',()=>removeAllShip(currentMount(),'generators',it=>+it.type===4));
+
+/* Equip / Remove helpers */
+function equipAllShip(mount, row, filterFn=()=>true){
+  const grid = mount.querySelector(`#grid-${mount.dataset.cfg}-${row}`);
+  if(!grid) return;
+  const free = [...grid.children].filter(c=>!c.classList.contains('filled'));
+  let pool=[];
+  if(row==='lasers')           pool = expandPool(DATA.inventory.filter(x=>x.category==='laser'));
+  else if(row==='generators')  pool = expandPool(DATA.inventory.filter(x=>x.category==='generator').filter(x=>filterFn(x)));
+  else                         pool = expandPool(DATA.inventory.filter(x=>x.category==='extra'));
+  if(!pool.length){ toast('No items available.'); return; }
+  let i=0;
+  for(const cell of free){
+    if(i>=pool.length) break;
+    placeInSlot(cell, pool[i]);
+    decrementInventory(pool[i].id);
+    i++;
+  }
+}
+function removeAllShip(mount, row, filterFn=()=>true){
+  const grid = mount.querySelector(`#grid-${mount.dataset.cfg}-${row}`);
+  if(!grid) return;
+  const filled = [...grid.children].filter(c=>c.classList.contains('filled'));
+  for(const cell of filled){
+    const it = cell.dataset.item ? JSON.parse(cell.dataset.item) : null;
+    if(it && filterFn(it)) clearSlot(cell);
+  }
+}
+
+/* go */
+loadAll();
+</script>
+</body>
+</html>

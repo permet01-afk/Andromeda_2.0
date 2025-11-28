@@ -1,0 +1,1100 @@
+/*  	
+--------------------------------------------------------------
+Colours and backgrounds for common.css
+-------------------------------------------------------------- */
+
+html, body {
+	color: #c8d5e9;
+	background: #252525;
+}
+
+body {
+	color: #c8d5e9;
+	background: #252525 url("{T_THEME_PATH}/images/fond.jpg") no-repeat top center;
+}
+h1 {
+	color: #c8d5e9;
+}
+
+h2 {
+	color: #6a9dc5;
+}
+
+h3 {
+	background: transparent url("{T_THEME_PATH}/images/separation.png") repeat-x bottom center;
+	color: #7ea1c9;
+}
+
+.postbody h3 {
+    background-image: none;
+}
+
+hr {
+	border-color: transparent;
+	border-top-color: transparent;
+	background: transparent url("{T_THEME_PATH}/images/divi.png") no-repeat bottom center;  
+}
+
+hr.dashed {
+	border-top-color: #7ea1c9;
+}
+
+/* Search box
+--------------------------------------------- */
+
+#search-box {
+	color: #FFFFFF;
+}
+
+#search-box #keywords {
+	background-color: #1f4f90;
+}
+
+#search-box input {
+	border-color: #0075B0;
+}
+
+/* Round cornered boxes and backgrounds
+---------------------------------------- */
+.headerbar {
+	background: transparent;
+	color: #FFFFFF;
+}
+
+.navbar {
+	background-color: transparent;
+	width:98%;
+}
+
+.forabg {
+	background-color: #0f1c31;
+	background-image: url("{T_THEME_PATH}/images/bg_header.gif"); 
+}
+
+.forumbg {
+	background-color: #0f1c31;
+	background-image: url("{T_THEME_PATH}/images/bg_header.gif");
+}
+
+li.header{
+	background: #27477d url("{T_THEME_PATH}/images/header_bar.jpg") repeat-x;
+	height: 28px; 
+}
+
+/* Main block */
+
+#page-body {
+	background: #111111 url("{T_THEME_PATH}/images/centre.jpg") repeat-y;
+}
+
+.panel {
+	width:98%;
+	background-color: #1f3c6b;
+	background-image: url("./styles/prosilver/theme/images/bg_list.gif");
+	color: #d9e0eb;
+}
+
+.post:target .content {
+	color: #bcc9de;
+}
+
+.post:target h3 a {
+	color: #bcc9de;
+}
+
+.bg1	{ background-color: #1f3c6b;}
+.bg2	{ background-color: #1f3c6b;}
+.bg3	{ background-color: #1f3c6b;}
+
+.ucprowbg {
+	background-color: #1f3c6b;
+}
+
+.fieldsbg {
+	background-color: #E7E8EA;
+}
+
+span.corners-top {
+	background-image: url("{T_THEME_PATH}/images/corners_left.png");
+}
+
+span.corners-top span {
+	background-image: url("{T_THEME_PATH}/images/corners_right.png");
+}
+
+span.corners-bottom {
+	background-image: url("{T_THEME_PATH}/images/corners_left.png");
+}
+
+span.corners-bottom span {
+	background-image: url("{T_THEME_PATH}/images/corners_right.png");
+}
+
+/* Horizontal lists
+----------------------------------------*/
+
+ul.navlinks {
+	border-bottom-color: #000000;
+}
+
+/* Table styles
+----------------------------------------*/
+table.table1 thead th {
+	color: #bcc9de;
+}
+
+table.table1 tbody tr {
+	border-color: #BFC1CF;
+}
+
+table.table1 tbody tr:hover, table.table1 tbody tr.hover {
+	background-color: #284c86;
+	color: #000000;
+}
+
+table.table1 td {
+	color: #bcc9de;
+}
+
+table.table1 tbody td {
+	border-top-color: #000000;
+}
+
+table.table1 tbody th {
+	border-bottom-color: #000000;
+	color: #bcc9de;
+	background-color: #1f3c6b;
+}
+
+table.info tbody th {
+	color: #000000;
+}
+
+/* Misc layout styles
+---------------------------------------- */
+dl.details dt {
+	color: #000000;
+}
+
+dl.details dd {
+	color: #d4e3fe;
+}
+
+.sep {
+	color: #1198D9;
+}
+
+/* Pagination
+---------------------------------------- */
+
+.pagination span strong {
+	color: #c8d5e9;
+	background-color: #4692BF;
+	border-color: #4692BF;
+}
+
+.pagination span a, .pagination span a:link, .pagination span a:visited {
+	color: #5C758C;
+	background-color: #ECEDEE;
+	border-color: #B4BAC0;
+}
+
+.pagination span a:hover {
+	border-color: #368AD2;
+	background-color: #368AD2;
+	color: #c8d5e9;
+}
+
+.pagination span a:active {
+	color: #5C758C;
+	background-color: #ECEDEE;
+	border-color: #B4BAC0;
+}
+
+/* Pagination in viewforum for multipage topics */
+.row .pagination {
+	background-image: url("{T_THEME_PATH}/images/icon_pages.gif");
+}
+
+.row .pagination span a, li.pagination span a {
+	background-color: #FFFFFF;
+}
+
+.row .pagination span a:hover, li.pagination span a:hover {
+	background-color: #368AD2;
+}
+
+/* Miscellaneous styles
+---------------------------------------- */
+
+.copyright {
+	color: #839abf;
+}
+
+.error {
+	color: #BC2A4D;
+}
+
+.reported {
+	background-color: #F7ECEF;
+}
+
+li.reported:hover {
+	background-color: #ECD5D8 !important;
+}
+.sticky, .announce {
+	/* you can add a background for stickies and announcements*/
+}
+
+div.rules {
+	background-color: #1f3c6b;
+	color: #bcc9dd;
+}
+
+p.rules {
+	background-color: #1f3c6b;
+	background-image: none;
+}
+
+/*  	
+--------------------------------------------------------------
+Colours and backgrounds for links.css
+-------------------------------------------------------------- */
+
+a:link	{ color: #bcc9dd;}
+a:visited	{ color: #bcc9dd;}
+a:hover	{ color: #a7c8fd;}
+a:active	{ color: #bcc9dd;}
+
+/* Links on gradient backgrounds */
+#search-box a:link, .navbg a:link, .forumbg .header a:link, .forabg .header a:link, th a:link {
+	color: #c6d5e4;
+}
+
+#search-box a:visited, .navbg a:visited, .forumbg .header a:visited, .forabg .header a:visited, th a:visited {
+	color: #c6d5e4;
+}
+
+#search-box a:hover, .navbg a:hover, .forumbg .header a:hover, .forabg .header a:hover, th a:hover {
+	color: #c6d5e4;
+}
+
+#search-box a:active, .navbg a:active, .forumbg .header a:active, .forabg .header a:active, th a:active {
+	color: #c6d5e4;
+}
+
+/* Links for forum/topic lists */
+a.forumtitle {
+	color: #c6d5e4;
+}
+
+/* a.forumtitle:visited { color: #105289; } */
+
+a.forumtitle:hover {
+	color: #a0c0e2;
+}
+
+a.forumtitle:active {
+	color: #a0c0e2;
+}
+
+a.topictitle {
+	color:#c6d5e4;
+}
+
+/* a.topictitle:visited { color: #368AD2; } */
+
+a.topictitle:hover {
+	color: #a0c0e2;
+}
+
+a.topictitle:active {
+	color: #a0c0e2;
+}
+
+/* Post body links */
+.postlink {
+	color: #c6d5e4;
+	border-bottom-color: #368AD2;
+}
+
+.postlink:visited {
+	color: #a0c0e2;
+	border-bottom-color: #5D8FBD;
+}
+
+.postlink:active {
+	color: #a0c0e2;
+}
+
+.postlink:hover {
+	background-color: transparent;
+	color: #78b2f0;
+}
+
+.signature a, .signature a:visited, .signature a:hover, .signature a:active {
+	background-color: transparent;
+}
+
+/* Profile links */
+.postprofile a:link, .postprofile a:visited, .postprofile dt.author a {
+	color: #105289;
+}
+
+.postprofile a:hover, .postprofile dt.author a:hover {
+	color: #D31141;
+}
+
+.postprofile a:active {
+	color: #105289;
+}
+
+/* Profile searchresults */	
+.search .postprofile a {
+	color: #000000;
+}
+
+.search .postprofile a:hover {
+	color: #91b9ff;
+}
+.postprofile{
+	color: #ccd5e4;
+}
+.postprofile dd, .postprofile dt {
+	color:  #ccd5e4;
+}
+/* Back to top of page */
+a.top {
+	background-image: url("{IMG_ICON_BACK_TOP_SRC}");
+}
+
+a.top2 {
+	background-image: url("{IMG_ICON_BACK_TOP_SRC}");
+}
+
+/* Arrow links  */
+a.up		{ background-image: url("{T_THEME_PATH}/images/arrow_up.png") }
+a.down		{ background-image: url("{T_THEME_PATH}/images/arrow_down.png") }
+a.left		{ background-image: url("{T_THEME_PATH}/images/arrow_left.png") }
+a.right		{ background-image: url("{T_THEME_PATH}/images/arrow_right.png") }
+
+a.up:hover {
+	background-color: transparent;
+}
+
+a.left:hover {
+	color: #368AD2;
+}
+
+a.right:hover {
+	color: #368AD2;
+}
+
+/*  	
+--------------------------------------------------------------
+Colours and backgrounds for content.css
+-------------------------------------------------------------- */
+
+ul.forums {
+	background-color: #203c6b;
+	background-image: url("{T_THEME_PATH}/images/gradient.gif");
+}
+
+ul.topiclist li {
+	color: #bac6da;
+}
+
+ul.topiclist dd {
+	border-left-color: #1b293a;
+}
+
+.rtl ul.topiclist dd {
+	border-right-color: #1b293a;
+	border-left-color: transparent;
+}
+
+ul.topiclist li.row dt a.subforum.read {
+	background-image: url("{IMG_SUBFORUM_READ_SRC}");
+}
+
+ul.topiclist li.row dt a.subforum.unread {
+	background-image: url("{IMG_SUBFORUM_UNREAD_SRC}");
+}
+
+li.row {
+	border-bottom-color: #080d12;
+	border-top-color: #1b293a;
+	background: #101928 url("{T_THEME_PATH}/images/f_row.jpg") repeat-x top center;  
+}
+
+li.row strong {
+	color: #c8d5e9;
+}
+
+li.row:hover {
+	background: #27477d url("{T_THEME_PATH}/images/f_row_h.jpg") repeat-x top center;
+}
+
+li.row, #cp-main .panel li.row {
+	border-bottom-color: #080d12;
+	border-top-color: #1b293a;
+}
+
+li.row:hover dd {
+	border-left-color: #080d12;
+}
+
+.rtl li.row:hover dd {
+	border-right-color: #080d12;
+	border-left-color: transparent;
+}
+
+li.header dt, li.header dd {
+	color: #c8d5e9;
+}
+
+li.header dt {
+	text-align: center;
+}
+
+/* Forum list column styles */
+ul.topiclist dd.searchextra {
+	color: #e8e3d4;
+}
+
+/* Post body styles
+----------------------------------------*/
+.postbody {
+	color: #d9e0ea;
+}
+
+/* Content container styles
+----------------------------------------*/
+.content {
+	color: #d9e0ea;
+}
+
+.content h2, .panel h2 {
+	color: #bac6da;
+	border-bottom-color: transparent;
+}
+
+dl.faq dt {
+	color: #5194ff;
+	font-size: 12px;
+}
+
+.posthilit {
+	background-color: #F3BFCC;
+	color: #BC2A4D;
+}
+
+/* Post signature */
+.signature {
+	border-top-color: #1f3c6b;
+}
+
+/* Post noticies */
+.notice {
+	border-top-color:  #1f3c6b;
+}
+
+/* BB Code styles
+----------------------------------------*/
+/* Quote block */
+blockquote {
+	background-color: #1F3C6B;
+	background-image: url("{T_THEME_PATH}/images/quote.png");
+	border-color:#000000;
+}
+
+.rtl blockquote {
+	background-image: url("{T_THEME_PATH}/images/quote_rtl.png");
+}
+
+blockquote blockquote {
+	/* Nested quotes */
+	background-color:#25477e;
+}
+
+blockquote blockquote blockquote {
+	/* Nested quotes */
+	background-color: #2b5291;
+}
+
+/* Code block */
+dl.codebox {
+	background-color: #1F3C6B;
+	border-color: #000000;
+}
+
+dl.codebox dt {
+	border-bottom-color:  #000000;
+}
+
+dl.codebox code {
+	color: #12ff00;
+}
+
+.syntaxbg		{ color: #FFFFFF; }
+.syntaxcomment	{ color: #FF8000; }
+.syntaxdefault	{ color: #ababff; }
+.syntaxhtml		{ color: #000000; }
+.syntaxkeyword	{ color: #00ca00; }
+.syntaxstring	{ color: #ff8989; }
+
+/* Attachments
+----------------------------------------*/
+.attachbox {
+	background-color: #1F3C6B;
+	border-color: #000000;
+}
+
+.pm-message .attachbox {
+	background-color: #1F3C6B;
+}
+
+.attachbox dd {
+	border-top-color: #000000;
+}
+
+.attachbox p {
+	color: #ffffff;
+}
+
+.attachbox p.stats {
+	color: #ffffff;
+}
+
+.attach-image img {
+	border-color: transparent;
+}
+
+/* Inline image thumbnails */
+
+dl.file dd {
+	color: #ffffff;
+}
+
+dl.thumbnail img {
+	border-color: #000000;
+	background-color: #1F3C6B;
+}
+
+dl.thumbnail dd {
+	color: #ffffff;
+}
+
+dl.thumbnail dt a:hover {
+	background-color: #25539e;
+}
+
+dl.thumbnail dt a:hover img {
+	border-color: #368AD2;
+}
+
+/* Post poll styles
+----------------------------------------*/
+
+fieldset.polls dl {
+	border-top-color: #000000;
+	color: #d8dee8;
+}
+ fieldset.polls dd {
+	color: #000000;
+}
+fieldset.polls dl.voted {
+	color: #000000;
+}
+fieldset.polls dt {
+	color: #d8dee8;
+}
+fieldset.polls dd div {
+	color: #FFFFFF;
+}
+
+.rtl .pollbar1, .rtl .pollbar2, .rtl .pollbar3, .rtl .pollbar4, .rtl .pollbar5 {
+	border-right-color: transparent;
+}
+
+.pollbar1 {
+	background-color: #00193c;
+	border-bottom-color: #000000;
+	border-right-color: #000000;
+}
+
+.rtl .pollbar1 {
+	border-left-color: #000000;
+}
+
+.pollbar2 {
+	background-color: #00214f;
+	border-bottom-color: #000000;
+	border-right-color: #000000;
+}
+
+.rtl .pollbar2 {
+	border-left-color: #000000;
+}
+
+.pollbar3 {
+	background-color: #002963;
+	border-bottom-color: #000000;
+	border-right-color: #000000;
+}
+
+.rtl .pollbar3 {
+	border-left-color: #000000;
+}
+
+.pollbar4 {
+	background-color: #003279;
+	border-bottom-color: #000000;
+	border-right-color: #000000;
+}
+
+.rtl .pollbar4 {
+	border-left-color: #000000;
+}
+
+.pollbar5 {
+	background-color: #003d92;
+	border-bottom-color: #000000;
+	border-right-color: #000000;
+}
+
+.rtl .pollbar5 {
+	border-left-color: #000000;
+}
+
+/* Poster profile block
+----------------------------------------*/
+.postprofile {
+	color: #666666;
+	border-left-color: #1f3c6b;
+}
+
+.rtl .postprofile {
+	border-right-color: #1f3c6b;
+	border-left-color: transparent;
+}
+
+.pm .postprofile {
+	border-left-color: #1f3c6b;
+}
+
+.rtl .pm .postprofile {
+	border-right-color: #1f3c6b;
+	border-left-color: transparent;
+}
+
+.postprofile strong {
+	color: #fff;
+}
+
+.online {
+	background-image: url("{IMG_ICON_USER_ONLINE_SRC}");
+}
+
+/*  	
+--------------------------------------------------------------
+Colours and backgrounds for buttons.css
+-------------------------------------------------------------- */
+
+/* Big button images */
+.reply-icon span	{ background-image: url("{IMG_BUTTON_TOPIC_REPLY_SRC}"); }
+.post-icon span		{ background-image: url("{IMG_BUTTON_TOPIC_NEW_SRC}"); }
+.locked-icon span	{ background-image: url("{IMG_BUTTON_TOPIC_LOCKED_SRC}"); }
+.pmreply-icon span	{ background-image: url("{IMG_BUTTON_PM_REPLY_SRC}") ;}
+.newpm-icon span 	{ background-image: url("{IMG_BUTTON_PM_NEW_SRC}") ;}
+.forwardpm-icon span	{ background-image: url("{IMG_BUTTON_PM_FORWARD_SRC}") ;}
+
+a.print {
+	background-image: url("{T_THEME_PATH}/images/icon_print.png");
+}
+
+a.sendemail {
+	background-image: url("{T_THEME_PATH}/images/icon_sendemail.png");
+}
+
+a.fontsize {
+	background-image: url("{T_THEME_PATH}/images/icon_fontsize.png");
+}
+
+/* Icon images
+---------------------------------------- */
+.sitehome						{ background-image: url("{T_THEME_PATH}/images/icon_home.png"); }
+.icon-faq						{ background-image: url("{T_THEME_PATH}/images/icon_faq.png"); }
+.icon-members					{ background-image: url("{T_THEME_PATH}/images/icon_members.png"); }
+.icon-home						{ background-image: url("{T_THEME_PATH}/images/icon_home.png"); }
+.icon-ucp						{ background-image: url("{T_THEME_PATH}/images/icon_ucp.png"); }
+.icon-register					{ background-image: url("{T_THEME_PATH}/images/icon_register.png"); }
+.icon-logout					{ background-image: url("{T_THEME_PATH}/images/icon_logout.png"); }
+.icon-bookmark					{ background-image: url("{T_THEME_PATH}/images/icon_bookmark.png"); }
+.icon-bump						{ background-image: url("{T_THEME_PATH}/images/icon_bump.png"); }
+.icon-subscribe					{ background-image: url("{T_THEME_PATH}/images/icon_subscribe.png"); }
+.icon-unsubscribe				{ background-image: url("{T_THEME_PATH}/images/icon_unsubscribe.png"); }
+.icon-pages						{ background-image: url("{T_THEME_PATH}/images/icon_pages.png"); }
+.icon-search					{ background-image: url("{T_THEME_PATH}/images/icon_search.png"); }
+
+/* Profile & navigation icons */
+.email-icon, .email-icon a		{ background-image: url("{IMG_ICON_CONTACT_EMAIL_SRC}"); }
+.aim-icon, .aim-icon a			{ background-image: url("{IMG_ICON_CONTACT_AIM_SRC}"); }
+.yahoo-icon, .yahoo-icon a		{ background-image: url("{IMG_ICON_CONTACT_YAHOO_SRC}"); }
+.web-icon, .web-icon a			{ background-image: url("{IMG_ICON_CONTACT_WWW_SRC}"); }
+.msnm-icon, .msnm-icon a			{ background-image: url("{IMG_ICON_CONTACT_MSNM_SRC}"); }
+.icq-icon, .icq-icon a			{ background-image: url("{IMG_ICON_CONTACT_ICQ_SRC}"); }
+.jabber-icon, .jabber-icon a		{ background-image: url("{IMG_ICON_CONTACT_JABBER_SRC}"); }
+.pm-icon, .pm-icon a				{ background-image: url("{IMG_ICON_CONTACT_PM_SRC}"); }
+.quote-icon, .quote-icon a		{ background-image: url("{IMG_ICON_POST_QUOTE_SRC}"); }
+
+/* Moderator icons */
+.report-icon, .report-icon a		{ background-image: url("{IMG_ICON_POST_REPORT_SRC}"); }
+.edit-icon, .edit-icon a			{ background-image: url("{IMG_ICON_POST_EDIT_SRC}"); }
+.delete-icon, .delete-icon a		{ background-image: url("{IMG_ICON_POST_DELETE_SRC}"); }
+.info-icon, .info-icon a			{ background-image: url("{IMG_ICON_POST_INFO_SRC}"); }
+.warn-icon, .warn-icon a			{ background-image: url("{IMG_ICON_USER_WARN_SRC}"); } /* Need updated warn icon */
+
+/*  	
+--------------------------------------------------------------
+Colours and backgrounds for cp.css
+-------------------------------------------------------------- */
+
+/* Main CP box
+----------------------------------------*/
+
+#cp-main h3, #cp-main hr, #cp-menu hr {
+	border-color: #A4B3BF;
+}
+#cp-main h3{
+  color: #00153a;
+}
+#cp-main .panel li.row {
+	border-bottom-color: #B5C1CB;
+	border-top-color: #F9F9F9;
+}
+
+ul.cplist {
+	border-top-color: #B5C1CB;
+}
+
+#cp-main .panel li.header dd, #cp-main .panel li.header dt {
+	color: #c8d5e9;
+}
+
+#cp-main table.table1 thead th {
+	color: #c8d5e9;
+	border-bottom-color: #333333;
+}
+
+#cp-main .pm-message {
+	border-color: #DBDEE2;
+	background-color: #5e7fb5;
+}
+#cp-main dt span, #cp-main p{
+  color: #ffffff;
+}
+/* CP tabbed menu
+----------------------------------------*/
+#tabs a {
+	background-image: url("{T_THEME_PATH}/images/bg_tabs1.jpg");
+}
+
+#tabs a span {
+	background-image: url("{T_THEME_PATH}/images/bg_tabs2.jpg");
+	color: #c8d5e9;
+}
+
+#tabs a:hover span {
+	color: #ffffff;
+}
+
+#tabs .activetab a {
+	border-bottom-color: transparent;
+}
+
+#tabs .activetab a span {
+	color: #c8d5e9;
+}
+
+#tabs .activetab a:hover span {
+	color: #ffffff;
+}
+
+/* Mini tabbed menu used in MCP
+----------------------------------------*/
+#minitabs li {
+	background-color: #768cb1;
+}
+
+#minitabs li a{
+	color: #002a70;
+}
+
+#minitabs li.activetab {
+	background-color: #5E7FB5;
+}
+
+#minitabs li.activetab a, #minitabs li.activetab a:hover {
+	color: #001436;
+}
+
+/* UCP navigation menu
+----------------------------------------*/
+
+/* Link styles for the sub-section links */
+#navigation a {
+	color: #c8d5e9;
+	background-color: #2e5ba3;
+	background-image: url("{T_THEME_PATH}/images/bg_menu.jpg");
+}
+
+.rtl #navigation a {
+	background-image: url("{T_THEME_PATH}/images/bg_menu_rtl.jpg");
+	background-position: 0 100%;
+}
+
+#navigation a:hover {
+	background-image: none;
+	background-color: #506d9b;
+	color: #ffffff;
+}
+
+#navigation #active-subsection a {
+	color: #ffffff;
+	background-color: #5e7fb5;
+	background-image: none;
+}
+
+#navigation #active-subsection a:hover {
+	color: #ffffff;
+}
+
+/* Preferences pane layout
+----------------------------------------*/
+#cp-main h2 {
+	color: #a1cef1;
+}
+
+#cp-main .panel {
+	background-color: #5e7fb5;
+}
+
+#cp-main .pm {
+	background-color: #5e7fb5;
+}
+
+#cp-main span.corners-top, #cp-menu span.corners-top {
+	background-image: url("{T_THEME_PATH}/images/corners_left3.png");
+}
+
+#cp-main span.corners-top span, #cp-menu span.corners-top span {
+	background-image: url("{T_THEME_PATH}/images/corners_right3.png");
+}
+
+#cp-main span.corners-bottom, #cp-menu span.corners-bottom {
+	background-image: url("{T_THEME_PATH}/images/corners_left3.png");
+}
+
+#cp-main span.corners-bottom span, #cp-menu span.corners-bottom span {
+	background-image: url("{T_THEME_PATH}/images/corners_right3.png");
+}
+
+/* Topicreview */
+#cp-main .panel #topicreview span.corners-top, #cp-menu .panel #topicreview span.corners-top {
+	background-image: url("{T_THEME_PATH}/images/corners_left.gif");
+}
+
+#cp-main .panel #topicreview span.corners-top span, #cp-menu .panel #topicreview span.corners-top span {
+	background-image: url("{T_THEME_PATH}/images/corners_right.gif");
+}
+
+#cp-main .panel #topicreview span.corners-bottom, #cp-menu .panel #topicreview span.corners-bottom {
+	background-image: url("{T_THEME_PATH}/images/corners_left.gif");
+}
+
+#cp-main .panel #topicreview span.corners-bottom span, #cp-menu .panel #topicreview span.corners-bottom span {
+	background-image: url("{T_THEME_PATH}/images/corners_right.gif");
+}
+
+/* Friends list */
+.cp-mini {
+	background-color: #eef5f9;
+}
+
+dl.mini dt {
+	color: #425067;
+}
+
+/* PM Styles
+----------------------------------------*/
+/* PM Message history */
+.current {
+	color: #000000 !important;
+}
+
+/* PM marking colours */
+.pmlist li.pm_message_reported_colour, .pm_message_reported_colour {
+	border-left-color: #BC2A4D;
+	border-right-color: #BC2A4D;
+}
+
+.pmlist li.pm_marked_colour, .pm_marked_colour {
+	border-color: #FF6600;
+}
+
+.pmlist li.pm_replied_colour, .pm_replied_colour {
+	border-color: #A9B8C2;
+}
+
+.pmlist li.pm_friend_colour, .pm_friend_colour {
+	border-color: #5D8FBD;
+}
+
+.pmlist li.pm_foe_colour, .pm_foe_colour {
+	border-color: #000000;
+}
+
+/* Avatar gallery */
+#gallery label {
+	background-color: #FFFFFF;
+	border-color: #CCC;
+}
+
+#gallery label:hover {
+	background-color: #EEE;
+}
+
+/*  	
+--------------------------------------------------------------
+Colours and backgrounds for forms.css
+-------------------------------------------------------------- */
+
+/* General form styles
+----------------------------------------*/
+select {
+	border-color: #1f3c6b;
+	background-color: #222222;
+	color: #e5e5e5;
+}
+
+label {
+	color: #bad6ff;
+}
+
+option.disabled-option {
+	color: graytext;
+}
+
+/* Definition list layout for forms
+---------------------------------------- */
+dd label {
+	color: #a1cef1;
+}
+
+/* Hover effects */
+fieldset dl:hover dt label {
+	color: #000000;
+}
+
+fieldset.fields2 dl:hover dt label {
+	color: inherit;
+}
+
+/* Quick-login on index page */
+fieldset.quick-login input.inputbox {
+	background-color: #222222;
+	border-color: #1F3C6B;
+	color: #ccd5e4;
+}
+
+/* Posting page styles
+----------------------------------------*/
+
+#message-box textarea {
+	color: #000000;
+}
+
+/* Input field styles
+---------------------------------------- */
+.inputbox {
+	background-color: #c0cedf; 
+	border-color: #B4BAC0;
+	color: #000000;
+}
+
+.inputbox:hover {
+	border-color: #11A3EA;
+}
+
+.inputbox:focus {
+	border-color: #11A3EA;
+	color: #0F4987;
+}
+
+/* Form button styles
+---------------------------------------- */
+
+a.button1, input.button1, input.button3, a.button2, input.button2 {
+	color: #a9bede;
+	background-color: #101d33;
+	background-image: url("{T_THEME_PATH}/images/bg_button.jpg");
+}
+
+a.button1, input.button1 {
+	border-color: #1F3C6B;
+}
+
+input.button3 {
+	background-image: none;
+}
+
+/* Alternative button */
+a.button2, input.button2, input.button3 {
+	border-color: #1F3C6B;
+}
+
+/* <a> button in the style of the form buttons */
+a.button1, a.button1:link, a.button1:visited, a.button1:active, a.button2, a.button2:link, a.button2:visited, a.button2:active {
+	color: #a9bede;
+}
+
+/* Hover states */
+a.button1:hover, input.button1:hover, a.button2:hover, input.button2:hover, input.button3:hover {
+	border-color: #1F3C6B;
+	color: #ff89f5;
+}
+
+a.button1:hover, input.button1:hover, input.button3:hover, a.button2:hover, input.button2:hover {
+	color: #ff89f5;
+	background-color: #1e345a;
+	background-image: url("{T_THEME_PATH}/images/bg_button_h.jpg");
+}
+
+input.search {
+	background-image: url("{T_THEME_PATH}/images/icon_textbox_search.png");
+	background-color: #222222;
+	border-color: #1F3C6B;
+	color: #ccd5e4;
+}
+
+input.disabled {
+	color: #666666;
+}
+
+/* Navigation */
+
+#menu a.forum { background-image: url("{T_IMAGESET_LANG_PATH}/bouton/forum.jpg");}
+#menu a.faqs { background-image: url("{T_IMAGESET_LANG_PATH}/bouton/faq.jpg")}
+#menu a.members { background-image: url("{T_IMAGESET_LANG_PATH}/bouton/membres.jpg") }
+#menu a.newpms { background-image: url("{T_IMAGESET_LANG_PATH}/bouton/newmp.gif") }
+#menu a.nonewpms { background-image: url("{T_IMAGESET_LANG_PATH}/bouton/mp.jpg") }
+/*#menu a.portail { background-image: url("{T_IMAGESET_LANG_PATH}/bouton/portail.jpg") }*/
+#menu a.search_self { background-image: url("{T_IMAGESET_LANG_PATH}/bouton/messages.jpg") }
+/*#menu a.site { background-image: url("{T_IMAGESET_LANG_PATH}/bouton/site.jpg") }*/
+#menu a.ucp { background-image: url("{T_IMAGESET_LANG_PATH}/bouton/profil.jpg") }
+#menu a.register { background-image: url("{T_IMAGESET_LANG_PATH}/bouton/inscription.gif") }
+#menu a.login { background-image : url("{T_IMAGESET_LANG_PATH}/bouton/connexion.jpg") }
+#menu a.logout { background-image: url("{T_IMAGESET_LANG_PATH}/bouton/deconnexion.jpg") }
+
+/* Fin navigation */       

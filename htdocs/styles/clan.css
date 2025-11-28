@@ -1,0 +1,354 @@
+/* ============ Layout générique des sections Clan ============ */
+#clan-create,
+#clan-infos,
+#clan-admin,
+#clan-messages,
+#clan-request,
+#clan-pending-request,
+#clan-wars,
+#clan-alliances,
+#clan-pending-alliance,
+#clan-new-war,
+#clan-new-alliance,
+#clan-members,
+#clan-members-requests {
+    /* aligné sur .clan-section-title et .clan-card */
+    width: min(100%, 1100px);
+    margin: 20px auto;
+    background: rgba(15, 23, 42, 0.78);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: var(--shadow-md, 0 12px 30px rgba(2, 6, 23, 0.32));
+}
+
+/* Hauteurs adaptatives pour les zones prévues scrollables */
+#clan-wars,
+#clan-alliances,
+#clan-pending-alliance,
+#clan-members,
+#clan-members-requests {
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+/* ============ Liste de messages (ancienne zone bleutée) ============ */
+#clan-messages-messages {
+    display: block;
+    width: 100%;
+    max-height: 360px;
+    overflow-y: auto;
+    margin-top: 12px;
+    text-align: left;
+    background: rgba(2, 6, 23, 0.35);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 10px;
+    color: #e6e6e6;
+    padding: 12px;
+}
+
+/* ============ Boutons “gauche” (compat héritée) ============ */
+.leftbutton {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(34, 197, 94, .9), rgba(16, 185, 129, .85));
+    color: #052d1f;
+    text-decoration: none;
+    font-size: 12px;
+    min-width: 74px;
+    height: 28px;
+    padding: 0 10px;
+    margin-right: 8px;
+    border: 1px solid rgba(34, 197, 94, .55);
+    border-radius: 8px;
+    opacity: .95;
+    z-index: 10;
+}
+
+    .leftbutton:hover {
+        opacity: 1;
+    }
+
+/* ============ Lignes stat (compat avec ancien HTML) ============ */
+/* On convertit le duo .stat-left/.stat-right en grille propre */
+.stat {
+    width: 100%;
+    padding: 6px 6px;
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    align-items: center;
+    gap: 8px;
+}
+
+.stat-left,
+.stat-right,
+.stat-rightbis {
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: #e6e6e6;
+    text-align: left;
+    height: auto;
+}
+
+.stat-left {
+    color: var(--color-text-muted, #cbd5f5);
+    font-weight: 700;
+    text-align: right;
+}
+
+.stat-right,
+.stat-rightbis {
+    font-weight: 700;
+    word-wrap: break-word;
+}
+
+/* Pour de très petits écrans on passe à une colonne */
+@media (max-width: 720px) {
+    .stat {
+        grid-template-columns: 1fr;
+    }
+
+    .stat-left {
+        text-align: left;
+    }
+}
+
+/* ============ Formulaires (create, edit, messages…) ============ */
+.clan-form {
+    display: block;
+    color: #e6e6e6;
+    text-align: left;
+    margin: 8px 0;
+    border: 0;
+}
+
+    .clan-form textarea,
+    .clan-form select,
+    .clan-form input[type="text"] {
+        width: 100%;
+        min-height: 44px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        background: rgba(2, 6, 23, 0.5);
+        color: #e6e6e6;
+        box-shadow: inset 0 0 0 rgba(0,0,0,0);
+        margin-bottom: 10px;
+    }
+
+    .clan-form textarea {
+        resize: vertical;
+        min-height: 110px;
+    }
+
+    .clan-form select {
+        height: 40px;
+    }
+
+    /* Boutons submit hérités, restylés */
+    .clan-form input[type="submit"] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 14px;
+        border-radius: 10px;
+        border: 1px solid rgba(56, 189, 248, 0.65);
+        background: linear-gradient(135deg, rgba(56, 189, 248, .9), rgba(14, 165, 233, .85));
+        color: #052634;
+        font-size: 14px;
+        font-weight: 800;
+        cursor: pointer;
+        opacity: 1;
+    }
+
+        .clan-form input[type="submit"]:hover {
+            filter: brightness(1.05);
+        }
+
+    /* Focus states */
+    .clan-form textarea:focus,
+    .clan-form select:focus,
+    .clan-form input[type="text"]:focus {
+        outline: none;
+        border-color: rgba(56, 189, 248, .65);
+        box-shadow: 0 0 0 3px rgba(56, 189, 248, .15);
+    }
+
+/* ============ Messages d’erreur compat héritée ============ */
+p.error {
+    border: 1px solid #ef4444;
+    text-align: left;
+    line-height: 1.5;
+    padding: 12px;
+    color: #fecaca;
+    font-weight: 700;
+    background: rgba(248, 113, 113, .12);
+    border-radius: 10px;
+}
+
+.error {
+    width: min(100%, 640px);
+    margin: 8px auto;
+}
+
+p.noerreur {
+    border: 1px solid #22c55e;
+    text-align: left;
+    line-height: 1.5;
+    padding: 12px;
+    color: #dcfce7;
+    font-weight: 700;
+    background: rgba(34, 197, 94, .12);
+    border-radius: 10px;
+}
+
+/* ============ Listes scroll (join/members etc.) ============ */
+.clan-list,
+.clan-list2 {
+    width: 100%;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 10px;
+    background: rgba(2, 6, 23, .35);
+    padding: 8px;
+}
+
+.clan-list2 {
+    max-height: 180px;
+}
+
+/* ================================================================= */
+/*                        AJOUTS POUR L’ALIGNEMENT                    */
+/*               (cartes centrées + titres de sections)              */
+/* ================================================================= */
+
+/* Wrapper de page (aligne les titres et les cartes) */
+.clan-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 16px 32px;
+}
+
+/* Titres “Clan informations / messages / administration” */
+.clan-section-title {
+    width: 100%;
+    max-width: 1100px;
+    margin: 24px auto 12px;
+    padding-left: 4px;
+    color: var(--color-text-muted, #cbd5f5);
+    font-weight: 600;
+}
+
+/* Carte normalisée (utilisée dans claninfos.php) */
+.clan-card {
+    margin: 0 auto 32px;
+    padding: 16px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.78);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    box-shadow: var(--shadow-md, 0 12px 30px rgba(2, 6, 23, 0.32));
+}
+
+/* Grille des infos */
+.clan-grid {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+}
+
+.clan-row {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    align-items: center;
+    gap: 10px;
+}
+
+    .clan-row dt {
+        margin: 0;
+        font-weight: 600;
+        color: var(--color-text-muted, #cbd5f5);
+        background: rgba(30, 41, 59, 0.6);
+        padding: 8px 12px;
+        border-radius: 8px;
+    }
+
+    .clan-row dd {
+        margin: 0;
+        background: rgba(30, 41, 59, 0.45);
+        padding: 10px 12px;
+        border-radius: 8px;
+        font-weight: 600;
+    }
+
+.clan-row--textarea dd {
+    padding: 0;
+}
+
+/* Zone messages (nouveau rendu) */
+.clan-messages-box {
+    max-height: 260px;
+    overflow-y: auto;
+    background: rgba(30, 41, 59, 0.35);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 14px;
+}
+
+.clan-message + .clan-message {
+    margin-top: 10px;
+}
+
+.clan-message .msg-user {
+    color: #38bdf8;
+    font-weight: 700;
+    margin-right: 6px;
+}
+
+.clan-message .msg-time {
+    color: var(--color-text-muted, #cbd5f5);
+    font-size: 12px;
+}
+
+/* Boutons modernes */
+.btn-primary {
+    align-self: flex-start;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(56, 189, 248, 0.6);
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.85), rgba(14, 165, 233, 0.75));
+    color: #062330;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+    .btn-primary:hover {
+        filter: brightness(1.05);
+    }
+
+.btn-danger {
+    align-self: flex-start;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(248, 113, 113, 0.5);
+    background: linear-gradient(135deg, rgba(248, 113, 113, 0.85), rgba(239, 68, 68, 0.75));
+    color: #2b0a0a;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+    .btn-danger:hover {
+        filter: brightness(1.05);
+    }
+
+/* Responsive pour la grille */
+@media (max-width: 640px) {
+    .clan-row {
+        grid-template-columns: 1fr;
+    }
+}

@@ -1,0 +1,20 @@
+items :
+
+I = item id
+LV = UNKNOW
+L = ID of description
+LV = ?????? Number quantity ??????
+S = inventory position
+Q = Quantity
+
+
+move packet config => answer : 
+
+si nbr pas supérieur au nbr de laser :
+
+{"isError":0,"data":{"ret":1,"money":{"uridium":"7.246","credits":"37.227.319"}}}
+
+sinon :
+
+{"isError":0,"data":{"ret":["156147","156151","156160","156131","156146","156153","156135","156143","156144","156145"],"money":{"uridium":"7.246","credits":"37.227.319"}}}
+

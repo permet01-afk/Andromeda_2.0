@@ -1,0 +1,113 @@
+<?php 
+$sth = $db->prepare("SELECT username, grade, factionid, clanid, credits, uridium, rankpoints FROM users WHERE id = :id LIMIT 1");
+$sth->execute(array(
+				':id' => $_SESSION['player_id']
+			));
+$datauser = $sth->fetchAll();
+if($datauser[0]['clanid'] != 0)
+{
+	$sth = $db->prepare("SELECT clan_tag FROM clan WHERE id = :clanid LIMIT 1");
+	$sth->execute(array(
+					':clanid' => $datauser[0]['clanid'] 
+				));
+	$dataclan = $sth->fetchAll();
+	$userclanag = '['.$dataclan[0]['clan_tag'].']';
+}
+else
+{
+	$userclanag = '';
+}
+$sth = $db->prepare("SELECT timestamp,message FROM users_log WHERE playerid = :playerid ORDER BY timestamp DESC LIMIT 0, 10");
+$sth->execute(array(
+				':playerid' => $_SESSION['player_id']
+			));
+$userlog = $sth->fetchAll();
+
+$last_active_limit = time() - (3600*14*24);
+$sth = $db->prepare("SELECT users.username, users.rankpoints, users.factionid, users.grade FROM users WHERE lastlogin > $last_active_limit AND (SELECT count(id) AS is_ban FROM bans WHERE bans.user_id = users.id AND bans.timestamp_expire > UNIX_TIMESTAMP() ) = 0  ORDER BY users.rankpoints DESC LIMIT 0, 10");
+$sth->execute();
+$top10 = $sth->fetchAll();
+
+$sth = $db->prepare("SELECT COUNT(*) as regplayer FROM users;");
+$sth->execute();
+$regplayer = $sth->fetchAll();
+
+$sth = $db->prepare("SELECT sval as onlineplayer FROM server_statistics WHERE skey='active_connections';");
+$sth->execute();
+$onlineplayer = $sth->fetchAll();
+
+$sth = $db->prepare("SELECT sval as mmoplayer FROM server_statistics WHERE skey='active_MMO';");
+$sth->execute();
+$mmoplayer = $sth->fetchAll();
+
+$sth = $db->prepare("SELECT sval as eicplayer FROM server_statistics WHERE skey='active_EIC';");
+$sth->execute();
+$eicplayer = $sth->fetchAll();
+
+$sth = $db->prepare("SELECT sval as vruplayer FROM server_statistics WHERE skey='active_VRU';");
+$sth->execute();
+$vruplayer = $sth->fetchAll();
+
+?>
+<link rel="stylesheet" type="text/css" href="styles/home.css" />
+<div class="CMSContent">
+	<div class="box">
+		<div class="title">User </div>
+		<div id="user-small">
+			<div class="stat"><div class="stat-left">Username</div><div class="stat-right"><?=$userclanag,$datauser[0]['username']?></div></div>
+			<div class="stat"><div class="stat-left">Company</div><div class="stat-right"><img src="img/ranks/company/<?=$datauser[0]['factionid']?>.png"></div></div>
+			<div class="stat"><div class="stat-left">Grade</div><div class="stat-right"><img src="img/ranks/<?=$datauser[0]['grade']?>.png"></div></div>
+			<div class="stat"><div class="stat-left">Rankpoints</div><div class="stat-right"><?=number_format($datauser[0]['rankpoints'])?></div></div>
+			<div class="stat"><div class="stat-left">Credits</div><div class="stat-right"><?=number_format($datauser[0]['credits'])?></div></div>
+			<div class="stat"><div class="stat-left">Uridium</div><div class="stat-right"><?=number_format($datauser[0]['uridium'])?></div></div>
+		</div>
+	</div>	
+	<div class="box">
+		<div class="title">Andromeda</div>    
+		<div id="andromeda-small">
+			<div class="stat"><div class="stat-left">Status</div><div class="stat-right"><img src="img/Tick.png" width="20" height="20"><?=date('H:i:s T')?></div></div>
+			<div class="stat"><div class="stat-left">Active players</div><div class="stat-right"><img src="img/ranks/company/1.png"> <?=$mmoplayer[0]['mmoplayer']?> <img src="img/ranks/company/2.png"> <?=$eicplayer[0]['eicplayer']?> <img src="img/ranks/company/3.png"> <?=$vruplayer[0]['vruplayer']?></div></div>
+			<div class="stat"><div class="stat-left">Online players</div><div class="stat-right"><?=$onlineplayer[0]['onlineplayer']?></div></div>
+			<div class="box">
+				<div class="title">News</div>     
+					<div id="news-small">		
+                   	<div class="news-date"><font color='#00AAFF'>INFO:</font></div><div class="news-content"> <a href=" http://andromeda-server.com/forum/viewtopic.php?f=7&t=227 "><font color='#FFA500'>Click here to access to the Events Calendar</font></a>. </div>										
+                   	<div class="news-date"><font color='#00AAFF'>IMPORTANT:</font></div><div class="news-content"> <font color='#008800'>Please respect the rules ! Have fun !</font>. </div>					
+					<div class="news-date"><font color='#00AAFF'>New rules: </font></div><div class="news-content">You can not organize multi-company farming events in the chat, if you do you will be ban from the chat.</div>			
+					<div class="news-date">INFOS:</div><div class="news-content">Read the Rules page, it contains very usefull advices.</div>
+				</div>						
+			</div>	
+		</div>
+	</div>	
+	<div class="box">
+		<div class="title">Hall of fame(<a href="view.php?page=top100">Top 100</a>)</div>
+		<div id="hof-small">
+		<?php 	
+			$i = 0;
+			foreach ($top10 as $player)
+			{
+				$i++;
+				$j = $i % 2;
+				?>	
+				<div class="top10item<?=$j?>"><div class="top10index"><?=$i?>.</div><div class="top10company"><img src="img/ranks/company/<?=$player['factionid']?>.png"></div><div class="top10grade"><img src="img/ranks/<?=$player['grade']?>.png"></div><div class="top10username"><?=$player['username']?></div><div class="top10points"><?=number_format($player['rankpoints'])?></div></div>
+				<?php
+			}
+		?>
+		</div>
+	</div>	
+	<div class="box">
+		<div class="title">Log</div>
+		<div id="log-small">
+		<?php 	
+			foreach ($userlog as $log)
+			{
+				?>	
+				<div class="logitem"><div class="logtime"><?=$log['timestamp']?>:</div><div class="logmessage">+<?=$log['message']?></div></div>
+				<?php
+			}    
+		?>
+		</div>
+	</div>	
+</div>		
+	
+	

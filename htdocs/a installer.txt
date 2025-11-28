@@ -1,0 +1,20 @@
+Il faut installer Node.js 
+
+ouvrir cmd puis colle ceci: cd C:\xampp\htdocs
+ensuite ceci : npm install ws
+puis: node ws_proxy.js
+
+si tout est bon on doit avoir ca qui s'affiche: 
+===============================================
+Proxy WebSocket → TCP lancé
+WS listening on ws://127.0.0.1:8082
+Forwarding TCP to 127.0.0.1:8080
+===============================================
+
+
+Attention, pour que la connection en websocket se fasse tout le temps, il faut toujours laisser l'invite de commande ovuerte. si par hasard on redémarre le pc il faut rouvrir le cmd en adminstrateur et taper ceci : 
+
+cd C:\xampp\htdocs
+puis: node ws_proxy.js
+
+Ainsi le proxy redémarre !
