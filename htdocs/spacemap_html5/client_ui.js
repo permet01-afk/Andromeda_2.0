@@ -1782,18 +1782,21 @@ window.toggleSettingsWindow = toggleSettingsWindow;
     // FENETRE HTML "MISSIONS / QUETES"
     // -------------------------------------------------
  let questWindowInitialized = false;
+ let lastQuestSignature = "";
  
     function initQuestWindow() {
     if (questWindowInitialized) return;
     questWindowInitialized = true;
 
     const style = document.createElement('style');
+    const questTop = (WINDOW_DEFAULT_POS.quest && WINDOW_DEFAULT_POS.quest.top) || 120;
+    const questLeft = (WINDOW_DEFAULT_POS.quest && WINDOW_DEFAULT_POS.quest.left) || 0;
+
     style.innerHTML = `
         #questWindow {
             position: absolute;
-            top: 120px;
-            left: 50%;
-            transform: translateX(-50%);
+            top: ${questTop}px;
+            left: ${questLeft}px;
             width: 500px;
             height: 380px;
 
@@ -1804,6 +1807,7 @@ window.toggleSettingsWindow = toggleSettingsWindow;
             background-size: auto;
 
             border: 2px solid #4a6b8c;
+            ${UI_SPRITES.windowSide ? `border-image: url('${UI_SPRITES.windowSide}') 4 fill stretch;` : ""}
             color: #ccc;
             font-family: Consolas, monospace;
             font-size: 12px;
@@ -1970,7 +1974,7 @@ window.toggleSettingsWindow = toggleSettingsWindow;
     const div = document.createElement('div');
     div.id = 'questWindow';
     div.innerHTML = `
-        <div class="questHeader">
+        <div class="questHeader" id="questWindowHeader">
             <span class="questTitleBar">Missions / Quêtes</span>
             <span class="questClose" id="questCloseBtn">X</span>
         </div>
@@ -1993,8 +1997,14 @@ window.toggleSettingsWindow = toggleSettingsWindow;
     document.body.appendChild(div);
 
     document.getElementById('questCloseBtn').addEventListener('click', () => {
-        div.style.display = 'none';
+        if (typeof toggleWindow === 'function') toggleWindow('quest', false);
+        else div.style.display = 'none';
     });
+
+    const questHeader = document.getElementById('questWindowHeader');
+    if (questHeader && typeof makeElementDraggable === 'function') {
+        makeElementDraggable(div, questHeader);
+    }
 
     const btnAccept = document.getElementById('questBtnAccept');
     const btnCancel  = document.getElementById('questBtnCancel');
@@ -2026,6 +2036,10 @@ window.toggleSettingsWindow = toggleSettingsWindow;
             privilegeQuestById(id);
         }
     });
+
+    if (typeof refreshWindowsVisibility === 'function') {
+        refreshWindowsVisibility();
+    }
 }
 
 
@@ -2133,6 +2147,29 @@ window.toggleSettingsWindow = toggleSettingsWindow;
             objectivesUl.appendChild(li);
         }
     }
+
+    function computeQuestSignature() {
+        const ids = Object.keys(quests)
+            .map((x) => parseInt(x, 10))
+            .sort((a, b) => a - b);
+        const payload = ids.map((id) => {
+            const q = quests[id];
+            if (!q) return null;
+            const conds = Object.values(q.flatConditions || {})
+                .map((c) => `${c.id}:${c.current}/${c.target}:${c.visibility}:${c.runstate}`)
+                .join('|');
+            return `${id}:${q.title || ''}:${q.category || ''}:${conds}`;
+        });
+        return JSON.stringify(payload);
+    }
+
+    setInterval(() => {
+        const signature = computeQuestSignature();
+        if (signature !== lastQuestSignature) {
+            lastQuestSignature = signature;
+            renderQuestWindow();
+        }
+    }, 500);
 
 
     // ========================================================
@@ -2414,6 +2451,7 @@ window.toggleSettingsWindow = toggleSettingsWindow;
     let groupListEl = null;
     let groupInviteBanner = null;
     let lastInviteId = null;
+    let lastGroupSignature = "";
 
     function isHeroGroupLeader() {
         const myId = parseInt(heroId, 10);
@@ -2548,37 +2586,57 @@ window.toggleSettingsWindow = toggleSettingsWindow;
         }
     }
 
+    function computeGroupSignature() {
+        const ids = Object.keys(groupMembers)
+            .map((x) => parseInt(x, 10))
+            .sort((a, b) => a - b);
+        const payload = ids.map((id) => {
+            const m = groupMembers[id];
+            if (!m) return null;
+            return `${id}:${m.name || ''}:${m.hp}/${m.maxHp}:${m.shield}/${m.maxShield}:${m.mapId || ''}`;
+        });
+        payload.push(`leader:${groupLeaderId || ''}`);
+        payload.push(`invite:${pendingGroupInvite ? pendingGroupInvite.id : ''}`);
+        return JSON.stringify(payload);
+    }
+
     function initGroupWindow() {
         if (groupWindowEl) return;
 
         const style = document.createElement('style');
+        const groupTop = (WINDOW_DEFAULT_POS.group && WINDOW_DEFAULT_POS.group.top) || 130;
+        const groupLeft = (WINDOW_DEFAULT_POS.group && WINDOW_DEFAULT_POS.group.left) || 10;
+
         style.innerHTML = `
-            #groupWindow {
+            #win_group {
                 position: absolute;
-                top: 130px;
-                left: 10px;
+                top: ${groupTop}px;
+                left: ${groupLeft}px;
                 width: 230px;
                 background: rgba(0,0,0,0.75);
                 border: 1px solid #4bc0ff;
+                ${UI_SPRITES.windowSide ? `border-image: url('${UI_SPRITES.windowSide}') 4 fill stretch;` : ""}
                 color: #e6f4ff;
                 font-family: Arial, sans-serif;
                 font-size: 11px;
                 padding: 6px;
                 z-index: 20;
+                display: none;
             }
-            #groupWindow h3 { margin: 0 0 6px 0; font-size: 12px; color: #6ad7ff; }
-            #groupWindow .groupControls { display: flex; gap: 4px; margin-bottom: 6px; }
-            #groupWindow .groupControls input { flex: 1; }
-            #groupWindow .groupList { max-height: 260px; overflow-y: auto; }
-            #groupWindow .groupRow { margin-bottom: 6px; padding: 4px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); }
-            #groupWindow .groupName { font-weight: bold; color: #fff; }
-            #groupWindow .groupMap { color: #b4d9ff; margin-bottom: 2px; }
-            #groupWindow .groupBar { position: relative; height: 8px; background: #222; border: 1px solid #444; margin-bottom: 2px; }
-            #groupWindow .groupBar::after { content: ""; position: absolute; top: 0; left: 0; height: 100%; width: calc(var(--ratio, 0) * 100%); }
-            #groupWindow .groupBar.hp::after { background: #5bff6a; }
-            #groupWindow .groupBar.sh::after { background: #4bc0ff; }
-            #groupWindow .groupRowActions { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
-            #groupWindow .groupRowActions .groupActionButton { padding: 2px 6px; min-width: 70px; }
+            #win_group h3 { margin: 0 0 6px 0; font-size: 12px; color: #6ad7ff; display:flex; align-items:center; justify-content:space-between; }
+            #win_group .groupHeaderBtn { cursor: pointer; padding: 0 4px; color: #ff7777; }
+            #win_group .groupControls { display: flex; gap: 4px; margin-bottom: 6px; }
+            #win_group .groupControls input { flex: 1; }
+            #win_group .groupList { max-height: 260px; overflow-y: auto; }
+            #win_group .groupRow { margin-bottom: 6px; padding: 4px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); }
+            #win_group .groupName { font-weight: bold; color: #fff; }
+            #win_group .groupMap { color: #b4d9ff; margin-bottom: 2px; }
+            #win_group .groupBar { position: relative; height: 8px; background: #222; border: 1px solid #444; margin-bottom: 2px; }
+            #win_group .groupBar::after { content: ""; position: absolute; top: 0; left: 0; height: 100%; width: calc(var(--ratio, 0) * 100%); }
+            #win_group .groupBar.hp::after { background: #5bff6a; }
+            #win_group .groupBar.sh::after { background: #4bc0ff; }
+            #win_group .groupRowActions { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+            #win_group .groupRowActions .groupActionButton { padding: 2px 6px; min-width: 70px; }
             #groupInviteBanner { position: absolute; top: 100px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); border: 1px solid #ffd166; color: #fff8e1; padding: 6px 10px; z-index: 30; display: flex; gap: 8px; align-items: center; }
             #groupInviteBanner.hidden { display: none; }
             #groupInviteBanner button { min-width: 70px; }
@@ -2586,10 +2644,18 @@ window.toggleSettingsWindow = toggleSettingsWindow;
         document.head.appendChild(style);
 
         groupWindowEl = document.createElement('div');
-        groupWindowEl.id = 'groupWindow';
+        groupWindowEl.id = 'win_group';
 
         const title = document.createElement('h3');
         title.textContent = 'Groupe';
+        const close = document.createElement('span');
+        close.textContent = '✕';
+        close.className = 'groupHeaderBtn';
+        close.addEventListener('click', () => {
+            if (typeof toggleWindow === 'function') toggleWindow('group', false);
+            else groupWindowEl.style.display = 'none';
+        });
+        title.appendChild(close);
         groupWindowEl.appendChild(title);
 
         const controls = document.createElement('div');
@@ -2651,6 +2717,10 @@ window.toggleSettingsWindow = toggleSettingsWindow;
 
         document.body.appendChild(groupWindowEl);
 
+        if (typeof makeElementDraggable === 'function') {
+            makeElementDraggable(groupWindowEl, title);
+        }
+
         groupInviteBanner = document.createElement('div');
         groupInviteBanner.id = 'groupInviteBanner';
         groupInviteBanner.classList.add('hidden');
@@ -2686,9 +2756,17 @@ window.toggleSettingsWindow = toggleSettingsWindow;
 
         // Rafraîchissement périodique comme le client Flash qui met à jour ses composants
         setInterval(() => {
-            renderGroupList();
-            renderGroupInviteBanner();
+            const sig = computeGroupSignature();
+            if (sig !== lastGroupSignature) {
+                lastGroupSignature = sig;
+                renderGroupList();
+                renderGroupInviteBanner();
+            }
         }, 400);
+
+        if (typeof refreshWindowsVisibility === 'function') {
+            refreshWindowsVisibility();
+        }
     }
 
     window.addEventListener('load', initGroupWindow);
