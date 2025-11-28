@@ -62,7 +62,12 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
     const RADIATION_MARGIN = 2000;
 
     // Durées visuelles (ms)
-    const LASER_BEAM_DURATION    = 150;
+    // Durée des animations laser (Flash main.swf ~0.3s par tir)
+    const LASER_BEAM_DURATION    = 300;
+    const LASER_SAB_DURATION     = 360; // SAB-50 (tir unique centré avec cercles)
+    const LASER_RSB_PULSE_DURATION = 200; // Durée d'une impulsion RSB-75
+    const LASER_RSB_PULSE_INTERVAL = 120; // Intervalle entre impulsions
+    const LASER_RSB_PULSE_COUNT = 3;
     const ROCKET_BEAM_DURATION   = 700;
     const DAMAGE_BUBBLE_DURATION = 800;
     const EXPLOSION_DURATION     = 700;
@@ -70,6 +75,30 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
     const INVINCIBILITY_DURATION_MS = 3000;
     const TARGET_FADE_OVERLAY_ALPHA = 0.45;
     const TARGET_FADE_OVERLAY_RADIUS = 26;
+
+    // Sprites de lasers (HTML5) alignés avec main.swf
+    const LASER_SPRITE_PATHS = {
+        1: "graphics/lasers/laser1.png", // LCB-10
+        2: "graphics/lasers/laser1.png", // MCB-25
+        3: "graphics/lasers/laser2.png", // MCB-50
+        4: "graphics/lasers/laser3.png", // UCB-100
+        5: "graphics/lasers/laser4.png", // SAB-50
+        6: "graphics/lasers/laser6.png"  // RSB-75
+    };
+
+    const laserSprites = {};
+
+    function preloadLaserSprites() {
+        for (const [patternId, path] of Object.entries(LASER_SPRITE_PATHS)) {
+            const img = new Image();
+            img.src = path;
+            laserSprites[parseInt(patternId, 10)] = img;
+        }
+    }
+
+    function getLaserSprite(patternId) {
+        return laserSprites[patternId] || null;
+    }
 
     // Types d'objets (bonus, cargos, etc.)
     const OBJECT_TYPE_META = {
@@ -169,6 +198,7 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
         refreshCanvasScale();
     }
 
+    preloadLaserSprites();
     refreshCanvasScale();
     window.addEventListener("resize", refreshCanvasScale);
 
@@ -4124,6 +4154,7 @@ function handlePacket_N(parts, i) {
 
         const beamAngle = computeShieldImpactAngle(attackerId, targetId);
         const targetSnap = snapshotEntityById(targetId);
+        const duration = getLaserBeamDuration({ patternId });
 
         laserBeams.push({
             attackerId,
@@ -4131,6 +4162,10 @@ function handlePacket_N(parts, i) {
             patternId,
             showShieldDamage,
             skilledLaser,
+            duration,
+            pulseDuration: LASER_RSB_PULSE_DURATION,
+            pulseInterval: LASER_RSB_PULSE_INTERVAL,
+            pulseCount: LASER_RSB_PULSE_COUNT,
             angle: beamAngle,
             createdAt: performance.now()
         });
@@ -4143,7 +4178,7 @@ function handlePacket_N(parts, i) {
                 const hasShield = (current.maxShield && current.maxShield > 0) || (current.shield && current.shield > 0);
                 if (!hasShield) return;
                 spawnShieldBurstAt(current.x, current.y, "hit", { angle: beamAngle, radius, targetId });
-            }, LASER_BEAM_DURATION);
+            }, duration);
         }
     }
 
@@ -5243,10 +5278,20 @@ function handlePacket_7(parts, i) {
     // 8. EFFETS VISUELS
     // -------------------------------------------------
 
+    function getLaserBeamDuration(beam) {
+        if (!beam) return LASER_BEAM_DURATION;
+        if (beam.patternId === 6) {
+            return (LASER_RSB_PULSE_COUNT - 1) * LASER_RSB_PULSE_INTERVAL + LASER_RSB_PULSE_DURATION;
+        }
+        if (beam.patternId === 5) return LASER_SAB_DURATION;
+        return LASER_BEAM_DURATION;
+    }
+
     function updateLaserBeams(now) {
         for (let i = laserBeams.length - 1; i >= 0; i--) {
             const beam = laserBeams[i];
-            if (now - beam.createdAt > LASER_BEAM_DURATION) {
+            const duration = beam.duration || getLaserBeamDuration(beam);
+            if (now - beam.createdAt > duration) {
                 laserBeams.splice(i, 1);
             }
         }
@@ -5342,6 +5387,75 @@ function handlePacket_7(parts, i) {
     function drawLaserBeams() {
         const now = performance.now();
 
+        const drawLaserStrip = (beam, progress, alphaFactor, startScreenX, startScreenY, endScreenX, endScreenY) => {
+            const sprite = getLaserSprite(beam.patternId);
+            const spriteReady = sprite && sprite.complete && sprite.naturalWidth > 0;
+            const dx = endScreenX - startScreenX;
+            const dy = endScreenY - startScreenY;
+            const len = Math.hypot(dx, dy);
+            if (len < 1) return;
+
+            const angle = Math.atan2(dy, dx);
+            const dirX = dx / len;
+            const dirY = dy / len;
+            const perpX = Math.cos(angle + Math.PI / 2);
+            const perpY = Math.sin(angle + Math.PI / 2);
+            const offsetMag = (beam.patternId === 5) ? 0 : getLaserOffsetsForShip(beam.attackerId);
+            const drawSegments = offsetMag === 0 ? [{ ox: 0, oy: 0 }] : [
+                { ox: perpX * offsetMag, oy: perpY * offsetMag },
+                { ox: -perpX * offsetMag, oy: -perpY * offsetMag }
+            ];
+
+            const spacing = sprite && sprite.width ? Math.max(18, sprite.width * 0.7) : 24;
+            const headPos = len * progress;
+            const trail = spacing * 3;
+
+            if (beam.patternId !== 5 || !spriteReady) {
+                for (const seg of drawSegments) {
+                    for (let pos = headPos; pos > -trail; pos -= spacing) {
+                        const px = startScreenX + seg.ox + dirX * pos;
+                        const py = startScreenY + seg.oy + dirY * pos;
+                        const fade = Math.max(0, 1 - (headPos - pos) / (spacing * 3));
+                        const localAlpha = alphaFactor * fade;
+                        if (spriteReady) {
+                            ctx.save();
+                            ctx.globalAlpha = localAlpha;
+                            ctx.translate(px, py);
+                            ctx.rotate(angle);
+                            ctx.drawImage(sprite, -sprite.width / 2, -sprite.height / 2);
+                            ctx.restore();
+                        } else {
+                            ctx.save();
+                            ctx.globalAlpha = localAlpha * 0.6;
+                            ctx.strokeStyle = "#ff0000";
+                            ctx.lineWidth = 2;
+                            ctx.beginPath();
+                            ctx.moveTo(startScreenX + seg.ox, startScreenY + seg.oy);
+                            ctx.lineTo(endScreenX + seg.ox, endScreenY + seg.oy);
+                            ctx.stroke();
+                            ctx.restore();
+                        }
+                    }
+                }
+            }
+
+            // Effet SAB : cercles répartis sur le trajet
+            if (beam.patternId === 5 && spriteReady) {
+                const circleSpacing = Math.max(20, sprite.width * 0.9);
+                for (let pos = 0; pos <= headPos; pos += circleSpacing) {
+                    const px = startScreenX + dirX * pos;
+                    const py = startScreenY + dirY * pos;
+                    const circleAlpha = alphaFactor * Math.max(0.2, 1 - pos / (len + circleSpacing));
+                    ctx.save();
+                    ctx.globalAlpha = circleAlpha;
+                    ctx.translate(px, py);
+                    ctx.rotate(angle);
+                    ctx.drawImage(sprite, -sprite.width / 2, -sprite.height / 2);
+                    ctx.restore();
+                }
+            }
+        };
+
         for (const beam of laserBeams) {
             let ax, ay, tx, ty;
 
@@ -5364,46 +5478,41 @@ function handlePacket_7(parts, i) {
             const endScreenX = mapToScreenX(tx);
             const endScreenY = mapToScreenY(ty);
 
-            let color = "#ff0000";
-            let width = 2;
-
-            switch(beam.patternId) {
-                case 1: color = "#ff0000"; break;
-                case 2: color = "#0000ff"; break;
-                case 3: color = "#00ff00"; break;
-                case 4: color = "#ffffff"; width = 3; break;
-                case 5: color = "#aaaaaa"; break;
-                case 6: color = "#ffff00"; width = 3; break;
-                default: color = "#ff0000"; break;
-            }
-
-            const life = (now - beam.createdAt) / LASER_BEAM_DURATION;
+            const duration = beam.duration || getLaserBeamDuration(beam);
+            const life = (now - beam.createdAt) / duration;
             const alpha = Math.max(0, 1 - life);
 
-            const angle = Math.atan2(ty - ay, tx - ax);
-            const perpX = Math.cos(angle + Math.PI / 2);
-            const perpY = Math.sin(angle + Math.PI / 2);
-            const offsetMag = (beam.patternId === 5) ? 0 : getLaserOffsetsForShip(beam.attackerId);
-
-            const drawSegments = offsetMag === 0 ? [{ ox: 0, oy: 0 }] : [
-                { ox: perpX * offsetMag, oy: perpY * offsetMag },
-                { ox: -perpX * offsetMag, oy: -perpY * offsetMag }
-            ];
-
-            ctx.save();
-            ctx.globalAlpha = 0.6 * alpha;
-            ctx.strokeStyle = color;
-            ctx.lineWidth = width;
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = color;
-
-            for (const seg of drawSegments) {
-                ctx.beginPath();
-                ctx.moveTo(startScreenX + seg.ox, startScreenY + seg.oy);
-                ctx.lineTo(endScreenX + seg.ox, endScreenY + seg.oy);
-                ctx.stroke();
+            // RSB-75 : rafale de plusieurs impulsions
+            if (beam.patternId === 6) {
+                const pulseDuration = beam.pulseDuration || LASER_RSB_PULSE_DURATION;
+                const pulseInterval = beam.pulseInterval || LASER_RSB_PULSE_INTERVAL;
+                const pulseCount = beam.pulseCount || LASER_RSB_PULSE_COUNT;
+                for (let p = 0; p < pulseCount; p++) {
+                    const pulseStart = beam.createdAt + p * pulseInterval;
+                    const pulseElapsed = now - pulseStart;
+                    if (pulseElapsed < 0 || pulseElapsed > pulseDuration) continue;
+                    const pulseProgress = Math.min(1, pulseElapsed / pulseDuration);
+                    const pulseAlpha = Math.max(0, 1 - pulseElapsed / pulseDuration) * 0.9;
+                    drawLaserStrip(beam, pulseProgress, pulseAlpha, startScreenX, startScreenY, endScreenX, endScreenY);
+                }
+                continue;
             }
-            ctx.restore();
+
+            const progress = Math.min(1, (now - beam.createdAt) / duration);
+            drawLaserStrip(beam, progress, alpha * 0.9, startScreenX, startScreenY, endScreenX, endScreenY);
+
+            if (!spriteReady) {
+                // Lueur légère pour rappeler la trajectoire (moins dominante)
+                ctx.save();
+                ctx.globalAlpha = alpha * 0.2;
+                ctx.strokeStyle = "rgba(255,255,255,0.5)";
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(startScreenX, startScreenY);
+                ctx.lineTo(endScreenX, endScreenY);
+                ctx.stroke();
+                ctx.restore();
+            }
         }
     }
 
