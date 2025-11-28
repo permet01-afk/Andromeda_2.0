@@ -2407,6 +2407,215 @@ window.toggleSettingsWindow = toggleSettingsWindow;
 
 
     // -------------------------------------------------
+    // 10.5 FENETRE GROUPE (LOGIQUE ISSUE DU CLIENT FLASH)
+    // -------------------------------------------------
+
+    let groupWindowEl = null;
+    let groupListEl = null;
+    let groupInviteBanner = null;
+    let lastInviteId = null;
+
+    function renderGroupList() {
+        if (!groupListEl) return;
+        groupListEl.innerHTML = "";
+
+        const memberIds = Object.keys(groupMembers);
+        if (memberIds.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'groupEmpty';
+            empty.textContent = "Aucun membre";
+            groupListEl.appendChild(empty);
+            return;
+        }
+
+        memberIds.forEach((id) => {
+            const m = groupMembers[id];
+            const row = document.createElement('div');
+            row.className = 'groupRow';
+
+            const name = document.createElement('div');
+            name.className = 'groupName';
+            const isLeader = (groupLeaderId === m.id);
+            name.textContent = `${isLeader ? '★ ' : ''}${m.name || '???'}`;
+
+            const mapTag = document.createElement('div');
+            mapTag.className = 'groupMap';
+            if (typeof cfg.mapID !== 'undefined' && m.mapId === cfg.mapID) {
+                mapTag.textContent = 'Ici';
+            } else {
+                mapTag.textContent = m.mapId ? `Map ${m.mapId}` : '???';
+            }
+
+            const hp = document.createElement('div');
+            hp.className = 'groupBar hp';
+            const hpRatio = (m.maxHp > 0) ? Math.max(0, Math.min(1, m.hp / m.maxHp)) : 0;
+            hp.style.setProperty('--ratio', hpRatio);
+            hp.title = `${m.hp} / ${m.maxHp}`;
+
+            const sh = document.createElement('div');
+            sh.className = 'groupBar sh';
+            const shRatio = (m.maxShield > 0) ? Math.max(0, Math.min(1, m.shield / m.maxShield)) : 0;
+            sh.style.setProperty('--ratio', shRatio);
+            sh.title = `${m.shield} / ${m.maxShield}`;
+
+            row.appendChild(name);
+            row.appendChild(mapTag);
+            row.appendChild(hp);
+            row.appendChild(sh);
+            groupListEl.appendChild(row);
+        });
+    }
+
+    function renderGroupInviteBanner() {
+        if (!groupInviteBanner) return;
+
+        if (pendingGroupInvite && pendingGroupInvite.id !== lastInviteId) {
+            groupInviteBanner.classList.remove('hidden');
+            const label = groupInviteBanner.querySelector('.groupInviteText');
+            label.textContent = `Invitation de ${pendingGroupInvite.name}`;
+            lastInviteId = pendingGroupInvite.id;
+        } else if (!pendingGroupInvite) {
+            groupInviteBanner.classList.add('hidden');
+            lastInviteId = null;
+        }
+    }
+
+    function initGroupWindow() {
+        if (groupWindowEl) return;
+
+        const style = document.createElement('style');
+        style.innerHTML = `
+            #groupWindow {
+                position: absolute;
+                top: 130px;
+                left: 10px;
+                width: 230px;
+                background: rgba(0,0,0,0.75);
+                border: 1px solid #4bc0ff;
+                color: #e6f4ff;
+                font-family: Arial, sans-serif;
+                font-size: 11px;
+                padding: 6px;
+                z-index: 20;
+            }
+            #groupWindow h3 { margin: 0 0 6px 0; font-size: 12px; color: #6ad7ff; }
+            #groupWindow .groupControls { display: flex; gap: 4px; margin-bottom: 6px; }
+            #groupWindow .groupControls input { flex: 1; }
+            #groupWindow .groupList { max-height: 260px; overflow-y: auto; }
+            #groupWindow .groupRow { margin-bottom: 6px; padding: 4px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); }
+            #groupWindow .groupName { font-weight: bold; color: #fff; }
+            #groupWindow .groupMap { color: #b4d9ff; margin-bottom: 2px; }
+            #groupWindow .groupBar { position: relative; height: 8px; background: #222; border: 1px solid #444; margin-bottom: 2px; }
+            #groupWindow .groupBar::after { content: ""; position: absolute; top: 0; left: 0; height: 100%; width: calc(var(--ratio, 0) * 100%); }
+            #groupWindow .groupBar.hp::after { background: #5bff6a; }
+            #groupWindow .groupBar.sh::after { background: #4bc0ff; }
+            #groupInviteBanner { position: absolute; top: 100px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); border: 1px solid #ffd166; color: #fff8e1; padding: 6px 10px; z-index: 30; display: flex; gap: 8px; align-items: center; }
+            #groupInviteBanner.hidden { display: none; }
+            #groupInviteBanner button { min-width: 70px; }
+        `;
+        document.head.appendChild(style);
+
+        groupWindowEl = document.createElement('div');
+        groupWindowEl.id = 'groupWindow';
+
+        const title = document.createElement('h3');
+        title.textContent = 'Groupe';
+        groupWindowEl.appendChild(title);
+
+        const controls = document.createElement('div');
+        controls.className = 'groupControls';
+        const input = document.createElement('input');
+        input.id = 'groupInputName';
+        input.className = 'doTextInput';
+        input.placeholder = 'Nom du joueur';
+        controls.appendChild(input);
+
+        const inviteBtn = document.createElement('button');
+        inviteBtn.className = 'doButton';
+        inviteBtn.textContent = 'Inviter';
+        inviteBtn.addEventListener('click', () => {
+            const name = input.value.trim();
+            if (!name) return;
+            sendRaw(`ps|inv|name|${name}`);
+            addInfoMessage(`Invitation envoyée à ${name}`);
+        });
+        controls.appendChild(inviteBtn);
+
+        groupWindowEl.appendChild(controls);
+
+        const actions = document.createElement('div');
+        actions.className = 'groupControls';
+
+        const leaveBtn = document.createElement('button');
+        leaveBtn.className = 'doButton';
+        leaveBtn.textContent = 'Quitter';
+        leaveBtn.addEventListener('click', () => {
+            sendRaw('ps|lv');
+            addInfoMessage('Demande de départ du groupe...');
+        });
+        actions.appendChild(leaveBtn);
+
+        const pingBtn = document.createElement('button');
+        pingBtn.className = 'doButton';
+        pingBtn.textContent = 'Ping';
+        pingBtn.addEventListener('click', () => {
+            groupPingMode = !groupPingMode;
+            addInfoMessage(`Mode ping de groupe ${groupPingMode ? 'ACTIVÉ' : 'désactivé'}.`);
+        });
+        actions.appendChild(pingBtn);
+
+        groupWindowEl.appendChild(actions);
+
+        groupListEl = document.createElement('div');
+        groupListEl.className = 'groupList';
+        groupWindowEl.appendChild(groupListEl);
+
+        document.body.appendChild(groupWindowEl);
+
+        groupInviteBanner = document.createElement('div');
+        groupInviteBanner.id = 'groupInviteBanner';
+        groupInviteBanner.classList.add('hidden');
+        const inviteText = document.createElement('div');
+        inviteText.className = 'groupInviteText';
+        groupInviteBanner.appendChild(inviteText);
+
+        const acceptBtn = document.createElement('button');
+        acceptBtn.className = 'doButton';
+        acceptBtn.textContent = 'Accepter';
+        acceptBtn.addEventListener('click', () => {
+            if (!pendingGroupInvite) return;
+            sendRaw(`ps|inv|ack|${pendingGroupInvite.id}`);
+            addInfoMessage(`Vous avez rejoint le groupe de ${pendingGroupInvite.name}`);
+            pendingGroupInvite = null;
+            renderGroupInviteBanner();
+        });
+        groupInviteBanner.appendChild(acceptBtn);
+
+        const refuseBtn = document.createElement('button');
+        refuseBtn.className = 'doButton';
+        refuseBtn.textContent = 'Refuser';
+        refuseBtn.addEventListener('click', () => {
+            if (!pendingGroupInvite) return;
+            sendRaw('ps|inv|cancel');
+            addInfoMessage('Invitation refusée.');
+            pendingGroupInvite = null;
+            renderGroupInviteBanner();
+        });
+        groupInviteBanner.appendChild(refuseBtn);
+
+        document.body.appendChild(groupInviteBanner);
+
+        // Rafraîchissement périodique comme le client Flash qui met à jour ses composants
+        setInterval(() => {
+            renderGroupList();
+            renderGroupInviteBanner();
+        }, 400);
+    }
+
+    window.addEventListener('load', initGroupWindow);
+
+
+    // -------------------------------------------------
     // 11. BOUCLE RENDU
     // -------------------------------------------------
 
