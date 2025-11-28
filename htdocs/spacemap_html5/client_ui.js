@@ -2415,6 +2415,57 @@ window.toggleSettingsWindow = toggleSettingsWindow;
     let groupInviteBanner = null;
     let lastInviteId = null;
 
+    function isHeroGroupLeader() {
+        const myId = parseInt(heroId, 10);
+        return !isNaN(myId) && groupLeaderId === myId;
+    }
+
+    function createGroupActionButton(label, onClick) {
+        const btn = document.createElement('button');
+        btn.className = 'doButton groupActionButton';
+        btn.textContent = label;
+        btn.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            onClick();
+        });
+        return btn;
+    }
+
+    function sendGroupFollow(targetId, targetName) {
+        const myId = parseInt(heroId, 10);
+        if (!targetId || targetId === myId) return;
+        sendRaw(`ps|flw|${targetId}`);
+        if (targetName) {
+            addInfoMessage(`Suivi de ${targetName} demandé.`);
+        }
+    }
+
+    function sendGroupChangeLeader(targetId, targetName) {
+        const myId = parseInt(heroId, 10);
+        if (!targetId || targetId === myId) return;
+        sendRaw(`ps|lc|${targetId}`);
+        if (targetName) {
+            addInfoMessage(`${targetName} sera nommé chef du groupe.`);
+        }
+    }
+
+    function sendGroupKick(targetId, targetName) {
+        const myId = parseInt(heroId, 10);
+        if (!targetId || targetId === myId) return;
+        sendRaw(`ps|kick|${targetId}`);
+        if (targetName) {
+            addInfoMessage(`Demande d'exclure ${targetName} envoyée.`);
+        }
+    }
+
+    function sendGroupPingUser(targetId, targetName) {
+        if (!targetId) return;
+        sendRaw(`ps|png|usr|${targetId}`);
+        if (targetName) {
+            addInfoMessage(`Ping vers ${targetName} envoyé.`);
+        }
+    }
+
     function renderGroupList() {
         if (!groupListEl) return;
         groupListEl.innerHTML = "";
@@ -2458,10 +2509,27 @@ window.toggleSettingsWindow = toggleSettingsWindow;
             sh.style.setProperty('--ratio', shRatio);
             sh.title = `${m.shield} / ${m.maxShield}`;
 
+            const actions = document.createElement('div');
+            actions.className = 'groupRowActions';
+            const myId = parseInt(heroId, 10);
+
+            if (!isNaN(myId) && myId !== m.id) {
+                actions.appendChild(createGroupActionButton('Suivre', () => sendGroupFollow(m.id, m.name)));
+                actions.appendChild(createGroupActionButton('Ping', () => sendGroupPingUser(m.id, m.name)));
+            }
+
+            if (isHeroGroupLeader() && myId !== m.id) {
+                actions.appendChild(createGroupActionButton('Chef', () => sendGroupChangeLeader(m.id, m.name)));
+                actions.appendChild(createGroupActionButton('Kick', () => sendGroupKick(m.id, m.name)));
+            }
+
             row.appendChild(name);
             row.appendChild(mapTag);
             row.appendChild(hp);
             row.appendChild(sh);
+            if (actions.childElementCount > 0) {
+                row.appendChild(actions);
+            }
             groupListEl.appendChild(row);
         });
     }
@@ -2509,6 +2577,8 @@ window.toggleSettingsWindow = toggleSettingsWindow;
             #groupWindow .groupBar::after { content: ""; position: absolute; top: 0; left: 0; height: 100%; width: calc(var(--ratio, 0) * 100%); }
             #groupWindow .groupBar.hp::after { background: #5bff6a; }
             #groupWindow .groupBar.sh::after { background: #4bc0ff; }
+            #groupWindow .groupRowActions { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+            #groupWindow .groupRowActions .groupActionButton { padding: 2px 6px; min-width: 70px; }
             #groupInviteBanner { position: absolute; top: 100px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); border: 1px solid #ffd166; color: #fff8e1; padding: 6px 10px; z-index: 30; display: flex; gap: 8px; align-items: center; }
             #groupInviteBanner.hidden { display: none; }
             #groupInviteBanner button { min-width: 70px; }
@@ -2563,6 +2633,15 @@ window.toggleSettingsWindow = toggleSettingsWindow;
             addInfoMessage(`Mode ping de groupe ${groupPingMode ? 'ACTIVÉ' : 'désactivé'}.`);
         });
         actions.appendChild(pingBtn);
+
+        const blockBtn = document.createElement('button');
+        blockBtn.className = 'doButton';
+        blockBtn.textContent = 'Bloquer invits';
+        blockBtn.addEventListener('click', () => {
+            sendRaw('ps|blk');
+            addInfoMessage('Basculer le blocage des invitations de groupe.');
+        });
+        actions.appendChild(blockBtn);
 
         groupWindowEl.appendChild(actions);
 
