@@ -54,28 +54,40 @@
 
     // Helpers entités / portails
     function ensureEntity(id) {
+        // Harmonisé sur la structure de main.swf (FULL_MERGE_AS) :
+        // les entités transportent systématiquement leurs points de vie,
+        // boucliers, vitesse, cargo et états visuels (ISH, invincibilité,
+        // fade de cible, etc.).
         if (!entities[id]) {
             entities[id] = {
                 id,
                 kind: "unknown",
                 type: 0,
                 category: "unknown",
+                shipId: null,
                 x: 0,
                 y: 0,
+                angle: 0,
                 name: "",
                 clanTag: "",
                 factionId: 0, // Ajouté pour la couleur
                 hp: null,
+                maxHp: null,
                 shield: null,
-                shieldDamageCount: 0,
+                maxShield: null,
+                cargo: null,
+                maxCargo: null,
+                speed: null,
+                targetFaded: false,
                 ishActive: false,
                 ishUntil: 0,
                 ishSince: 0,
                 invincible: false,
                 invUntil: 0,
                 invSince: 0,
+                invisible: false,
+                shieldDamageCount: 0,
                 drones: [],
-                angle: 0,
                 interp: {
                     startX: 0,
                     startY: 0,
@@ -85,6 +97,20 @@
                     duration: 0
                 }
             };
+        } else {
+            const ent = entities[id];
+            // Ajoute les champs manquants si l'entité existe déjà
+            if (!("shipId" in ent)) ent.shipId = null;
+            if (!("maxHp" in ent)) ent.maxHp = null;
+            if (!("maxShield" in ent)) ent.maxShield = null;
+            if (!("cargo" in ent)) ent.cargo = null;
+            if (!("maxCargo" in ent)) ent.maxCargo = null;
+            if (!("speed" in ent)) ent.speed = null;
+            if (!("targetFaded" in ent)) ent.targetFaded = false;
+            if (!("invisible" in ent)) ent.invisible = false;
+            if (!ent.interp) {
+                ent.interp = { startX: 0, startY: 0, endX: 0, endY: 0, startTime: 0, duration: 0 };
+            }
         }
         return entities[id];
     }
@@ -98,8 +124,11 @@
                 x: 0,
                 y: 0,
                 visibleOnMiniMap: true,
-                targetMaps: []
+                targetMaps: [],
+                targetMapId: null
             };
+        } else if (!("targetMapId" in portals[id])) {
+            portals[id].targetMapId = null;
         }
         return portals[id];
     }
