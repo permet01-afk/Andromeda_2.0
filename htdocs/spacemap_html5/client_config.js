@@ -208,37 +208,44 @@ let setting_play_music = true;
 let setting_client_resolution = "ID,W,H"; 
 let isChasingTarget = false; // Est-ce qu'on poursuit une cible ?
 
-// Stock de munitions complet (Basé sur les IDs serveurs standards)
+// Stock de munitions complet (Basé sur les IDs standards Flash / émulateur)
 let ammoStock = {
-    // Lasers
-    1: 0, // LC-01 / Standard (x1)
-    2: 0, // LC-02 (x2)
-    3: 0, // LC-03 (x3)
-    4: 0, // MCB-50 (x4)
-    5: 0, // SAB-50 (Shield Killer)
-    6: 0, // RSB-75 (Special)
-    // Roquettes Plasma / Hellstorm
-    10: 0, // R-310
-    11: 0, // PLT-2026
-    12: 0, // PLT-2021
-    13: 0, // PLT-3030
-    14: 0, // PLD-8
-    15: 0, // DCR-250
-    16: 0, // HSTRM-01
-    17: 0, // UBR-100
-    18: 0, // ECO-10
-    19: 0, // SAR-02
+    // Lasers (catalogue Flash : batteryNames[1..6])
+    1: 0,  // LCB-10 (x1)
+    2: 0,  // MCB-25 (x2)
+    3: 0,  // MCB-50 (x3)
+    4: 0,  // UCB-100 (x4)
+    5: 0,  // SAB-50
+    6: 0,  // RSB-75
+    101: 0, // CBO-100 (slot spécial combo)
+    102: 0, // JOB-100 (lasers aliens)
 
-    // Mines et spéciaux
-    20: 0, // ACM-1
+    // Roquettes (RocketPattern 1..10)
+    9: 0,   // R-310
+    10: 0,  // PLT-2026
+    11: 0,  // PLT-2021
+    12: 0,  // PLT-3030
+    13: 0,  // PLD-8
+    14: 0,  // WIZ-X
+    15: 0,  // HSTRM-01
+    16: 0,  // UBR-100
+    17: 0,  // ECO-10
+    18: 0,  // DCR-250
+    19: 0,  // SAR-02 (spéciale absorb bouclier)
+
+    // Mines et spéciaux (explosive_names 1..10)
+    20: 0, // ACM-01
     21: 0, // EMPM-01
     22: 0, // SABM-01
     23: 0, // DDM-01
+    24: 0, // FWX-S
+    25: 0, // FWX-M
+    26: 0, // FWX-L
 
     // Charges spéciales / CPU consommables
-    30: 0, // EMP
-    31: 0, // ISH
-    32: 0  // SMB
+    30: 0, // EMP-01
+    31: 0, // ISH-01
+    32: 0  // SMB-01
 };
 
 // --- Fonction de mise à jour de l'état (essentielle pour le paquet 7) ---
@@ -582,39 +589,41 @@ const shipSpriteCache = {};
 const shieldSpriteCache = {};
 const uiImageCache = {};
 
-const QUICKBAR_ICON_LOOKUP = {
-    ammo: {
-        1: "graphics/ui/actionMenu/images/41_laserBat1.png.png", // LCB-10
-        2: "graphics/ui/actionMenu/images/40_laserBat2.png.png", // MCB-25
-        3: "graphics/ui/actionMenu/images/39_laserBat3.png.png", // MCB-50
-        4: "graphics/ui/actionMenu/images/38_laserBat4.png.png", // UCB-100
-        5: "graphics/ui/actionMenu/images/18_sab_m01.png.png", // SAB-50
-        6: "graphics/ui/actionMenu/images/37_laserBat5.png.png", // RSB-75
-        12: "graphics/ui/actionMenu/images/36_laserBat6.png.png", // CBO-100
-        13: "graphics/ui/actionMenu/images/63_explosive.png.png" // JOB-100
-    },
-    rocket: {
-        1: "graphics/ui/actionMenu/images/28_r310.png.png", // R-310
-        2: "graphics/ui/actionMenu/images/30_plt2026.png.png", // PLT-2026
-        3: "graphics/ui/actionMenu/images/31_plt2021.png.png", // PLT-2021
-        4: "graphics/ui/actionMenu/images/29_plt3030.png.png", // PLT-3030
-        5: "graphics/ui/actionMenu/images/32_pld8.png.png", // PLD-8
-        6: "graphics/ui/actionMenu/images/72_dcr30.png.png", // DCR-250
-        10: "graphics/ui/actionMenu/images/113_hstrm01.png.png", // HSTRM-01
-        11: "graphics/ui/actionMenu/images/112_ubr100.png.png", // UBR-100
-        12: "graphics/ui/actionMenu/images/111_eco10.png.png", // ECO-10
-        13: "graphics/ui/actionMenu/images/63_explosive.png.png" // SAR-02
-    },
-    mine: {
-        1: "graphics/ui/actionMenu/images/103_acm1.png.png", // ACM-1
-        2: "graphics/ui/actionMenu/images/67_emp_m01.png.png", // EMPM-01
-        3: "graphics/ui/actionMenu/images/18_sab_m01.png.png", // SABM-01
-        4: "graphics/ui/actionMenu/images/71_dd_m01.png.png" // DDM-01
-    },
-    cpu: {
-        EMP: "graphics/ui/actionMenu/images/66_emp01.png.png",
-        ISH: "graphics/ui/actionMenu/images/46_ish.png.png",
-        SMB: "graphics/ui/actionMenu/images/7_smb01.png.png",
+    const QUICKBAR_ICON_LOOKUP = {
+        ammo: {
+            1: "graphics/ui/actionMenu/images/41_laserBat1.png.png", // LCB-10
+            2: "graphics/ui/actionMenu/images/40_laserBat2.png.png", // MCB-25
+            3: "graphics/ui/actionMenu/images/39_laserBat3.png.png", // MCB-50
+            4: "graphics/ui/actionMenu/images/38_laserBat4.png.png", // UCB-100
+            5: "graphics/ui/actionMenu/images/18_sab_m01.png.png", // SAB-50
+            6: "graphics/ui/actionMenu/images/37_laserBat5.png.png", // RSB-75
+            12: "graphics/ui/actionMenu/images/36_laserBat6.png.png", // CBO-100
+            13: "graphics/ui/actionMenu/images/63_explosive.png.png" // JOB-100
+        },
+        rocket: {
+            1: "graphics/ui/actionMenu/images/28_r310.png.png", // R-310
+            2: "graphics/ui/actionMenu/images/30_plt2026.png.png", // PLT-2026
+            3: "graphics/ui/actionMenu/images/31_plt2021.png.png", // PLT-2021
+            4: "graphics/ui/actionMenu/images/29_plt3030.png.png", // PLT-3030
+            5: "graphics/ui/actionMenu/images/32_pld8.png.png", // PLD-8
+            6: "graphics/ui/actionMenu/images/1_wiz.png.png", // WIZ-X
+            7: "graphics/ui/actionMenu/images/113_hstrm01.png.png", // HSTRM-01
+            8: "graphics/ui/actionMenu/images/112_ubr100.png.png", // UBR-100
+            9: "graphics/ui/actionMenu/images/111_eco10.png.png", // ECO-10
+            10: "graphics/ui/actionMenu/images/72_dcr30.png.png", // DCR-250
+            11: "graphics/ui/actionMenu/images/63_explosive.png.png" // SAR-02
+        },
+        mine: {
+            1: "graphics/ui/actionMenu/images/103_acm1.png.png", // ACM-1
+            2: "graphics/ui/actionMenu/images/67_emp_m01.png.png", // EMPM-01
+            3: "graphics/ui/actionMenu/images/18_sab_m01.png.png", // SABM-01
+            4: "graphics/ui/actionMenu/images/71_dd_m01.png.png", // DDM-01
+            5: "graphics/ui/actionMenu/images/7_smb01.png.png" // SMB-01 (explosif spécial)
+        },
+        cpu: {
+            EMP: "graphics/ui/actionMenu/images/66_emp01.png.png",
+            ISH: "graphics/ui/actionMenu/images/46_ish.png.png",
+            SMB: "graphics/ui/actionMenu/images/7_smb01.png.png",
         ROB: "graphics/ui/actionMenu/images/92_battle_repair_bot.png.png",
         CLK: "graphics/ui/actionMenu/images/88_cloak01.png.png",
         DRP: "graphics/ui/actionMenu/images/68_droneRepair02.png.png",
@@ -923,20 +932,21 @@ loadQuickbarLayout();
             { type: "ammo", id: 4, stockId: 4, label: "UCB-100" },  // x4
             { type: "ammo", id: 5, stockId: 5, label: "SAB-50" },   // SAB
             { type: "ammo", id: 6, stockId: 6, label: "RSB-75" },   // RSB
-            { type: "ammo", id: 12, stockId: 12, label: "CBO-100" }, // Combo
-            { type: "ammo", id: 13, stockId: 13, label: "JOB-100" }  // Job
+            { type: "ammo", id: 12, stockId: 101, label: "CBO-100" }, // Combo
+            { type: "ammo", id: 13, stockId: 102, label: "JOB-100" }  // Job
         ],
         rocket: [
-            { type: "rocket", id: 1, stockId: 10, label: "R-310" },      // R1
-            { type: "rocket", id: 2, stockId: 11, label: "PLT-2026" },   // R2
-            { type: "rocket", id: 3, stockId: 12, label: "PLT-2021" },   // R3
-            { type: "rocket", id: 4, stockId: 13, label: "PLT-3030" },   // R4
-            { type: "rocket", id: 5, stockId: 14, label: "PLD-8" },      // Plasma
-            { type: "rocket", id: 6, stockId: 15, label: "DCR-250" },    // Decelerator
-            { type: "rocket", id: 10, stockId: 16, label: "HSTRM-01" },  // Hellstorm
-            { type: "rocket", id: 11, stockId: 17, label: "UBR-100" },   // Uber
-            { type: "rocket", id: 12, stockId: 18, label: "ECO-10" },    // Eco
-            { type: "rocket", id: 13, stockId: 19, label: "SAR-02" }     // Shield Absorb
+            { type: "rocket", id: 1, stockId: 9, label: "R-310" },        // RocketPattern.R310
+            { type: "rocket", id: 2, stockId: 10, label: "PLT-2026" },    // RocketPattern.PLT_2026
+            { type: "rocket", id: 3, stockId: 11, label: "PLT-2021" },    // RocketPattern.PLT_2021
+            { type: "rocket", id: 4, stockId: 12, label: "PLT-3030" },    // RocketPattern.PLT_3030
+            { type: "rocket", id: 5, stockId: 13, label: "PLD-8" },       // RocketPattern.PLD_8
+            { type: "rocket", id: 6, stockId: 14, label: "WIZ-X" },       // RocketPattern.WIZ
+            { type: "rocket", id: 7, stockId: 15, label: "HSTRM-01" },    // RocketPattern.HSTRM01
+            { type: "rocket", id: 8, stockId: 16, label: "UBR-100" },     // RocketPattern.UBR100
+            { type: "rocket", id: 9, stockId: 17, label: "ECO-10" },      // RocketPattern.ECO10
+            { type: "rocket", id: 10, stockId: 18, label: "DCR-250" },    // RocketPattern.DCR_250
+            { type: "rocket", id: 11, stockId: 19, label: "SAR-02" }      // Mode absorb bouclier
         ],
         special: [ // Mines & Special Ammo
             { type: "mine", id: 1, stockId: 20, label: "ACM-1" },    // Mine contact
