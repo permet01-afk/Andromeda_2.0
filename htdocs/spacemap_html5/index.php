@@ -101,6 +101,12 @@ $height = (int)$exploded[2];
     };
 </script>
 
-<script src="client.js?v=999"></script>
+<script src="client_config.js?v=999"></script>
+<script src="client_network.js?v=999"></script>
+<script src="client_entities.js?v=999"></script>
+<script src="client_combat.js?v=999"></script>
+<script src="client_graphics.js?v=999"></script>
+<script src="client_ui.js?v=999"></script>
+<script src="client_bootstrap.js?v=999"></script>
 </body>
 </html>

@@ -112,6 +112,12 @@ $mapId = (int)$datauser[0]['mapid'];
     </div>
 
     <!-- Notre futur client JS -->
-    <script src="client.js"></script>
+    <script src="client_config.js"></script>
+    <script src="client_network.js"></script>
+    <script src="client_entities.js"></script>
+    <script src="client_combat.js"></script>
+    <script src="client_graphics.js"></script>
+    <script src="client_ui.js"></script>
+    <script src="client_bootstrap.js"></script>
 </body>
 </html>
