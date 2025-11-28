@@ -329,8 +329,9 @@ function updateLocalSetting(key, value) {
     let radiationServerFlag = false;
     let radiationWarningActive = false;
     let radiationFade = 0;
-    let nextRadiationWarn = 0;
     let radiationPulseStart = 0;
+    let radiationWarningTimer = null;
+    let radiationFlashAlpha = 0;
     
     // --- Quickbar (barre 1-0 configurable avec cadenas) ---
 	
@@ -3123,8 +3124,9 @@ function handlePacket_N(parts, i) {
         radiationServerFlag = false;
         radiationWarningActive = false;
         radiationFade = 0;
-        nextRadiationWarn = 0;
         radiationPulseStart = 0;
+        radiationFlashAlpha = 0;
+        stopRadiationWarningTimer();
 
         addInfoMessage("Saut vers la carte " + (newMapId || "?") + " effectué.");
     }
@@ -5715,53 +5717,66 @@ function handlePacket_7(parts, i) {
     // 9. ZONES VISUELLES & HUD
     // -------------------------------------------------
 
-    function updateRadiationWarning(active) {
-        const now = performance.now();
-        if (active && !radiationWarningActive) {
-            nextRadiationWarn = now;
-            radiationPulseStart = now;
+    function triggerRadiationPulse() {
+        radiationPulseStart = performance.now();
+        radiationFlashAlpha = 0.35;
+    }
+
+    function startRadiationWarning() {
+        if (radiationWarningTimer === null) {
+            radiationWarningTimer = setInterval(triggerRadiationPulse, 2000);
         }
-        if (!active && radiationWarningActive) {
-            radiationPulseStart = 0;
+        triggerRadiationPulse();
+        radiationWarningActive = true;
+    }
+
+    function stopRadiationWarningTimer() {
+        if (radiationWarningTimer !== null) {
+            clearInterval(radiationWarningTimer);
+            radiationWarningTimer = null;
         }
-        radiationWarningActive = active;
+    }
+
+    function stopRadiationWarning() {
+        radiationWarningActive = false;
+        radiationPulseStart = 0;
+        stopRadiationWarningTimer();
     }
 
     function setRadiationWarning(active) {
-        radiationServerFlag = !!active;
-        updateRadiationWarning(!!active);
+        const shouldActivate = !!active;
+        radiationServerFlag = shouldActivate;
+        if (shouldActivate) {
+            startRadiationWarning();
+        } else {
+            stopRadiationWarning();
+        }
     }
 
     function drawRadiationOverlay() {
-        const heroSnap = snapshotEntityById(heroId);
-        let shouldWarn = radiationServerFlag;
-
-        if (heroSnap) {
-            if (heroSnap.x < MAP_MIN_X - RADIATION_MARGIN || heroSnap.x > MAP_MAX_X + RADIATION_MARGIN ||
-                heroSnap.y < MAP_MIN_Y - RADIATION_MARGIN || heroSnap.y > MAP_MAX_Y + RADIATION_MARGIN) {
-                shouldWarn = true;
-            }
-        }
-
-        if (shouldWarn !== radiationWarningActive) {
-            updateRadiationWarning(shouldWarn);
-        }
-
         const now = performance.now();
         if (radiationWarningActive) {
-            if (nextRadiationWarn === 0) nextRadiationWarn = now;
-            if (now >= nextRadiationWarn) {
-                radiationPulseStart = now;
-                nextRadiationWarn = now + 2000;
-            }
             radiationFade = Math.min(1, radiationFade + 0.08);
         } else {
             radiationFade = Math.max(0, radiationFade - 0.08);
+            if (radiationFade === 0) {
+                radiationFlashAlpha = 0;
+            }
+        }
+
+        if (radiationFlashAlpha > 0) {
+            ctx.save();
+            ctx.globalAlpha = radiationFlashAlpha;
+            ctx.fillStyle = "rgba(255, 64, 64, 0.8)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.restore();
+            radiationFlashAlpha = Math.max(0, radiationFlashAlpha - 0.05);
         }
 
         if (radiationFade <= 0) return;
 
         const pulseAlpha = radiationPulseStart ? Math.max(0, 1 - (now - radiationPulseStart) / 600) : 0;
+        const heroSnap = snapshotEntityById(heroId);
 
         if (heroSnap) {
             const radiationScreenX = mapToScreenX(heroSnap.x);
@@ -5795,9 +5810,9 @@ function handlePacket_7(parts, i) {
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
         const textY = canvas.height / 2 - 150;
-        ctx.fillText("RADIATION", canvas.width / 2, textY);
+        ctx.fillText("ZONE DE RADIATION", canvas.width / 2, textY);
         ctx.font = "14px Arial";
-        ctx.fillText("Retournez vers la zone sûre", canvas.width / 2, textY + 22);
+        ctx.fillText("Retournez vers la zone sécurisée", canvas.width / 2, textY + 22);
         ctx.restore();
     }
 
