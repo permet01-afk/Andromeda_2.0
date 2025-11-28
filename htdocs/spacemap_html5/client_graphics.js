@@ -1,3 +1,80 @@
+    // --- LASER SPRITES & HELPERS (override visual beams with PNGs) ---
+    const LASER_SPRITE_PATHS = {
+        1: "graphics/lasers/laser1.png", // LCB / MCB classic red
+        2: "graphics/lasers/laser2.png", // SAB blue
+        3: "graphics/lasers/laser3.png", // MCB-50 / higher green tint
+        4: "graphics/lasers/laser4.png", // RSB white burst
+        5: "graphics/lasers/laser5.png", // Special grey (drone / scatter)
+        6: "graphics/lasers/laser6.png"  // Yellow premium
+    };
+
+    const laserSpriteCache = {};
+
+    function getLaserSprite(patternId) {
+        const key = LASER_SPRITE_PATHS[patternId] ? patternId : 1;
+        if (!laserSpriteCache[key]) {
+            laserSpriteCache[key] = getUiImage(LASER_SPRITE_PATHS[key]);
+        }
+        return laserSpriteCache[key];
+    }
+
+    function drawBeamSprite(img, startX, startY, endX, endY, alpha, scale = 1) {
+        if (!img || !img.complete || img.width === 0 || img.height === 0) return;
+        const dx = endX - startX;
+        const dy = endY - startY;
+        const dist = Math.hypot(dx, dy);
+        const angle = Math.atan2(dy, dx);
+
+        const height = img.height * scale;
+        const width = Math.max(img.width * scale, dist);
+
+        ctx.save();
+        ctx.translate(startX, startY);
+        ctx.rotate(angle);
+        ctx.globalAlpha = alpha;
+        ctx.drawImage(img, 0, -height / 2, width, height);
+        ctx.restore();
+    }
+
+    function drawSabTransfer(startX, startY, endX, endY, lifeRatio) {
+        const def = SHIELD_SPRITE_DEFS.hit;
+        if (!def) return;
+
+        const frame = Math.min(def.frameCount - 1, Math.floor((lifeRatio * def.frameCount)));
+        const ringImg = getShieldSpriteFrame("hit", frame);
+        if (!ringImg || !ringImg.complete || ringImg.width === 0) return;
+
+        const dx = endX - startX;
+        const dy = endY - startY;
+        const dist = Math.hypot(dx, dy);
+        const segments = Math.max(3, Math.floor(dist / 80));
+        const stepX = dx / segments;
+        const stepY = dy / segments;
+
+        for (let i = 1; i < segments; i++) {
+            const t = i / segments;
+            const cx = startX + stepX * i;
+            const cy = startY + stepY * i;
+            const scale = 0.8 + 0.4 * Math.sin(Math.PI * t);
+
+            ctx.save();
+            ctx.globalAlpha = 0.5 * (1 - lifeRatio);
+            const w = ringImg.width * scale;
+            const h = ringImg.height * scale;
+            ctx.drawImage(ringImg, cx - w / 2, cy - h / 2, w, h);
+            ctx.restore();
+        }
+    }
+
+    function drawRsbPulse(img, startX, startY, endX, endY, now, createdAt) {
+        const elapsed = now - createdAt;
+        const phase = (elapsed % 90) / 90;
+        const alpha = 0.4 + 0.6 * Math.sin(phase * Math.PI);
+        const scale = 1 + 0.15 * Math.sin(phase * Math.PI * 2);
+        drawBeamSprite(img, startX, startY, endX, endY, alpha, scale);
+    }
+
+    // =====================================================================
     function drawMiniMap() {
         const margin = 10;
         const x = canvas.width  - MINIMAP_WIDTH  - margin;
@@ -266,6 +343,78 @@
         const h = img.height * pulse;
         ctx.drawImage(img, sx - w / 2, sy - h / 2, w, h);
         ctx.restore();
+    }
+
+    // Remplacement du rendu des lasers pour utiliser les sprites PNG (aligné SWF)
+    function drawLaserBeams() {
+        const now = performance.now();
+
+        for (const beam of laserBeams) {
+            let ax, ay, tx, ty;
+
+            if (heroId !== null && beam.attackerId === heroId) { ax = shipX; ay = shipY; }
+            else if (entities[beam.attackerId]) { ax = entities[beam.attackerId].x; ay = entities[beam.attackerId].y; }
+            else continue;
+
+            if (heroId !== null && beam.targetId === heroId) { tx = shipX; ty = shipY; }
+            else if (entities[beam.targetId]) { tx = entities[beam.targetId].x; ty = entities[beam.targetId].y; }
+            else continue;
+
+            const startScreenX = mapToScreenX(ax);
+            const startScreenY = mapToScreenY(ay);
+            const endScreenX   = mapToScreenX(tx);
+            const endScreenY   = mapToScreenY(ty);
+
+            const img = getLaserSprite(beam.patternId);
+            const life = Math.min(1, (now - beam.createdAt) / LASER_BEAM_DURATION);
+            const alpha = 0.9 * (1 - life);
+
+            if (beam.patternId === 4) { // RSB-75 pulse
+                drawRsbPulse(img, startScreenX, startScreenY, endScreenX, endScreenY, now, beam.createdAt);
+                continue;
+            }
+
+            drawBeamSprite(img, startScreenX, startScreenY, endScreenX, endScreenY, alpha);
+
+            if (beam.patternId === 2) { // SAB transfert bouclier
+                drawSabTransfer(startScreenX, startScreenY, endScreenX, endScreenY, life);
+            }
+        }
+    }
+
+    // Utilise toutes les frames des sprites de dégâts bouclier
+    function drawShieldBursts() {
+        const now = performance.now();
+        for (const sb of shieldBursts) {
+            const spriteKey = sb.sprite || "hit";
+            const def = SHIELD_SPRITE_DEFS[spriteKey];
+            if (!def) continue;
+
+            const elapsed = now - sb.createdAt;
+            const frameDuration = 1000 / (def.fps || SHIELD_ANIM_FPS);
+            const frame = Math.min(def.frameCount - 1, Math.floor(elapsed / frameDuration));
+            const img = getShieldSpriteFrame(spriteKey, frame);
+            if (!img || !img.complete || img.width === 0 || img.height === 0) continue;
+
+            const lifeRatio = Math.min(1, elapsed / Math.max(1, frameDuration * def.frameCount));
+            const angle = sb.angle || 0;
+            const radius = sb.radius || 0;
+            const baseX = sb.x + Math.cos(angle) * radius;
+            const baseY = sb.y + Math.sin(angle) * radius;
+
+            const burstScreenX = mapToScreenX(baseX);
+            const burstScreenY = mapToScreenY(baseY);
+            const scale = 1 + lifeRatio * 0.2;
+            const w = img.width * scale;
+            const h = img.height * scale;
+
+            ctx.save();
+            ctx.translate(burstScreenX, burstScreenY);
+            if (sb.angle !== undefined && sb.angle !== null) ctx.rotate(angle);
+            ctx.globalAlpha = 1 - lifeRatio;
+            ctx.drawImage(img, -w / 2, -h / 2, w, h);
+            ctx.restore();
+        }
     }
 
     function drawShip() {
