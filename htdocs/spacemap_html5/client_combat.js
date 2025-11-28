@@ -653,7 +653,14 @@
         
         // Raccourcir le nom si trop long
         let nameDisplay = m.name.length > 10 ? m.name.substring(0, 10) + ".." : m.name;
-        ctx.fillText(`${nameDisplay} ${mapTxt}`, x + 5, currentY + 10);
+        const isLeader = (groupLeaderId === m.id);
+        const leaderPrefix = isLeader ? "★ " : "";
+        const label = `${leaderPrefix}${nameDisplay} ${mapTxt}`;
+        if (isLeader) {
+            ctx.fillStyle = "#ffef5c";
+        }
+        ctx.fillText(label, x + 5, currentY + 10);
+        ctx.fillStyle = "#ffffff";
 
         // Barre HP
         const barW = boxWidth - 10;
