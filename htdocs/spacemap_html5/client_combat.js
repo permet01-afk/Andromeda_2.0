@@ -1010,14 +1010,20 @@
 
             const img = getPortalJumpFrame(frame);
             if (!img || !img.complete || img.width === 0 || img.height === 0) continue;
-
+			
             const sx = mapToScreenX(fx.x) + (PORTAL_JUMP_ANIM.offsetX || 0);
             const sy = mapToScreenY(fx.y) + (PORTAL_JUMP_ANIM.offsetY || 0);
+			
+			const OFFSET_X = -12; // négatif = vers la gauche, positif = vers la droite
 
-            ctx.save();
+			ctx.save();
             ctx.globalCompositeOperation = "lighter";
-            ctx.drawImage(img, sx - img.width / 2, sy - img.height / 2);
-            ctx.restore();
+            ctx.drawImage(
+			img,
+			sx - img.width / 2 + OFFSET_X,
+			sy - img.height / 2
+							);
+			ctx.restore();
         }
     }
 
