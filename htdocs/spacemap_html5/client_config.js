@@ -575,6 +575,14 @@ const PORTAL_SPRITE_DEFS = {
     }
 };
 
+const PORTAL_JUMP_ANIM = {
+    frameCount: 70,
+    basePath: "graphics/assets/portalJumpAnim/frames/",
+    frameDuration: 40,
+    offsetX: 0,
+    offsetY: 0
+};
+
 // --- SPRITES DE BOUCLIERS ---
 const SHIELD_ANIM_FPS = 30;
 const SHIELD_SPRITE_DEFS = {
@@ -712,6 +720,7 @@ let stationImages = {};  // Stockage des images chargées
 const shipSpriteCache = {};
 const shieldSpriteCache = {};
 const portalSpriteCache = {};
+const portalJumpSpriteCache = {};
 const uiImageCache = {};
 
     const QUICKBAR_ICON_LOOKUP = {
@@ -862,6 +871,22 @@ function getPortalSpriteFrame(portalType, animation, frameIndex) {
     const fileNumber = idx + 1;
     img.src = animDef.basePath + fileNumber + ".png";
     portalSpriteCache[key] = img;
+    return img;
+}
+
+function getPortalJumpFrame(frameIndex) {
+    if (!PORTAL_JUMP_ANIM) return null;
+
+    const frameCount = PORTAL_JUMP_ANIM.frameCount || 1;
+    let idx = frameIndex % frameCount;
+    if (idx < 0) idx += frameCount;
+
+    if (portalJumpSpriteCache[idx]) return portalJumpSpriteCache[idx];
+
+    const img = new Image();
+    const fileNumber = idx + 1;
+    img.src = PORTAL_JUMP_ANIM.basePath + fileNumber + ".png";
+    portalJumpSpriteCache[idx] = img;
     return img;
 }
 

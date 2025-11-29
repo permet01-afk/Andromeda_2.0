@@ -981,6 +981,43 @@
         }
     }
 
+    function spawnPortalJumpEffect(x, y) {
+        if (x == null || y == null || !PORTAL_JUMP_ANIM) return;
+        portalJumpEffects.push({
+            x,
+            y,
+            startedAt: performance.now()
+        });
+    }
+
+    function updatePortalJumpEffects(now) {
+        const totalDuration = (PORTAL_JUMP_ANIM.frameCount || 1) * (PORTAL_JUMP_ANIM.frameDuration || 40);
+        for (let i = portalJumpEffects.length - 1; i >= 0; i--) {
+            const fx = portalJumpEffects[i];
+            if (now - fx.startedAt >= totalDuration) {
+                portalJumpEffects.splice(i, 1);
+            }
+        }
+    }
+
+    function drawPortalJumpEffects() {
+        if (!PORTAL_JUMP_ANIM) return;
+        const now = performance.now();
+        for (const fx of portalJumpEffects) {
+            const elapsed = now - fx.startedAt;
+            const frame = Math.floor(elapsed / (PORTAL_JUMP_ANIM.frameDuration || 40));
+            if (frame < 0 || frame >= PORTAL_JUMP_ANIM.frameCount) continue;
+
+            const img = getPortalJumpFrame(frame);
+            if (!img || !img.complete || img.width === 0 || img.height === 0) continue;
+
+            const sx = mapToScreenX(fx.x) + (PORTAL_JUMP_ANIM.offsetX || 0);
+            const sy = mapToScreenY(fx.y) + (PORTAL_JUMP_ANIM.offsetY || 0);
+
+            ctx.drawImage(img, sx - img.width / 2, sy - img.height / 2);
+        }
+    }
+
     function spawnExplosionAt(x, y, isPlayer) {
         if (x == null || y == null) return;
         const now = performance.now();

@@ -25,6 +25,7 @@
     }
     const explosions = [];
     const shieldBursts = [];
+    const portalJumpEffects = [];
 
     // Cible & tir
     let selectedTargetId = null;
