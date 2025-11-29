@@ -1014,7 +1014,10 @@
             const sx = mapToScreenX(fx.x) + (PORTAL_JUMP_ANIM.offsetX || 0);
             const sy = mapToScreenY(fx.y) + (PORTAL_JUMP_ANIM.offsetY || 0);
 
+            ctx.save();
+            ctx.globalCompositeOperation = "lighter";
             ctx.drawImage(img, sx - img.width / 2, sy - img.height / 2);
+            ctx.restore();
         }
     }
 
