@@ -62,6 +62,18 @@
         }
     }
 
+    // Permet d'éviter les erreurs si l'UI du chat n'est pas encore chargée
+    function renderChatTabsSafe(attempt = 0) {
+        if (typeof renderChatTabs === 'function') {
+            renderChatTabs();
+            return;
+        }
+
+        if (attempt < 10) {
+            setTimeout(() => renderChatTabsSafe(attempt + 1), 100);
+        }
+    }
+
     function connectToChat() {
         const url = `ws://${cfg.host}:${cfg.port}`;
         console.log("[CHAT-WS] Connexion au canal Chat/Groupe...");
@@ -72,7 +84,7 @@
             console.log("[CHAT-WS] Connecté ! Attente avant init...");
 
             ensureDefaultChatRooms();
-            renderChatTabs();
+            renderChatTabsSafe();
             
             // On attend 500ms avant d'envoyer le paquet d'auth Chat
             // pour être sûr que le serveur a fini le handshake WebSocket
@@ -285,7 +297,7 @@
                 const faction = parseInt(parts[2], 10) || 0;
                 if (!isNaN(roomId)) {
                     upsertChatRoom(roomId, roomName, faction);
-                    renderChatTabs();
+                    renderChatTabsSafe();
                 }
             }
         }
@@ -700,6 +712,16 @@ function handlePacket_N(parts, i) {
         }
     }
 
+    const DRONE_GROUP_RADIUS = 75; // game.xml patterns.drones.@groupRadius
+    const DRONE_RADIUS = 15;       // game.xml patterns.drones.drone.@droneRadius
+    const DRONE_GROUP_DIMENSION = DRONE_GROUP_RADIUS * 2;
+
+    const DRONE_POSITION_TOP = 0;
+    const DRONE_POSITION_RIGHT = 1;
+    const DRONE_POSITION_DOWN = 2;
+    const DRONE_POSITION_LEFT = 3;
+    const DRONE_POSITION_CENTER = 4;
+
     function resolveDroneKind(typeId) {
         // Dans le client Flash, les types 1 = Flax, 2/3 = Iris (et dérivés). Ici on ne gère
         // que Flax/Iris au niveau max : on mappe 1 -> "flax", tout le reste -> "iris".
@@ -707,52 +729,99 @@ function handlePacket_N(parts, i) {
         return "iris";
     }
 
+    function resolveDroneRadius(typeId, level) {
+        // Les patterns du client Flash donnent un radius de 15px pour les deux types (levels 0..5).
+        // On conserve cette valeur par défaut pour reproduire le placement original.
+        if (!Number.isFinite(typeId) || !Number.isFinite(level)) return DRONE_RADIUS;
+        return DRONE_RADIUS;
+    }
+
+    function mapGroupPosition(groupCount, groupIndex) {
+        if (groupCount === 1) return DRONE_POSITION_DOWN;
+        if (groupCount === 2) return (groupIndex === 0) ? DRONE_POSITION_LEFT : DRONE_POSITION_RIGHT;
+        if (groupCount === 3) {
+            if (groupIndex === 0) return DRONE_POSITION_RIGHT;
+            if (groupIndex === 1) return DRONE_POSITION_DOWN;
+            return DRONE_POSITION_LEFT;
+        }
+        // groupCount >= 4
+        if (groupIndex === 0) return DRONE_POSITION_RIGHT;
+        if (groupIndex === 1) return DRONE_POSITION_DOWN;
+        if (groupIndex === 2) return DRONE_POSITION_LEFT;
+        return DRONE_POSITION_TOP;
+    }
+
+    function mapDronePosition(droneCount, droneIndex) {
+        if (droneCount === 1) return DRONE_POSITION_CENTER;
+        if (droneCount === 2) return droneIndex === 0 ? DRONE_POSITION_LEFT : DRONE_POSITION_RIGHT;
+        if (droneCount === 3) {
+            if (droneIndex === 0) return DRONE_POSITION_TOP;
+            if (droneIndex === 1) return DRONE_POSITION_RIGHT;
+            return DRONE_POSITION_LEFT;
+        }
+        // droneCount >= 4
+        if (droneIndex === 0) return DRONE_POSITION_TOP;
+        if (droneIndex === 1) return DRONE_POSITION_RIGHT;
+        if (droneIndex === 2) return DRONE_POSITION_LEFT;
+        return DRONE_POSITION_DOWN;
+    }
+
     function parseDrones(droneStr) {
-        const result = [];
-        if (!droneStr || typeof droneStr !== "string") return result;
+        const emptyResult = { groupCount: 0, groupDimension: DRONE_GROUP_DIMENSION, groups: [] };
+        if (!droneStr || typeof droneStr !== "string") return emptyResult;
 
         const trimmed = droneStr.trim();
-        if (!trimmed) return result;
+        if (!trimmed) return emptyResult;
 
-        // Format typique envoyé par l'émulateur :
-        // "3/2-15-15,3/4-15-15-15-15,3/2-15-15"
-        // => plusieurs drones séparés par des virgules
-        const entries = trimmed.split(',');
-        for (let rawEntry of entries) {
-            rawEntry = rawEntry.trim();
-            if (!rawEntry) continue;
+        // Format original du client Flash (voir parseDroneString) :
+        // "<nbGroupes>/<nbDrones>-<d1>-<d2>.../<nbDrones>-<d1>-..."
+        // Exemple pour 8 drones (4 groupes de 2) :
+        // "4/2-21-21/2-21-21/2-21-21/2-21-21"
+        const segments = trimmed.split('/').filter(s => s !== "");
+        if (!segments.length) return emptyResult;
 
-            const slashParts = rawEntry.split('/');
-            const typeId = parseInt(slashParts[0], 10);
-            let level = null;
-            let upgrades = [];
+        const groupCount = parseInt(segments.shift(), 10);
+        if (!Number.isFinite(groupCount) || groupCount <= 0) return emptyResult;
 
-            if (slashParts.length >= 2) {
-                // Exemple : "2-15-15-15" => niveau 2 + upgrades [15,15,15]
-                const lvlAndUpgrades = slashParts[1]
-                    .split('-')
-                    .map(x => x.trim())
-                    .filter(x => x !== "");
+        const groups = [];
+        for (let i = 0; i < segments.length; i++) {
+            const rawGroup = segments[i];
+            if (!rawGroup) continue;
 
-                if (lvlAndUpgrades.length > 0) {
-                    const lvl = parseInt(lvlAndUpgrades[0], 10);
-                    if (!Number.isNaN(lvl)) level = lvl;
-                    if (lvlAndUpgrades.length > 1) {
-                        upgrades = lvlAndUpgrades.slice(1);
-                    }
-                }
+            const parts = rawGroup.split('-').filter(p => p !== "");
+            if (!parts.length) continue;
+
+            const droneCount = parseInt(parts.shift(), 10);
+            if (!Number.isFinite(droneCount) || droneCount <= 0) continue;
+
+            const drones = [];
+            for (let j = 0; j < parts.length; j++) {
+                const token = parts[j];
+                const tokenParts = token.split(',');
+                const digits = (tokenParts[0] || "").trim();
+                if (digits.length < 2) continue;
+
+                const typeId = parseInt(digits.charAt(0), 10);
+                const level = parseInt(digits.charAt(1), 10);
+
+                drones.push({
+                    type: Number.isNaN(typeId) ? null : typeId,
+                    kind: resolveDroneKind(typeId),
+                    level: Number.isNaN(level) ? null : level,
+                    position: mapDronePosition(droneCount, j),
+                    dimension: resolveDroneRadius(typeId, level) * 2
+                });
             }
 
-            result.push({
-                type: Number.isNaN(typeId) ? null : typeId,
-                kind: resolveDroneKind(typeId),
-                level: level,
-                upgrades: upgrades,
-                raw: rawEntry
-            });
+            if (drones.length) {
+                groups.push({
+                    position: mapGroupPosition(groupCount, i),
+                    drones
+                });
+            }
         }
 
-        return result;
+        return { groupCount, groupDimension: DRONE_GROUP_DIMENSION, groups };
     }
 
 
