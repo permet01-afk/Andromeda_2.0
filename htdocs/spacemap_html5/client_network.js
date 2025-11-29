@@ -1392,6 +1392,10 @@ function handlePacket_N(parts, i) {
         if (!isNaN(portalId) && portals[portalId]) {
             portals[portalId].playJump = true;
             portals[portalId].jumpStart = performance.now();
+            const portal = portals[portalId];
+            spawnPortalJumpEffect(portal.x, portal.y);
+        } else if (!isNaN(portalId)) {
+            spawnPortalJumpEffect(shipX, shipY);
         }
     }
 

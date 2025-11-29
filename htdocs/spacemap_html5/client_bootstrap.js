@@ -13,6 +13,8 @@
         updateActionCooldowns();
         updateShieldEffects(now);
 
+        updatePortalJumpEffects(now);
+        
         updateLaserBeams(now);
         updateRocketAttacks(now);
         updateDamageBubbles(now);
@@ -54,6 +56,7 @@
         drawShip();
 
         // F. Effets Spéciaux (Toujours au-dessus)
+        drawPortalJumpEffects();
         drawShieldBursts();
         drawExplosions();
         drawRocketAttacks();
