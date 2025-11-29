@@ -47,6 +47,10 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
         content: null,
         frame: null
     };
+    let minimapHoverState = {
+        icon: false,
+        header: false
+    };
     window.showMinimap = true;
 
     // Échelle de la minimap (équivalent du combinedScaleFactor de l'AS3)
@@ -131,6 +135,7 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
         };
     }
     window.getMinimapLayout = getMinimapLayout;
+    window.getMinimapHoverState = () => minimapHoverState;
 
     updateMinimapSize();
 
@@ -618,6 +623,7 @@ const UI_SPRITES = {
     quickbarLockIcon: "graphics/ui/window1/images/18_info_icon.png.png",
     quickbarRotateIcon: "graphics/ui/window1/images/16_log_icon.png.png",
     quickbarMinimizeIcon: "graphics/ui/window1/images/19_help_icon.png.png",
+    minimapWindowIcon: "graphics/ui/window1/images/14_map_icon.png.png",
     iconAmmo: "graphics/ui/actionMenu/images/42_laser.png.png",
     iconRocket: "graphics/ui/actionMenu/images/20_rocket.png.png",
     iconTech: "graphics/ui/actionMenu/images/3_tech_icon.png.png",

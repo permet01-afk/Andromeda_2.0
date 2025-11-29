@@ -579,6 +579,13 @@ canvas.addEventListener("mousemove", (e) => {
     const scaleMouseY = canvas.height / rect.height;
     const screenX = (e.clientX - rect.left) * scaleMouseX;
     const screenY = (e.clientY - rect.top) * scaleMouseY;
+    let cursor = "default";
+
+    const hoverState = (typeof getMinimapHoverState === "function") ? getMinimapHoverState() : null;
+    if (hoverState) {
+        hoverState.icon = false;
+        hoverState.header = false;
+    }
 
     // 1) Déplacement de la Quickbar si on est en drag
     if (isDraggingQuickbar) {
@@ -592,6 +599,7 @@ canvas.addEventListener("mousemove", (e) => {
             y: screenY - minimapDragOffset.y
         };
         minimapPositionDirty = true;
+        cursor = "move";
     }
 
     // 2) Tooltips de la Quickbar
@@ -622,7 +630,7 @@ canvas.addEventListener("mousemove", (e) => {
         // IMPORTANT : on NE fait PAS sendMoveToServer ici
     }
 	
-	// --- GESTION DU CURSEUR (STYLE FLASH) ---
+        // --- GESTION DU CURSEUR (STYLE FLASH) ---
         // On vérifie si on survole quelque chose d'interactif
         
         // 1. On cherche une entité (Vaisseau, NPC, Box) avec le même rayon large (60) que pour le clic
@@ -634,12 +642,34 @@ canvas.addEventListener("mousemove", (e) => {
         // 2. On cherche un portail
         const hoverPortal = findPortalAtScreenPos(screenX, screenY, 40);
 
-        // 3. Si on survole l'un des deux, on change le curseur
-        if (hoverEntity || hoverPortal) {
-            canvas.style.cursor = "pointer"; // La petite main (comme dans Flash)
-        } else {
-            canvas.style.cursor = "default"; // La flèche normale
+        const isMinimapOpen = window.showMinimap !== false;
+        const layout = (typeof getMinimapLayout === "function") ? getMinimapLayout(isMinimapOpen) : null;
+        if (isMinimapOpen && layout && hoverState) {
+            const headerRect = {
+                x: layout.outerX,
+                y: layout.outerY,
+                w: layout.outerWidth,
+                h: MINIMAP_HEADER_HEIGHT
+            };
+            const overIcon = minimapHitboxes.icon && isPointInRect(screenX, screenY, minimapHitboxes.icon);
+            const overHeader = isPointInRect(screenX, screenY, headerRect);
+            hoverState.icon = !!overIcon;
+            hoverState.header = !!overHeader;
+
+            if (overIcon) {
+                cursor = "pointer";
+            } else if (overHeader || isDraggingMinimap) {
+                cursor = "move";
+            }
         }
+
+        if (cursor === "default") {
+            if (hoverEntity || hoverPortal) {
+                cursor = "pointer"; // La petite main (comme dans Flash)
+            }
+        }
+
+        canvas.style.cursor = cursor;
 
 });
 

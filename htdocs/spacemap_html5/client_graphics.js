@@ -87,6 +87,10 @@ function drawMiniMap() {
         headerHeight: 26
     };
 
+    const hoverState = (typeof getMinimapHoverState === "function")
+        ? getMinimapHoverState()
+        : { icon: false, header: false };
+
     const x = layout.contentX;
     const y = layout.contentY;
     const headerY = layout.headerY;
@@ -124,28 +128,38 @@ function drawMiniMap() {
     );
     ctx.restore();
 
-    // Bouton de fermeture (style rond rouge comme sur le SWF)
-    const closeSize = MINIMAP_BUTTON_SIZE;
-    const closeX = layout.outerX + MINIMAP_FRAME_PADDING;
-    const closeY = headerY + (layout.headerHeight - closeSize) / 2;
+    // Icône de la minimap (à la place de la croix)
+    const iconSize = MINIMAP_BUTTON_SIZE;
+    const iconX = layout.outerX + MINIMAP_FRAME_PADDING;
+    const iconY = headerY + (layout.headerHeight - iconSize) / 2;
+    const minimapIcon = getUiImage(UI_SPRITES.minimapWindowIcon);
+    const iconHovered = hoverState.icon === true;
+
     ctx.save();
-    ctx.fillStyle = "#7d271d";
+    ctx.beginPath();
+    ctx.arc(iconX + iconSize / 2, iconY + iconSize / 2, iconSize / 2, 0, Math.PI * 2);
+    ctx.fillStyle = iconHovered ? "#8a623b" : "#5d3a28";
     ctx.strokeStyle = "#d6b48d";
     ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.arc(closeX + closeSize / 2, closeY + closeSize / 2, closeSize / 2, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
-    ctx.strokeStyle = "#f3d1a4";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(closeX + 4, closeY + 4);
-    ctx.lineTo(closeX + closeSize - 4, closeY + closeSize - 4);
-    ctx.moveTo(closeX + closeSize - 4, closeY + 4);
-    ctx.lineTo(closeX + 4, closeY + closeSize - 4);
-    ctx.stroke();
+
+    if (minimapIcon && minimapIcon.complete && minimapIcon.width > 0) {
+        const scale = (iconSize - 4) / Math.max(minimapIcon.width, minimapIcon.height);
+        const drawW = minimapIcon.width * scale;
+        const drawH = minimapIcon.height * scale;
+        ctx.globalAlpha = iconHovered ? 1 : 0.85;
+        ctx.drawImage(
+            minimapIcon,
+            iconX + (iconSize - drawW) / 2,
+            iconY + (iconSize - drawH) / 2,
+            drawW,
+            drawH
+        );
+    }
     ctx.restore();
-    minimapHitboxes.close = { x: closeX, y: closeY, w: closeSize, h: closeSize };
+    minimapHitboxes.icon = { x: iconX, y: iconY, w: iconSize, h: iconSize };
+    minimapHitboxes.close = minimapHitboxes.icon;
 
     // Titre
     ctx.fillStyle = "#f5d1a4";
@@ -412,23 +426,45 @@ function drawMiniMap() {
         }
     }
 
-    // 11. Textes (ID de carte + coordonnées en haut comme sur le client Flash)
+    // 11. Cadre et textes map + coordonnées (autour de la minimap)
+    const infoRectX = layout.outerX + MINIMAP_FRAME_PADDING - 4;
+    const infoRectY = layout.outerY + layout.headerHeight + 2;
+    const infoRectW = layout.outerWidth - (MINIMAP_FRAME_PADDING - 4) * 2;
+    const infoRectH = layout.outerHeight - layout.headerHeight - 4;
+
+    ctx.save();
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(infoRectX + 0.5, infoRectY + 0.5, infoRectW - 1, infoRectH - 1);
+
     const displayX  = Math.round(shipX / 100);
     const displayY  = Math.round(shipY / 100);
     const coordText = `${displayX}/${displayY}`;
-    const mapText   = (currentMapId && currentMapId > 0)
-        ? `${Math.floor(currentMapId / 10)}-${currentMapId % 10}`
-        : "1-1";
+    const formatMapId = (mapId) => {
+        if (!mapId || mapId <= 0) return "1-1";
+        if (mapId < 10) return `1-${mapId}`;
+        return `${Math.floor(mapId / 10)}-${mapId % 10}`;
+    };
+    const mapText   = formatMapId(currentMapId);
+
+    ctx.font = "bold 12px Arial";
+    const labelWidth = ctx.measureText(`${mapText} ${coordText}`).width + 16;
+    const labelHeight = 18;
+    const labelX = infoRectX + 4;
+    const labelY = layout.outerY + layout.headerHeight + MINIMAP_FRAME_PADDING - 6;
+
+    ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
+    ctx.fillRect(labelX - 4, labelY - 12, Math.min(labelWidth, infoRectW - 8), labelHeight);
 
     ctx.fillStyle = "#f5d1a4";
-    ctx.font      = "bold 12px Arial";
     ctx.textAlign = "left";
-    ctx.fillText(mapText, x + 4, y + 12);
+    ctx.fillText(mapText, labelX, labelY);
 
     const mapLabelWidth = ctx.measureText(mapText).width;
     ctx.fillStyle = "#ffffff";
     ctx.textAlign = "left";
-    ctx.fillText(coordText, x + 4 + mapLabelWidth + 8, y + 12);
+    ctx.fillText(coordText, labelX + mapLabelWidth + 8, labelY);
+    ctx.restore();
 }
 
 
