@@ -644,7 +644,7 @@ function drawMiniMap() {
         drawShieldAura(shipScreenX, sy, heroShield, heroMaxShield, heroIshActive, heroInvincible, heroIshSince, heroIshUntil, heroInvSince, heroInvUntil);
 
         if (setting_show_drones && window.heroDrones && window.heroDrones.length > 0) {
-            drawDrones(shipX, shipY, window.heroDrones);
+            drawDrones(shipX, shipY, window.heroDrones, heroAngle);
         }
 
         if (heroName) {
@@ -666,30 +666,51 @@ function drawMiniMap() {
 
         ctx.restore();
     }
+    const DRONE_SPRITE_SETS = {
+        iris: { start: 131, frameCount: 63 },
+        flax: { start: 196, frameCount: 63 }
+    };
 
+    const DRONE_FRAME_DURATION_MS = 1000 / 24; // animation ~24 fps comme le client Flash
+    const DRONE_ORBIT_RADIUS = 38;              // distance en pixels autour du centre du vaisseau
 
+    function getDroneSpriteFrame(kind, frameIndex) {
+        const def = DRONE_SPRITE_SETS[kind] || DRONE_SPRITE_SETS.iris;
+        const idx = ((frameIndex % def.frameCount) + def.frameCount) % def.frameCount;
+        const fileNumber = def.start + idx;
+        return getUiImage(`graphics/assets/drones/images/${fileNumber}.png`);
+    }
+
+    function pickDroneKind(drone) {
+        if (drone && drone.kind) return drone.kind;
+        if (typeof resolveDroneKind === "function" && drone) {
+            return resolveDroneKind(drone.type);
+        }
+        return "iris";
+    }
 
     // Dessin générique des drones autour d'un vaisseau
-    function drawDrones(worldX, worldY, drones) {
+    function drawDrones(worldX, worldY, drones, shipAngle = 0) {
         if (!drones || !drones.length) return;
 
         const count = drones.length;
         const centerX = mapToScreenX(worldX);
         const centerY = mapToScreenY(worldY);
-        const radius = 26;   // distance en pixels autour du vaisseau
-        const size = 8;      // taille du drone (pour l'instant un petit rond)
+        const now = performance.now();
+        const animFrame = Math.floor(now / DRONE_FRAME_DURATION_MS);
+        const baseAngle = (isFinite(shipAngle) ? shipAngle : 0) - Math.PI;
 
         for (let i = 0; i < count; i++) {
-            const angle = (Math.PI * 2 * i) / count;
-            const droneScreenX = centerX + Math.cos(angle) * radius;
-            const droneScreenY = centerY + Math.sin(angle) * radius;
+            const drone = drones[i] || {};
+            const kind = pickDroneKind(drone);
+            const img = getDroneSpriteFrame(kind, animFrame);
+            if (!img || !img.complete || img.width === 0 || img.height === 0) continue;
 
-            ctx.save();
-            ctx.fillStyle = "#ffaa00"; // couleur temporaire, plus tard on mettra un sprite
-            ctx.beginPath();
-            ctx.arc(droneScreenX, droneScreenY, size / 2, 0, Math.PI * 2, false);
-            ctx.fill();
-            ctx.restore();
+            const angle = baseAngle + (Math.PI * 2 * i) / count;
+            const droneScreenX = centerX + Math.cos(angle) * DRONE_ORBIT_RADIUS;
+            const droneScreenY = centerY + Math.sin(angle) * DRONE_ORBIT_RADIUS;
+
+            ctx.drawImage(img, droneScreenX - img.width / 2, droneScreenY - img.height / 2);
         }
     }
 
@@ -769,7 +790,7 @@ function drawMiniMap() {
 
         // Drones de l'entité
         if (setting_show_drones && e.drones && e.drones.length > 0) {
-            drawDrones(e.x, e.y, e.drones);
+            drawDrones(e.x, e.y, e.drones, e.angle || 0);
         }
 
         // Anneau de sélection / cible laser
