@@ -125,10 +125,17 @@
                 y: 0,
                 visibleOnMiniMap: true,
                 targetMaps: [],
-                targetMapId: null
+                targetMapId: null,
+                idleStart: performance.now(),
+                playJump: false,
+                jumpStart: 0
             };
-        } else if (!("targetMapId" in portals[id])) {
-            portals[id].targetMapId = null;
+        } else {
+            const portal = portals[id];
+            if (!("targetMapId" in portal)) portal.targetMapId = null;
+            if (!("idleStart" in portal)) portal.idleStart = performance.now();
+            if (!("playJump" in portal)) portal.playJump = false;
+            if (!("jumpStart" in portal)) portal.jumpStart = 0;
         }
         return portals[id];
     }
