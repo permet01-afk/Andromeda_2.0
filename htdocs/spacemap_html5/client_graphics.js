@@ -826,6 +826,8 @@ function drawMiniMap() {
 
 
     function drawPortals() {
+        const now = performance.now();
+
         for (const pid in portals) {
             const p = portals[pid];
 
@@ -833,7 +835,7 @@ function drawMiniMap() {
             const dx = p.x - shipX;
             const dy = p.y - shipY;
             const distSq = dx * dx + dy * dy;
-            
+
             // Si hors de vue (plus loin que la vision), on passe
             if (distSq > VIEW_RADIUS_SQ) continue;
 
@@ -847,45 +849,80 @@ function drawMiniMap() {
             // 3. LOGIQUE VISUELLE BASÉE SUR LE TYPE FLASH
             // Dans le protocole, typeId 1 = Saut (Jumpgate).
             // Les autres types (0, ou spécifiques comme 80, etc.) sont souvent des bases ou des éléments de décor.
-            
-            if (p.typeId === 1) { 
-                // --- VRAI PORTAIL DE SAUT (Cercle Cyan/Bleu) ---
-                // C'est le "GalaxyGate" graphique
-                ctx.strokeStyle = "#00ffff"; // Cyan brillant
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = "#00ffff";
 
-                const radius = 24; // Taille standard Flash ~
-                
-                // Cercle extérieur
-                ctx.beginPath();
-                ctx.arc(portalScreenX, portalScreenY, radius, 0, Math.PI * 2, false);
-                ctx.stroke();
+            if (p.typeId === 1) {
+                let drawn = false;
+                const portalDef = PORTAL_SPRITE_DEFS.standard;
 
-                // Cercle intérieur (animation visuelle simple)
-                ctx.beginPath();
-                ctx.arc(portalScreenX, portalScreenY, radius - 8, 0, Math.PI * 2, false);
-                ctx.globalAlpha = 0.6;
-                ctx.stroke();
-                
-                // Centre
-                ctx.beginPath();
-                ctx.arc(portalScreenX, portalScreenY, 4, 0, Math.PI * 2, false);
-                ctx.fillStyle = "#ffffff";
-                ctx.fill();
+                if (portalDef) {
+                    if (!p.idleStart) p.idleStart = now;
+
+                    if (p.playJump && p.jumpStart) {
+                        const jumpElapsed = now - p.jumpStart;
+                        if (jumpElapsed <= PORTAL_ACTIVE_DURATION) {
+                            const activeImg = getPortalSpriteFrame("standard", "active", 0);
+                            if (activeImg && activeImg.complete && activeImg.width > 0 && activeImg.height > 0) {
+                                const w = activeImg.width;
+                                const h = activeImg.height;
+                                ctx.drawImage(activeImg, portalScreenX - w / 2, portalScreenY - h / 2, w, h);
+                                drawn = true;
+                            }
+                        } else {
+                            p.playJump = false;
+                            p.jumpStart = 0;
+                        }
+                    }
+
+                    if (!drawn) {
+                        const idleDef = portalDef.idle;
+                        const frameDuration = 1000 / (idleDef.fps || PORTAL_ANIM_FPS);
+                        const elapsed = now - (p.idleStart || now);
+                        const frame = Math.floor(elapsed / frameDuration) % idleDef.frameCount;
+                        const idleImg = getPortalSpriteFrame("standard", "idle", frame);
+                        if (idleImg && idleImg.complete && idleImg.width > 0 && idleImg.height > 0) {
+                            const w = idleImg.width;
+                            const h = idleImg.height;
+                            ctx.drawImage(idleImg, portalScreenX - w / 2, portalScreenY - h / 2, w, h);
+                            drawn = true;
+                        }
+                    }
+                }
+
+                // Fallback vectoriel si les sprites ne sont pas disponibles
+                if (!drawn) {
+                    ctx.strokeStyle = "#00ffff"; // Cyan brillant
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = "#00ffff";
+
+                    const radius = 24;
+
+                    ctx.beginPath();
+                    ctx.arc(portalScreenX, portalScreenY, radius, 0, Math.PI * 2, false);
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.arc(portalScreenX, portalScreenY, radius - 8, 0, Math.PI * 2, false);
+                    ctx.globalAlpha = 0.6;
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.arc(portalScreenX, portalScreenY, 4, 0, Math.PI * 2, false);
+                    ctx.fillStyle = "#ffffff";
+                    ctx.fill();
+                }
 
             } else {
                 // --- BASE / STATION DE RÉPARATION (Carré/Structure) ---
                 // Ce n'est pas un portail de saut, c'est la base (X-1 ou X-8)
                 // Dans le Flash, c'est souvent une image de station, ici on fait un carré symbolique
-                
+
                 ctx.strokeStyle = "#0055ff"; // Bleu foncé (Couleur Firme)
                 ctx.shadowBlur = 0; // Pas de lueur magique
-                
+
                 // Dessin d'une "Base" (Carré avec une croix au milieu pour atterrissage)
                 const baseSize = 80;
                 ctx.strokeRect(portalScreenX - baseSize/2, portalScreenY - baseSize/2, baseSize, baseSize);
-                
+
                 ctx.beginPath();
                 ctx.moveTo(portalScreenX - baseSize/2, portalScreenY - baseSize/2);
                 ctx.lineTo(portalScreenX + baseSize/2, portalScreenY + baseSize/2);
@@ -893,7 +930,7 @@ function drawMiniMap() {
                 ctx.lineTo(portalScreenX - baseSize/2, portalScreenY + baseSize/2);
                 ctx.globalAlpha = 0.3;
                 ctx.stroke();
-                
+
                 // Label
                 ctx.globalAlpha = 1;
                 ctx.fillStyle = "#0055ff";

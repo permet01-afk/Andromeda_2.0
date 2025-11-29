@@ -146,6 +146,7 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
 
     // Distance max pour considérer qu'on est "dans" un portail
     const PORTAL_JUMP_DISTANCE = 400;
+    const PORTAL_ACTIVE_DURATION = 6000; // durée avant retour à l'animation idle
 
     // Rayon de vision
     const VIEW_RADIUS = 1600;
@@ -555,6 +556,25 @@ const STATION_SPRITE_DEFS = {
     "redStation":   { path: "graphics/stations/redStation/1.png" }
 };
 
+// --- SPRITES DE PORTAILS ---
+const PORTAL_ANIM_FPS = 30;
+const PORTAL_SPRITE_DEFS = {
+    standard: {
+        idle: {
+            frameCount: 90,
+            basePath: "graphics/portals/standardGate/sprites/DefineSprite_5_pulseAnimation/",
+            fps: PORTAL_ANIM_FPS,
+            loop: true
+        },
+        active: {
+            frameCount: 1,
+            basePath: "graphics/portals/standardGate/sprites/DefineSprite_8_activeAnimation/",
+            fps: 1,
+            loop: false
+        }
+    }
+};
+
 // --- SPRITES DE BOUCLIERS ---
 const SHIELD_ANIM_FPS = 30;
 const SHIELD_SPRITE_DEFS = {
@@ -691,6 +711,7 @@ let stationImages = {};  // Stockage des images chargées
 // Cache des images déjà chargées
 const shipSpriteCache = {};
 const shieldSpriteCache = {};
+const portalSpriteCache = {};
 const uiImageCache = {};
 
     const QUICKBAR_ICON_LOOKUP = {
@@ -820,6 +841,27 @@ function getShipSpriteFrame(shipId, frameIndex) {
     const fileNumber = idx + 1;
     img.src = def.basePath + fileNumber + ".png";
     shipSpriteCache[key] = img;
+    return img;
+}
+
+function getPortalSpriteFrame(portalType, animation, frameIndex) {
+    const portalDef = PORTAL_SPRITE_DEFS[portalType];
+    if (!portalDef) return null;
+
+    const animDef = portalDef[animation];
+    if (!animDef) return null;
+
+    const frameCount = animDef.frameCount || 1;
+    let idx = frameIndex % frameCount;
+    if (idx < 0) idx += frameCount;
+
+    const key = `${portalType}_${animation}_${idx}`;
+    if (portalSpriteCache[key]) return portalSpriteCache[key];
+
+    const img = new Image();
+    const fileNumber = idx + 1;
+    img.src = animDef.basePath + fileNumber + ".png";
+    portalSpriteCache[key] = img;
     return img;
 }
 
