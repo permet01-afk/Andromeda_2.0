@@ -134,7 +134,8 @@ function drawMiniMap() {
     const iconSize = MINIMAP_BUTTON_SIZE;
     const iconX = layout.outerX + MINIMAP_FRAME_PADDING;
     const iconY = headerY + (layout.headerHeight - iconSize) / 2;
-    const minimapIcon = getUiImage(UI_SPRITES.minimapWindowIcon);
+    const minimapIconPath = UI_SPRITES.mainMenuIconMap || UI_SPRITES.minimapWindowIcon;
+    const minimapIcon = getUiImage(minimapIconPath);
     const iconHovered = hoverState.icon === true;
 
     ctx.save();
@@ -441,7 +442,7 @@ function drawMiniMap() {
         const mapText   = formatMapId(currentMapId);
 
         ctx.save();
-        ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
+        ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
         ctx.fillRect(x, infoY, MINIMAP_WIDTH, infoHeight - 4);
 
         ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
