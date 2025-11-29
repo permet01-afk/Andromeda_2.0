@@ -26,9 +26,22 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
 
     const MINIMAP_BASE_WIDTH  = 200;
     const MINIMAP_BASE_HEIGHT = 150;
+    const MINIMAP_MARGIN = 10;
+    const MINIMAP_FRAME_PADDING = 8;
+    const MINIMAP_HEADER_HEIGHT = 26;
+    const MINIMAP_BUTTON_SIZE = 16;
+
     let MINIMAP_WIDTH  = MINIMAP_BASE_WIDTH;
     let MINIMAP_HEIGHT = MINIMAP_BASE_HEIGHT;
     let minimapZoom = 1;
+    let minimapHitboxes = {
+        icon: null,
+        zoomIn: null,
+        zoomOut: null,
+        content: null,
+        frame: null
+    };
+    window.showMinimap = true;
 
     // Échelle de la minimap (équivalent du combinedScaleFactor de l'AS3)
     function getMiniMapScale() {
@@ -40,13 +53,72 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
         // Dans le client Flash, combinedScaleFactor = 1 / (zoomFactor * 10)
         // => plus le zoomFactor est grand, plus on "voit large" (zoom OUT).
         // Ici on reproduit la même idée : scale ∝ 1 / minimapZoom.
-            return baseScale * minimapZoom;
+        return baseScale * minimapZoom;
     }
 
     function updateMinimapSize() {
         MINIMAP_WIDTH  = MINIMAP_BASE_WIDTH  * minimapZoom;
         MINIMAP_HEIGHT = MINIMAP_BASE_HEIGHT * minimapZoom;
     }
+
+    function updateMinimapZoom(newZoom, options = {}) {
+        const previous = minimapZoom;
+        const clamped  = Math.max(0.5, Math.min(4, newZoom));
+        minimapZoom = clamped;
+        updateMinimapSize();
+
+        if ((clamped !== previous || options.forceSend) && typeof sendSetting === "function") {
+            const serverScale = Math.round(minimapZoom * 8);
+            sendSetting('MINIMAP_SCALE', serverScale);
+        }
+
+        if (options.message) {
+            const msg = (typeof options.message === "function")
+                ? options.message(minimapZoom, previous)
+                : options.message;
+            addInfoMessage(msg);
+        }
+
+        return { previous, current: minimapZoom, changed: clamped !== previous };
+    }
+
+    function zoomMinimapIn() {
+        updateMinimapZoom(minimapZoom * 2, {
+            message: (zoom) => `Taille minimap x${zoom.toFixed(2)}`
+        });
+    }
+
+    function zoomMinimapOut() {
+        updateMinimapZoom(minimapZoom / 2, {
+            message: (zoom) => `Taille minimap x${zoom.toFixed(2)}`
+        });
+    }
+
+    function resetMinimapZoom() {
+        updateMinimapZoom(1, { forceSend: true });
+        addInfoMessage("Taille minimap réinitialisée");
+    }
+
+    function getMinimapLayout(isOpenOverride = null) {
+        const isOpen = (isOpenOverride !== null) ? isOpenOverride : (window.showMinimap !== false);
+        const contentHeight = isOpen ? MINIMAP_HEIGHT : 0;
+
+        const outerWidth  = MINIMAP_WIDTH + MINIMAP_FRAME_PADDING * 2;
+        const outerHeight = MINIMAP_HEADER_HEIGHT + MINIMAP_FRAME_PADDING * 2 + contentHeight;
+        const outerX = canvas.width  - outerWidth  - MINIMAP_MARGIN;
+        const outerY = canvas.height - outerHeight - MINIMAP_MARGIN;
+
+        const contentX = outerX + MINIMAP_FRAME_PADDING;
+        const contentY = outerY + MINIMAP_HEADER_HEIGHT + MINIMAP_FRAME_PADDING;
+
+        return {
+            outerX, outerY, outerWidth, outerHeight,
+            contentX, contentY,
+            headerY: outerY,
+            headerHeight: MINIMAP_HEADER_HEIGHT
+        };
+    }
+    window.getMinimapLayout = getMinimapLayout;
 
     updateMinimapSize();
 

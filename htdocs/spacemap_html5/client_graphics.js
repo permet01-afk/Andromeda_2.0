@@ -76,49 +76,104 @@
 
     // =====================================================================
 function drawMiniMap() {
-    const margin = 10;
-    const x = canvas.width  - MINIMAP_WIDTH  - margin;
-    const y = canvas.height - MINIMAP_HEIGHT - margin;
+    const layout = (typeof getMinimapLayout === "function") ? getMinimapLayout() : {
+        outerX: canvas.width - MINIMAP_WIDTH - 10,
+        outerY: canvas.height - MINIMAP_HEIGHT - 10 - 26 - 16,
+        outerWidth: MINIMAP_WIDTH + 16,
+        outerHeight: MINIMAP_HEIGHT + 26 + 16,
+        contentX: canvas.width - MINIMAP_WIDTH - 10 + 8,
+        contentY: canvas.height - MINIMAP_HEIGHT - 10 + 26,
+        headerY: canvas.height - MINIMAP_HEIGHT - 10 - 26 - 16,
+        headerHeight: 26
+    };
 
-    // 1. FOND ET CADRE
-    const frameImg = getUiImage(UI_SPRITES.minimapFrame);
-    if (frameImg && frameImg.complete && frameImg.width > 0 && frameImg.height > 0) {
-        const pad = 6;
-        ctx.drawImage(
-            frameImg,
-            x - pad,
-            y - pad,
-            MINIMAP_WIDTH + pad * 2,
-            MINIMAP_HEIGHT + pad * 2
-        );
-    }
+    const x = layout.contentX;
+    const y = layout.contentY;
+    const headerY = layout.headerY;
+    const isMinimapOpen = window.showMinimap !== false;
 
-    // Fond noir simple (pas d'image grise)
-    ctx.fillStyle = "black";
-    ctx.fillRect(x, y, MINIMAP_WIDTH, MINIMAP_HEIGHT);
+    minimapHitboxes.icon = null;
+    minimapHitboxes.zoomIn = null;
+    minimapHitboxes.zoomOut = null;
+    minimapHitboxes.frame = { x: layout.outerX, y: layout.outerY, w: layout.outerWidth, h: layout.outerHeight };
+    minimapHitboxes.content = isMinimapOpen ? { x, y, w: MINIMAP_WIDTH, h: MINIMAP_HEIGHT } : null;
 
-    // --- SUPPRIMÉ : overlay avec les angles blancs ---
-    // const mmOverlay = getMinimapSpriteFrame("overlay", 0);
-    // if (mmOverlay && mmOverlay.complete && mmOverlay.width > 0 && mmOverlay.height > 0) {
-    //     ctx.drawImage(mmOverlay, x, y, MINIMAP_WIDTH, MINIMAP_HEIGHT);
-    // }
+    // 1. CADRE ET EN-TÊTE
+    ctx.save();
+    ctx.fillStyle = "#0b0909";
+    ctx.fillRect(layout.outerX, layout.outerY, layout.outerWidth, layout.outerHeight);
 
-    // Bordure
-    ctx.strokeStyle = "#4a6b8c";
-    ctx.lineWidth = 1;
+    const headerGrad = ctx.createLinearGradient(0, headerY, 0, headerY + layout.headerHeight);
+    headerGrad.addColorStop(0, "#4d2b1d");
+    headerGrad.addColorStop(1, "#2d130d");
+    ctx.fillStyle = headerGrad;
+    ctx.fillRect(layout.outerX, headerY, layout.outerWidth, layout.headerHeight);
+
+    ctx.strokeStyle = "#8a5a3a";
+    ctx.lineWidth = 2;
     ctx.strokeRect(
-        x + 0.5,
-        y + 0.5,
-        MINIMAP_WIDTH - 1,
-        MINIMAP_HEIGHT - 1
+        layout.outerX + 0.5,
+        layout.outerY + 0.5,
+        layout.outerWidth - 1,
+        layout.outerHeight - 1
     );
+    ctx.restore();
 
-    // Icône de la minimap dans le coin haut-gauche (comme dans le SWF)
+    // Icône de la minimap dans l'angle du cadre (clic = ouvrir/fermer)
     const mmIconImg = getUiImage(UI_SPRITES.mainMenuIconMap);
     if (mmIconImg && mmIconImg.complete && mmIconImg.width > 0 && mmIconImg.height > 0) {
-        const iconW = 24;
+        const iconW = 20;
         const iconH = iconW * (mmIconImg.height / mmIconImg.width);
-        ctx.drawImage(mmIconImg, x + 4, y + 4, iconW, iconH);
+        const iconX = layout.outerX + MINIMAP_FRAME_PADDING;
+        const iconY = headerY + (layout.headerHeight - iconH) / 2;
+        ctx.drawImage(mmIconImg, iconX, iconY, iconW, iconH);
+        minimapHitboxes.icon = { x: iconX, y: iconY, w: iconW, h: iconH };
+    }
+
+    // Titre
+    ctx.fillStyle = "#f5d1a4";
+    ctx.font = "bold 12px Arial";
+    ctx.textAlign = "left";
+    ctx.fillText("Mini map", layout.outerX + MINIMAP_FRAME_PADDING + 26, headerY + layout.headerHeight - 8);
+
+    // Boutons + / -
+    const buttonY = headerY + (layout.headerHeight - MINIMAP_BUTTON_SIZE) / 2;
+    const zoomOutX = layout.outerX + layout.outerWidth - MINIMAP_FRAME_PADDING - MINIMAP_BUTTON_SIZE;
+    const zoomInX  = zoomOutX - MINIMAP_BUTTON_SIZE - 4;
+
+    function drawHeaderButton(xBtn, label) {
+        const grad = ctx.createLinearGradient(xBtn, buttonY, xBtn, buttonY + MINIMAP_BUTTON_SIZE);
+        grad.addColorStop(0, "#5d3a28");
+        grad.addColorStop(1, "#3b2318");
+        ctx.fillStyle = grad;
+        ctx.strokeStyle = "#9b7555";
+        ctx.lineWidth = 1;
+        ctx.fillRect(xBtn, buttonY, MINIMAP_BUTTON_SIZE, MINIMAP_BUTTON_SIZE);
+        ctx.strokeRect(xBtn + 0.5, buttonY + 0.5, MINIMAP_BUTTON_SIZE - 1, MINIMAP_BUTTON_SIZE - 1);
+        ctx.fillStyle = "#f8e6c8";
+        ctx.font = "bold 12px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(label, xBtn + MINIMAP_BUTTON_SIZE / 2, buttonY + MINIMAP_BUTTON_SIZE / 2 + 0.5);
+    }
+
+    drawHeaderButton(zoomInX, "+");
+    drawHeaderButton(zoomOutX, "-");
+    minimapHitboxes.zoomIn = { x: zoomInX, y: buttonY, w: MINIMAP_BUTTON_SIZE, h: MINIMAP_BUTTON_SIZE };
+    minimapHitboxes.zoomOut = { x: zoomOutX, y: buttonY, w: MINIMAP_BUTTON_SIZE, h: MINIMAP_BUTTON_SIZE };
+
+    // Fond noir simple (pas d'image grise)
+    if (isMinimapOpen) {
+        ctx.fillStyle = "black";
+        ctx.fillRect(x, y, MINIMAP_WIDTH, MINIMAP_HEIGHT);
+    } else {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+        ctx.fillRect(x, y, MINIMAP_WIDTH, MINIMAP_HEIGHT);
+        ctx.fillStyle = "#d6b48d";
+        ctx.font = "italic 11px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("Minimap fermée", x + MINIMAP_WIDTH / 2, y + MINIMAP_HEIGHT / 2);
+        return;
     }
 
     // 2. CALCULS D'ÉCHELLE

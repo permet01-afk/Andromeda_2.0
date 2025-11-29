@@ -64,9 +64,7 @@
         drawRadiationOverlay();
         drawPvpOverlay();
         
-        if (window.showMinimap !== false) {
-            drawMiniMap();
-        }
+        drawMiniMap();
         
         updateHtmlWindows();
         drawTargetWindow();
