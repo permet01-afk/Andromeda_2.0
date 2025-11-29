@@ -27,6 +27,7 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
     const MINIMAP_MARGIN = 10;
     const MINIMAP_FRAME_PADDING = 8;
     const MINIMAP_HEADER_HEIGHT = 26;
+    const MINIMAP_INFO_HEIGHT = 27;
     const MINIMAP_BUTTON_SIZE = 16;
     const MINIMAP_SCALE_MIN = 3;
     const MINIMAP_SCALE_MAX = 11;
@@ -49,7 +50,9 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
     };
     let minimapHoverState = {
         icon: false,
-        header: false
+        header: false,
+        zoomIn: false,
+        zoomOut: false
     };
     window.showMinimap = true;
 
@@ -104,7 +107,7 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
 
     function getMinimapLayout(isOpenOverride = null) {
         const isOpen = (isOpenOverride !== null) ? isOpenOverride : (window.showMinimap !== false);
-        const contentHeight = isOpen ? MINIMAP_HEIGHT : 0;
+        const contentHeight = isOpen ? MINIMAP_HEIGHT + MINIMAP_INFO_HEIGHT : 0;
 
         const outerWidth  = MINIMAP_WIDTH + MINIMAP_FRAME_PADDING * 2;
         const outerHeight = MINIMAP_HEADER_HEIGHT + MINIMAP_FRAME_PADDING * 2 + contentHeight;
@@ -126,10 +129,12 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
 
         const contentX = outerX + MINIMAP_FRAME_PADDING;
         const contentY = outerY + MINIMAP_HEADER_HEIGHT + MINIMAP_FRAME_PADDING;
+        const mapY      = contentY + MINIMAP_INFO_HEIGHT;
 
         return {
             outerX, outerY, outerWidth, outerHeight,
-            contentX, contentY,
+            contentX, contentY, mapY,
+            infoHeight: MINIMAP_INFO_HEIGHT,
             headerY: outerY,
             headerHeight: MINIMAP_HEADER_HEIGHT
         };

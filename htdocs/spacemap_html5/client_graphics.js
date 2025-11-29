@@ -92,7 +92,9 @@ function drawMiniMap() {
         : { icon: false, header: false };
 
     const x = layout.contentX;
+    const infoHeight = layout.infoHeight || 0;
     const y = layout.contentY;
+    const mapY = layout.mapY || (layout.contentY + infoHeight);
     const headerY = layout.headerY;
     const isMinimapOpen = window.showMinimap !== false;
 
@@ -101,7 +103,7 @@ function drawMiniMap() {
     minimapHitboxes.zoomOut = null;
     minimapHitboxes.close = null;
     minimapHitboxes.frame = isMinimapOpen ? { x: layout.outerX, y: layout.outerY, w: layout.outerWidth, h: layout.outerHeight } : null;
-    minimapHitboxes.content = isMinimapOpen ? { x, y, w: MINIMAP_WIDTH, h: MINIMAP_HEIGHT } : null;
+    minimapHitboxes.content = isMinimapOpen ? { x, y: mapY, w: MINIMAP_WIDTH, h: MINIMAP_HEIGHT } : null;
 
     if (!isMinimapOpen) {
         return;
@@ -138,9 +140,11 @@ function drawMiniMap() {
     ctx.save();
     ctx.beginPath();
     ctx.arc(iconX + iconSize / 2, iconY + iconSize / 2, iconSize / 2, 0, Math.PI * 2);
-    ctx.fillStyle = iconHovered ? "#8a623b" : "#5d3a28";
-    ctx.strokeStyle = "#d6b48d";
+    ctx.fillStyle = iconHovered ? "#0d3927" : "#5d3a28";
+    ctx.strokeStyle = iconHovered ? "#00ff7f" : "#d6b48d";
     ctx.lineWidth = 1.5;
+    ctx.shadowColor = iconHovered ? "rgba(0, 255, 127, 0.7)" : "transparent";
+    ctx.shadowBlur = iconHovered ? 8 : 0;
     ctx.fill();
     ctx.stroke();
 
@@ -172,15 +176,12 @@ function drawMiniMap() {
     const zoomOutX = layout.outerX + layout.outerWidth - MINIMAP_FRAME_PADDING - MINIMAP_BUTTON_SIZE;
     const zoomInX  = zoomOutX - MINIMAP_BUTTON_SIZE - 4;
 
-    function drawHeaderButton(xBtn, label) {
+    function drawHeaderButton(xBtn, label, hovered) {
         const grad = ctx.createLinearGradient(xBtn, buttonY, xBtn, buttonY + MINIMAP_BUTTON_SIZE);
-        grad.addColorStop(0, "#5d3a28");
-        grad.addColorStop(1, "#3b2318");
+        grad.addColorStop(0, hovered ? "#2e8b57" : "#5d3a28");
+        grad.addColorStop(1, hovered ? "#1f5f3c" : "#3b2318");
         ctx.fillStyle = grad;
-        ctx.strokeStyle = "#9b7555";
-        ctx.lineWidth = 1;
         ctx.fillRect(xBtn, buttonY, MINIMAP_BUTTON_SIZE, MINIMAP_BUTTON_SIZE);
-        ctx.strokeRect(xBtn + 0.5, buttonY + 0.5, MINIMAP_BUTTON_SIZE - 1, MINIMAP_BUTTON_SIZE - 1);
         ctx.fillStyle = "#f8e6c8";
         ctx.font = "bold 12px Arial";
         ctx.textAlign = "center";
@@ -188,13 +189,13 @@ function drawMiniMap() {
         ctx.fillText(label, xBtn + MINIMAP_BUTTON_SIZE / 2, buttonY + MINIMAP_BUTTON_SIZE / 2 + 0.5);
     }
 
-    drawHeaderButton(zoomInX, "+");
-    drawHeaderButton(zoomOutX, "-");
+    drawHeaderButton(zoomInX, "+", hoverState.zoomIn === true);
+    drawHeaderButton(zoomOutX, "-", hoverState.zoomOut === true);
     minimapHitboxes.zoomIn = { x: zoomInX, y: buttonY, w: MINIMAP_BUTTON_SIZE, h: MINIMAP_BUTTON_SIZE };
     minimapHitboxes.zoomOut = { x: zoomOutX, y: buttonY, w: MINIMAP_BUTTON_SIZE, h: MINIMAP_BUTTON_SIZE };
     // Fond noir simple (pas d'image grise)
     ctx.fillStyle = "black";
-    ctx.fillRect(x, y, MINIMAP_WIDTH, MINIMAP_HEIGHT);
+    ctx.fillRect(x, mapY, MINIMAP_WIDTH, MINIMAP_HEIGHT);
 
     // 2. CALCULS D'ÉCHELLE
     const scale   = (typeof getMiniMapScale === "function")
@@ -207,18 +208,18 @@ function drawMiniMap() {
     const offsetY = (MINIMAP_HEIGHT - realH) / 2;
 
     const toMiniX = (wx) => x + offsetX + (wx * scale);
-    const toMiniY = (wy) => y + offsetY + (wy * scale);
+    const toMiniY = (wy) => mapY + offsetY + (wy * scale);
 
     // 3. VISEUR (croix sur la position du joueur)
     const px = toMiniX(shipX);
     const py = toMiniY(shipY);
 
-    if (px >= x && px <= x + MINIMAP_WIDTH && py >= y && py <= y + MINIMAP_HEIGHT) {
+    if (px >= x && px <= x + MINIMAP_WIDTH && py >= mapY && py <= mapY + MINIMAP_HEIGHT) {
         ctx.save();
         ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
         ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(x, py); ctx.lineTo(x + MINIMAP_WIDTH, py); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(px, y); ctx.lineTo(px, y + MINIMAP_HEIGHT); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(px, mapY); ctx.lineTo(px, mapY + MINIMAP_HEIGHT); ctx.stroke();
         ctx.restore();
     }
 
@@ -231,7 +232,7 @@ function drawMiniMap() {
         const mx = toMiniX(p.x);
         const my = toMiniY(p.y);
 
-        if (mx >= x && mx <= x + MINIMAP_WIDTH && my >= y && my <= y + MINIMAP_HEIGHT) {
+        if (mx >= x && mx <= x + MINIMAP_WIDTH && my >= mapY && my <= mapY + MINIMAP_HEIGHT) {
             if (portalIcon && portalIcon.complete && portalIcon.width > 0) {
                 const pw = portalIcon.width;
                 const ph = portalIcon.height;
@@ -250,7 +251,7 @@ function drawMiniMap() {
     for (const s of stations) {
         const mx = toMiniX(s.x);
         const my = toMiniY(s.y);
-        if (mx >= x && mx <= x + MINIMAP_WIDTH && my >= y && my <= y + MINIMAP_HEIGHT) {
+        if (mx >= x && mx <= x + MINIMAP_WIDTH && my >= mapY && my <= mapY + MINIMAP_HEIGHT) {
             const stationImg = stationImages[s.type];
             if (stationImg && stationImg.complete && stationImg.width > 0) {
                 const targetHeight = 26;
@@ -292,7 +293,7 @@ function drawMiniMap() {
         const mx = toMiniX(e.x);
         const my = toMiniY(e.y);
 
-        if (mx >= x && mx <= x + MINIMAP_WIDTH && my >= y && my <= y + MINIMAP_HEIGHT) {
+        if (mx >= x && mx <= x + MINIMAP_WIDTH && my >= mapY && my <= mapY + MINIMAP_HEIGHT) {
             const nameLower = (e.name || "").toLowerCase();
             const isSpaceball = nameLower.includes("spaceball");
 
@@ -331,7 +332,7 @@ function drawMiniMap() {
     if (moveTargetX !== null && moveTargetY !== null) {
         const tx = toMiniX(moveTargetX);
         const ty = toMiniY(moveTargetY);
-        if (tx >= x && tx <= x + MINIMAP_WIDTH && ty >= y && ty <= y + MINIMAP_HEIGHT) {
+        if (tx >= x && tx <= x + MINIMAP_WIDTH && ty >= mapY && ty <= mapY + MINIMAP_HEIGHT) {
             const finishIcon = getUiImage(UI_SPRITES.minimapFinishIcon);
             if (finishIcon && finishIcon.complete && finishIcon.width > 0) {
                 ctx.drawImage(
@@ -372,7 +373,7 @@ function drawMiniMap() {
         }
         const mx = toMiniX(ping.x);
         const my = toMiniY(ping.y);
-        if (mx >= x && mx <= x + MINIMAP_WIDTH && my >= y && my <= y + MINIMAP_HEIGHT) {
+        if (mx >= x && mx <= x + MINIMAP_WIDTH && my >= mapY && my <= mapY + MINIMAP_HEIGHT) {
             const def   = MINIMAP_SPRITE_DEFS.groupPing;
             const frame = Math.floor(((nowMs - ping.createdAt) / 1000) * def.fps);
             const pingImg = getMinimapSpriteFrame(
@@ -399,7 +400,7 @@ function drawMiniMap() {
     }
 
     // 10. Joueur (point central + alerte ennemis proches)
-    if (px >= x && px <= x + MINIMAP_WIDTH && py >= y && py <= y + MINIMAP_HEIGHT) {
+    if (px >= x && px <= x + MINIMAP_WIDTH && py >= mapY && py <= mapY + MINIMAP_HEIGHT) {
         ctx.fillStyle = "white";
         ctx.fillRect(px - 2, py - 2, 4, 4);
 
@@ -426,45 +427,42 @@ function drawMiniMap() {
         }
     }
 
-    // 11. Cadre et textes map + coordonnées (autour de la minimap)
-    const infoRectX = layout.outerX + MINIMAP_FRAME_PADDING - 4;
-    const infoRectY = layout.outerY + layout.headerHeight + 2;
-    const infoRectW = layout.outerWidth - (MINIMAP_FRAME_PADDING - 4) * 2;
-    const infoRectH = layout.outerHeight - layout.headerHeight - 4;
+    // 11. Cadre et textes map + coordonnées (bande séparée au-dessus de la carte)
+    if (infoHeight > 0) {
+        const infoY = y;
+        const displayX  = Math.round(shipX / 100);
+        const displayY  = Math.round(shipY / 100);
+        const coordText = `${displayX}/${displayY}`;
+        const formatMapId = (mapId) => {
+            if (!mapId || mapId <= 0) return "1-1";
+            if (mapId < 10) return `1-${mapId}`;
+            return `${Math.floor(mapId / 10)}-${mapId % 10}`;
+        };
+        const mapText   = formatMapId(currentMapId);
 
-    ctx.save();
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(infoRectX + 0.5, infoRectY + 0.5, infoRectW - 1, infoRectH - 1);
+        ctx.save();
+        ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
+        ctx.fillRect(x, infoY, MINIMAP_WIDTH, infoHeight - 4);
 
-    const displayX  = Math.round(shipX / 100);
-    const displayY  = Math.round(shipY / 100);
-    const coordText = `${displayX}/${displayY}`;
-    const formatMapId = (mapId) => {
-        if (!mapId || mapId <= 0) return "1-1";
-        if (mapId < 10) return `1-${mapId}`;
-        return `${Math.floor(mapId / 10)}-${mapId % 10}`;
-    };
-    const mapText   = formatMapId(currentMapId);
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, mapY - 1);
+        ctx.lineTo(x + MINIMAP_WIDTH, mapY - 1);
+        ctx.stroke();
 
-    ctx.font = "bold 12px Arial";
-    const labelWidth = ctx.measureText(`${mapText} ${coordText}`).width + 16;
-    const labelHeight = 18;
-    const labelX = infoRectX + 4;
-    const labelY = layout.outerY + layout.headerHeight + MINIMAP_FRAME_PADDING - 6;
+        ctx.font = "bold 12px Arial";
+        ctx.textAlign = "left";
+        const labelY = infoY + infoHeight - 10;
 
-    ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
-    ctx.fillRect(labelX - 4, labelY - 12, Math.min(labelWidth, infoRectW - 8), labelHeight);
+        ctx.fillStyle = "#f5d1a4";
+        ctx.fillText(mapText, x + 2, labelY);
 
-    ctx.fillStyle = "#f5d1a4";
-    ctx.textAlign = "left";
-    ctx.fillText(mapText, labelX, labelY);
-
-    const mapLabelWidth = ctx.measureText(mapText).width;
-    ctx.fillStyle = "#ffffff";
-    ctx.textAlign = "left";
-    ctx.fillText(coordText, labelX + mapLabelWidth + 8, labelY);
-    ctx.restore();
+        const mapLabelWidth = ctx.measureText(mapText).width;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText(coordText, x + 2 + mapLabelWidth + 8, labelY);
+        ctx.restore();
+    }
 }
 
 
