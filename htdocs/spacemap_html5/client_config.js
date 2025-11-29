@@ -1789,5 +1789,3 @@ loadQuickbarLayout();
     function sendQuestTurnIn(questId) {
         sendRaw(`9|done|${questId}`);
     }
-
-

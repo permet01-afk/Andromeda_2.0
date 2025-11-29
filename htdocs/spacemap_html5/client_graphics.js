@@ -75,232 +75,299 @@
     }
 
     // =====================================================================
-    function drawMiniMap() {
-        const margin = 10;
-        const x = canvas.width  - MINIMAP_WIDTH  - margin;
-        const y = canvas.height - MINIMAP_HEIGHT - margin;
+function drawMiniMap() {
+    const margin = 10;
+    const x = canvas.width  - MINIMAP_WIDTH  - margin;
+    const y = canvas.height - MINIMAP_HEIGHT - margin;
 
-        // 1. FOND ET CADRE
-        const frameImg = getUiImage(UI_SPRITES.minimapFrame);
-        if (frameImg && frameImg.complete && frameImg.width > 0 && frameImg.height > 0) {
-            const pad = 6;
-            ctx.drawImage(frameImg, x - pad, y - pad, MINIMAP_WIDTH + pad * 2, MINIMAP_HEIGHT + pad * 2);
-        }
-
-        const mmBg = getUiImage(UI_SPRITES.minimapBg);
-        if (mmBg && mmBg.complete && mmBg.width > 0 && mmBg.height > 0) {
-            ctx.drawImage(mmBg, x, y, MINIMAP_WIDTH, MINIMAP_HEIGHT);
-        } else {
-            ctx.save();
-            ctx.globalAlpha = 0.85;
-            ctx.fillStyle = "rgba(0, 0, 0, 0.9)";
-            ctx.fillRect(x, y, MINIMAP_WIDTH, MINIMAP_HEIGHT);
-            ctx.restore();
-        }
-        const mmGrid = getUiImage(UI_SPRITES.minimapGrid);
-        if (mmGrid && mmGrid.complete && mmGrid.width > 0 && mmGrid.height > 0) {
-            ctx.drawImage(mmGrid, x, y, MINIMAP_WIDTH, MINIMAP_HEIGHT);
-        }
-        const mmOverlay = getMinimapSpriteFrame("overlay", 0);
-        if (mmOverlay && mmOverlay.complete && mmOverlay.width > 0 && mmOverlay.height > 0) {
-            ctx.drawImage(mmOverlay, x, y, MINIMAP_WIDTH, MINIMAP_HEIGHT);
-        }
-        ctx.strokeStyle = "#4a6b8c";
-        ctx.lineWidth = 1;
-        ctx.strokeRect(x + 0.5, y + 0.5, MINIMAP_WIDTH - 1, MINIMAP_HEIGHT - 1);
-
-        // Calculs d'échelle
-        const scale = getMiniMapScale ? getMiniMapScale() : (MINIMAP_WIDTH / MAP_WIDTH);
-        const realW = MAP_WIDTH * scale;
-        const realH = MAP_HEIGHT * scale;
-        const offsetX = (MINIMAP_WIDTH  - realW) / 2;
-        const offsetY = (MINIMAP_HEIGHT - realH) / 2;
-
-        const toMiniX = (wx) => x + offsetX + (wx * scale);
-        const toMiniY = (wy) => y + offsetY + (wy * scale);
-
-        // 2. VISEUR (Croix sur la position joueur)
-        const px = toMiniX(shipX);
-        const py = toMiniY(shipY);
-        
-        if (px >= x && px <= x + MINIMAP_WIDTH && py >= y && py <= y + MINIMAP_HEIGHT) {
-            ctx.save();
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
-            ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.moveTo(x, py); ctx.lineTo(x + MINIMAP_WIDTH, py); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(px, y); ctx.lineTo(px, y + MINIMAP_HEIGHT); ctx.stroke();
-            ctx.restore();
-        }
-
-        // --- 3. PORTAILS & BASES (TOUJOURS VISIBLES) ---
-        const portalIcon = getUiImage(UI_SPRITES.minimapPortalIcon);
-        for (const pid in portals) {
-            const p = portals[pid];
-            if (p.visibleOnMiniMap === false) continue;
-
-            const mx = toMiniX(p.x);
-            const my = toMiniY(p.y);
-
-            if (mx >= x && mx <= x + MINIMAP_WIDTH && my >= y && my <= y + MINIMAP_HEIGHT) {
-                if (portalIcon && portalIcon.complete && portalIcon.width > 0) {
-                    const pw = portalIcon.width;
-                    const ph = portalIcon.height;
-                    ctx.drawImage(portalIcon, mx - pw / 2, my - ph / 2, pw, ph);
-                } else {
-                    ctx.strokeStyle = "#00ffff"; // Saut
-                    ctx.lineWidth = 1.5;
-                    ctx.beginPath();
-                    ctx.arc(mx, my, 3, 0, Math.PI * 2);
-                    ctx.stroke();
-                }
-            }
-        }
-
-        const stationIcon = getUiImage(UI_SPRITES.minimapStationIcon);
-        if (stationIcon && stationIcon.complete && stationIcon.width > 0) {
-            for (const s of stations) {
-                const mx = toMiniX(s.x);
-                const my = toMiniY(s.y);
-                if (mx >= x && mx <= x + MINIMAP_WIDTH && my >= y && my <= y + MINIMAP_HEIGHT) {
-                    ctx.drawImage(stationIcon, mx - stationIcon.width / 2, my - stationIcon.height / 2, stationIcon.width, stationIcon.height);
-                }
-            }
-        }
-
-        // --- 4. ENTITÉS (AVEC CORRECTION LOCK) ---
-        for (const id in entities) {
-            const e = entities[id];
-            if (!isEntityVisibleOnMap(e)) continue;
-
-            const isGroupMember = (groupMembers[e.id] !== undefined);
-            // CORRECTION : La cible verrouillée est TOUJOURS visible
-            const isLockedTarget = (selectedTargetId !== null && e.id == selectedTargetId);
-
-            // Filtre Radar : On cache si loin, SAUF si Groupe OU Cible
-            if (!isGroupMember && !isLockedTarget) {
-                const dx = e.x - shipX;
-                const dy = e.y - shipY;
-                if (dx*dx + dy*dy > MINIMAP_VIEW_RADIUS_SQ) continue;
-            }
-
-            const mx = toMiniX(e.x);
-            const my = toMiniY(e.y);
-            
-            if (mx >= x && mx <= x + MINIMAP_WIDTH && my >= y && my <= y + MINIMAP_HEIGHT) {
-                const nameLower = (e.name || "").toLowerCase();
-                const isSpaceball = nameLower.includes("spaceball");
-
-                if (isSpaceball) {
-                    const sbIcon = getUiImage(UI_SPRITES.minimapSpaceballIcon);
-                    if (sbIcon && sbIcon.complete && sbIcon.width > 0) {
-                        ctx.drawImage(sbIcon, mx - sbIcon.width / 2, my - sbIcon.height / 2, sbIcon.width, sbIcon.height);
-                        continue;
-                    }
-                }
-
-                ctx.fillStyle = getEntityColor(e);
-                let size = isGroupMember ? 4 : 2;
-
-                if (isLockedTarget) {
-                    size = 4;
-                    ctx.fillStyle = "#ff0000"; // Force rouge
-                    ctx.save();
-                    ctx.strokeStyle = "#ff0000";
-                    ctx.lineWidth = 1;
-                    ctx.strokeRect(mx - 4, my - 4, 8, 8);
-                    ctx.restore();
-                }
-
-                ctx.fillRect(mx - size/2, my - size/2, size, size);
-            }
-        }
-
-        // 4b. Point de destination (clic minimap / mouvement manuel)
-        if (moveTargetX !== null && moveTargetY !== null) {
-            const tx = toMiniX(moveTargetX);
-            const ty = toMiniY(moveTargetY);
-            if (tx >= x && tx <= x + MINIMAP_WIDTH && ty >= y && ty <= y + MINIMAP_HEIGHT) {
-                const finishIcon = getUiImage(UI_SPRITES.minimapFinishIcon);
-                if (finishIcon && finishIcon.complete && finishIcon.width > 0) {
-                    ctx.drawImage(finishIcon, tx - finishIcon.width / 2, ty - finishIcon.height / 2, finishIcon.width, finishIcon.height);
-                } else {
-                    ctx.save();
-                    ctx.strokeStyle = "#00ff00";
-                    ctx.beginPath();
-                    ctx.arc(tx, ty, 4, 0, Math.PI * 2);
-                    ctx.stroke();
-                    ctx.restore();
-                }
-            }
-        }
-
-        // 5. Cadre de vue
-        const viewW = canvas.width * scale;
-        const viewH = canvas.height * scale;
-        const miniViewX = px - viewW/2;
-        const miniViewY = py - viewH/2;
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
-        ctx.lineWidth = 1;
-        ctx.strokeRect(miniViewX, miniViewY, viewW, viewH);
-
-        // 6. Pings Groupe
-        const nowMs = performance.now();
-        for (let idx = groupPings.length - 1; idx >= 0; idx--) {
-            const ping = groupPings[idx];
-            if (nowMs - ping.createdAt > 5000) { groupPings.splice(idx, 1); continue; }
-            const mx = toMiniX(ping.x);
-            const my = toMiniY(ping.y);
-            if (mx >= x && mx <= x + MINIMAP_WIDTH && my >= y && my <= y + MINIMAP_HEIGHT) {
-                const def = MINIMAP_SPRITE_DEFS.groupPing;
-                const frame = Math.floor(((nowMs - ping.createdAt) / 1000) * def.fps);
-                const pingImg = getMinimapSpriteFrame("groupPing", def.loop ? frame % def.frameCount : Math.min(frame, def.frameCount - 1));
-                if (pingImg && pingImg.complete && pingImg.width > 0) {
-                    ctx.save();
-                    const size = Math.max(pingImg.width, pingImg.height);
-                    ctx.globalAlpha = 1 - Math.min((nowMs - ping.createdAt) / 5000, 1);
-                    ctx.drawImage(pingImg, mx - size / 2, my - size / 2, size, size);
-                    ctx.restore();
-                } else {
-                    ctx.save();
-                    ctx.strokeStyle = "#ffff00"; ctx.lineWidth = 2;
-                    const anim = (nowMs - ping.createdAt) / 1000;
-                    const r = 2 + (anim % 1) * 10;
-                    ctx.globalAlpha = 1 - (anim % 1);
-                    ctx.beginPath(); ctx.arc(mx, my, r, 0, Math.PI * 2); ctx.stroke();
-                    ctx.restore();
-                }
-            }
-        }
-
-        // 7. Joueur
-        if (px >= x && px <= x + MINIMAP_WIDTH && py >= y && py <= y + MINIMAP_HEIGHT) {
-            ctx.fillStyle = "white";
-            ctx.fillRect(px - 2, py - 2, 4, 4);
-
-            // Alerte ennemi proche (icône)
-            const alertImg = getUiImage(UI_SPRITES.minimapAlertIcon);
-            if (alertImg && alertImg.complete && alertImg.width > 0) {
-                const threat = Object.values(entities).some(ent => ent && ent.kind === "player" && ent.factionId && heroFactionId && ent.factionId !== heroFactionId && Math.hypot(ent.x - shipX, ent.y - shipY) < 2000);
-                if (threat) {
-                    ctx.drawImage(alertImg, px - alertImg.width / 2, py - alertImg.height / 2, alertImg.width, alertImg.height);
-                }
-            }
-        }
-
-        // 8. Textes
-        const displayX = Math.round(shipX / 100);
-        const displayY = Math.round(shipY / 100);
-        const coordText = `${displayX} / ${displayY}`;
-        const mapText = `${cfg.mapID || 1}-1`;
-
-        ctx.fillStyle = "#ccc";
-        ctx.font = "10px Arial";
-        ctx.textAlign = "left";
-        ctx.fillText(mapText, x + 4, y + 12);
-        ctx.fillStyle = "#fff";
-        ctx.textAlign = "center";
-        ctx.fillText(coordText, x + MINIMAP_WIDTH / 2, y + MINIMAP_HEIGHT - 4);
+    // 1. FOND ET CADRE
+    const frameImg = getUiImage(UI_SPRITES.minimapFrame);
+    if (frameImg && frameImg.complete && frameImg.width > 0 && frameImg.height > 0) {
+        const pad = 6;
+        ctx.drawImage(
+            frameImg,
+            x - pad,
+            y - pad,
+            MINIMAP_WIDTH + pad * 2,
+            MINIMAP_HEIGHT + pad * 2
+        );
     }
+
+    // --- NOUVEAU : fond simple sans image ---
+    ctx.save();
+    ctx.globalAlpha = 0.85;
+    ctx.fillStyle = "rgba(0, 0, 0, 0.9)";
+    ctx.fillRect(x, y, MINIMAP_WIDTH, MINIMAP_HEIGHT);
+    ctx.restore();
+
+    // Grille (conservée)
+    const mmGrid = getUiImage(UI_SPRITES.minimapGrid);
+    if (mmGrid && mmGrid.complete && mmGrid.width > 0 && mmGrid.height > 0) {
+        ctx.drawImage(mmGrid, x, y, MINIMAP_WIDTH, MINIMAP_HEIGHT);
+    }
+
+    // --- SUPPRIMÉ : overlay avec les angles blancs ---
+    // const mmOverlay = getMinimapSpriteFrame("overlay", 0);
+    // if (mmOverlay && mmOverlay.complete && mmOverlay.width > 0 && mmOverlay.height > 0) {
+    //     ctx.drawImage(mmOverlay, x, y, MINIMAP_WIDTH, MINIMAP_HEIGHT);
+    // }
+
+    // Bordure
+    ctx.strokeStyle = "#4a6b8c";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(
+        x + 0.5,
+        y + 0.5,
+        MINIMAP_WIDTH - 1,
+        MINIMAP_HEIGHT - 1
+    );
+
+    // Icône de la minimap dans le coin haut-gauche (comme dans le SWF)
+    const mmIconImg = getUiImage(UI_SPRITES.mainMenuIconMap);
+    if (mmIconImg && mmIconImg.complete && mmIconImg.width > 0 && mmIconImg.height > 0) {
+        const iconW = 24;
+        const iconH = iconW * (mmIconImg.height / mmIconImg.width);
+        ctx.drawImage(mmIconImg, x + 4, y + 4, iconW, iconH);
+    }
+
+    // 2. CALCULS D'ÉCHELLE
+    const scale   = (typeof getMiniMapScale === "function")
+        ? getMiniMapScale()
+        : (MINIMAP_WIDTH / MAP_WIDTH);
+
+    const realW   = MAP_WIDTH  * scale;
+    const realH   = MAP_HEIGHT * scale;
+    const offsetX = (MINIMAP_WIDTH  - realW)  / 2;
+    const offsetY = (MINIMAP_HEIGHT - realH) / 2;
+
+    const toMiniX = (wx) => x + offsetX + (wx * scale);
+    const toMiniY = (wy) => y + offsetY + (wy * scale);
+
+    // 3. VISEUR (croix sur la position du joueur)
+    const px = toMiniX(shipX);
+    const py = toMiniY(shipY);
+
+    if (px >= x && px <= x + MINIMAP_WIDTH && py >= y && py <= y + MINIMAP_HEIGHT) {
+        ctx.save();
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(x, py); ctx.lineTo(x + MINIMAP_WIDTH, py); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(px, y); ctx.lineTo(px, y + MINIMAP_HEIGHT); ctx.stroke();
+        ctx.restore();
+    }
+
+    // 4. PORTAILS
+    const portalIcon = getUiImage(UI_SPRITES.minimapPortalIcon);
+    for (const pid in portals) {
+        const p = portals[pid];
+        if (p.visibleOnMiniMap === false) continue;
+
+        const mx = toMiniX(p.x);
+        const my = toMiniY(p.y);
+
+        if (mx >= x && mx <= x + MINIMAP_WIDTH && my >= y && my <= y + MINIMAP_HEIGHT) {
+            if (portalIcon && portalIcon.complete && portalIcon.width > 0) {
+                const pw = portalIcon.width;
+                const ph = portalIcon.height;
+                ctx.drawImage(portalIcon, mx - pw / 2, my - ph / 2, pw, ph);
+            } else {
+                ctx.strokeStyle = "#00ffff";
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(mx, my, 3, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        }
+    }
+
+    // 5. STATIONS
+    const stationIcon = getUiImage(UI_SPRITES.minimapStationIcon);
+    if (stationIcon && stationIcon.complete && stationIcon.width > 0) {
+        for (const s of stations) {
+            const mx = toMiniX(s.x);
+            const my = toMiniY(s.y);
+            if (mx >= x && mx <= x + MINIMAP_WIDTH && my >= y && my <= y + MINIMAP_HEIGHT) {
+                ctx.drawImage(
+                    stationIcon,
+                    mx - stationIcon.width / 2,
+                    my - stationIcon.height / 2,
+                    stationIcon.width,
+                    stationIcon.height
+                );
+            }
+        }
+    }
+
+    // 6. ENTITÉS (avec correction pour la cible lockée)
+    for (const id in entities) {
+        const e = entities[id];
+        if (!isEntityVisibleOnMap(e)) continue;
+
+        const isGroupMember  = (groupMembers[e.id] !== undefined);
+        const isLockedTarget = (selectedTargetId !== null && e.id == selectedTargetId);
+
+        // Filtre radar : on cache si loin, SAUF si groupe ou cible
+        if (!isGroupMember && !isLockedTarget) {
+            const dx = e.x - shipX;
+            const dy = e.y - shipY;
+            if (dx * dx + dy * dy > MINIMAP_VIEW_RADIUS_SQ) continue;
+        }
+
+        const mx = toMiniX(e.x);
+        const my = toMiniY(e.y);
+
+        if (mx >= x && mx <= x + MINIMAP_WIDTH && my >= y && my <= y + MINIMAP_HEIGHT) {
+            const nameLower = (e.name || "").toLowerCase();
+            const isSpaceball = nameLower.includes("spaceball");
+
+            if (isSpaceball) {
+                const sbIcon = getUiImage(UI_SPRITES.minimapSpaceballIcon);
+                if (sbIcon && sbIcon.complete && sbIcon.width > 0) {
+                    ctx.drawImage(
+                        sbIcon,
+                        mx - sbIcon.width / 2,
+                        my - sbIcon.height / 2,
+                        sbIcon.width,
+                        sbIcon.height
+                    );
+                    continue;
+                }
+            }
+
+            ctx.fillStyle = getEntityColor(e);
+            let size = isGroupMember ? 4 : 2;
+
+            if (isLockedTarget) {
+                size = 4;
+                ctx.fillStyle = "#ff0000";
+                ctx.save();
+                ctx.strokeStyle = "#ff0000";
+                ctx.lineWidth = 1;
+                ctx.strokeRect(mx - 4, my - 4, 8, 8);
+                ctx.restore();
+            }
+
+            ctx.fillRect(mx - size / 2, my - size / 2, size, size);
+        }
+    }
+
+    // 7. Point de destination (clic minimap / mouvement manuel)
+    if (moveTargetX !== null && moveTargetY !== null) {
+        const tx = toMiniX(moveTargetX);
+        const ty = toMiniY(moveTargetY);
+        if (tx >= x && tx <= x + MINIMAP_WIDTH && ty >= y && ty <= y + MINIMAP_HEIGHT) {
+            const finishIcon = getUiImage(UI_SPRITES.minimapFinishIcon);
+            if (finishIcon && finishIcon.complete && finishIcon.width > 0) {
+                ctx.drawImage(
+                    finishIcon,
+                    tx - finishIcon.width / 2,
+                    ty - finishIcon.height / 2,
+                    finishIcon.width,
+                    finishIcon.height
+                );
+            } else {
+                ctx.save();
+                ctx.strokeStyle = "#00ff00";
+                ctx.beginPath();
+                ctx.arc(tx, ty, 4, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+    }
+
+    // 8. Cadre de vue
+    const viewW     = canvas.width  * scale;
+    const viewH     = canvas.height * scale;
+    const miniViewX = px - viewW / 2;
+    const miniViewY = py - viewH / 2;
+
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+    ctx.lineWidth   = 1;
+    ctx.strokeRect(miniViewX, miniViewY, viewW, viewH);
+
+    // 9. Pings de groupe
+    const nowMs = performance.now();
+    for (let idx = groupPings.length - 1; idx >= 0; idx--) {
+        const ping = groupPings[idx];
+        if (nowMs - ping.createdAt > 5000) {
+            groupPings.splice(idx, 1);
+            continue;
+        }
+        const mx = toMiniX(ping.x);
+        const my = toMiniY(ping.y);
+        if (mx >= x && mx <= x + MINIMAP_WIDTH && my >= y && my <= y + MINIMAP_HEIGHT) {
+            const def   = MINIMAP_SPRITE_DEFS.groupPing;
+            const frame = Math.floor(((nowMs - ping.createdAt) / 1000) * def.fps);
+            const pingImg = getMinimapSpriteFrame(
+                "groupPing",
+                def.loop ? frame % def.frameCount : Math.min(frame, def.frameCount - 1)
+            );
+            if (pingImg && pingImg.complete && pingImg.width > 0) {
+                ctx.save();
+                const size = Math.max(pingImg.width, pingImg.height);
+                ctx.globalAlpha = 1 - Math.min((nowMs - ping.createdAt) / 5000, 1);
+                ctx.drawImage(pingImg, mx - size / 2, my - size / 2, size, size);
+                ctx.restore();
+            } else {
+                ctx.save();
+                ctx.strokeStyle = "#ffff00";
+                ctx.lineWidth   = 2;
+                const anim = (nowMs - ping.createdAt) / 1000;
+                const r    = 2 + (anim % 1) * 10;
+                ctx.globalAlpha = 1 - (anim % 1);
+                ctx.beginPath(); ctx.arc(mx, my, r, 0, Math.PI * 2); ctx.stroke();
+                ctx.restore();
+            }
+        }
+    }
+
+    // 10. Joueur (point central + alerte ennemis proches)
+    if (px >= x && px <= x + MINIMAP_WIDTH && py >= y && py <= y + MINIMAP_HEIGHT) {
+        ctx.fillStyle = "white";
+        ctx.fillRect(px - 2, py - 2, 4, 4);
+
+        // Alerte ennemi proche (icône)
+        const alertImg = getUiImage(UI_SPRITES.minimapAlertIcon);
+        if (alertImg && alertImg.complete && alertImg.width > 0) {
+            const threat = Object.values(entities).some(ent =>
+                ent &&
+                ent.kind === "player" &&
+                ent.factionId &&
+                heroFactionId &&
+                ent.factionId !== heroFactionId &&
+                Math.hypot(ent.x - shipX, ent.y - shipY) < 2000
+            );
+            if (threat) {
+                ctx.drawImage(
+                    alertImg,
+                    px - alertImg.width / 2,
+                    py - alertImg.height / 2,
+                    alertImg.width,
+                    alertImg.height
+                );
+            }
+        }
+    }
+
+    // 11. Textes (ID de carte + coordonnées)
+    const displayX  = Math.round(shipX / 100);
+    const displayY  = Math.round(shipY / 100);
+    const coordText = `${displayX} / ${displayY}`;
+    const mapText   = `${cfg.mapID || 1}-1`;
+
+    ctx.fillStyle = "#ccc";
+    ctx.font      = "10px Arial";
+    ctx.textAlign = "left";
+    ctx.fillText(mapText, x + 4, y + 12);
+
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "center";
+    ctx.fillText(coordText, x + MINIMAP_WIDTH / 2, y + MINIMAP_HEIGHT - 4);
+}
+
+
+    
 
     function drawShieldAura(sx, sy, currentShield, maxShield, ish, invincible, ishSince, ishUntil, invSince, invUntil) {
         if (!invincible && !ish && (!currentShield || currentShield <= 0)) return;
@@ -1395,6 +1462,22 @@ function initWindowManager() {
             display: flex; justify-content: space-between; align-items: center;
             padding: 0 5px; cursor: move;
         }
+		        .windowHeaderIcon {
+            width: 22px;
+            height: 22px;
+            margin-right: 6px;
+            background-size: 90% 90%;
+            background-position: center;
+            background-repeat: no-repeat;
+            border-radius: 4px;
+            box-shadow: 0 0 4px #000;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .windowHeaderIcon:hover {
+            box-shadow: 0 0 6px #0ff;
+        }
+
         .gameWindow.chatTheme .gwHeader { background:${UI_SPRITES.chatHeader ? `url('${UI_SPRITES.chatHeader}')` : (UI_SPRITES.windowHeader ? `url('${UI_SPRITES.windowHeader}')` : "rgba(0,0,0,0.8)")}; }
         .gameWindow.chatTheme .gwContent { background:${UI_SPRITES.chatFooter ? `url('${UI_SPRITES.chatFooter}')` : (UI_SPRITES.windowFooter ? `url('${UI_SPRITES.windowFooter}')` : "rgba(0,0,0,0.25)")}; background-size:100% 100%; }
         .gwTitle { color: #00aaff; font-weight: bold; font-size: 11px; text-shadow: 1px 1px 0 #000; }
@@ -1496,19 +1579,30 @@ function createGameWindows() {
 function createGenericWindow(key, cfg) {
     const div = document.createElement('div');
     div.id = 'win_' + key;
-    const isBasic = BASIC_WINDOW_KEYS.has(key);
+
+    const isBasic = BASIC_WINDOW_KEYS.has(key); // user / ship / chat / group
     div.className = isBasic ? 'gameWindow basicWindow' : 'gameWindow';
-    if (!isBasic && key === 'chat') div.classList.add('chatTheme');
-    div.style.width = cfg.w + 'px';
-    div.style.height = cfg.h + 'px';
+
+    // Thème spécial pour le chat si tu veux garder ça
+    if (!isBasic && key === 'chat') {
+        div.classList.add('chatTheme');
+    }
+
+    // Taille de la fenêtre
+    if (cfg.w) div.style.width  = cfg.w + 'px';
+    if (cfg.h) div.style.height = cfg.h + 'px';
+
+    // Position par défaut (équivalent des valeurs dans FULL_MERGE_AS)
     const pos = WINDOW_DEFAULT_POS[key] || {};
-    div.style.top = (pos.top != null ? pos.top : 100) + 'px';
+    div.style.top  = (pos.top  != null ? pos.top  : 100) + 'px';
     div.style.left = (pos.left != null ? pos.left : 100) + 'px';
 
+    // ---------- Contenu HTML ----------
     if (isBasic) {
+        // Fenêtres "simples" style user / ship / group
         div.innerHTML = `
             <div class="basicHeader" id="head_${key}">
-                <span>${cfg.title}</span>
+                <span class="gwTitle">${cfg.title}</span>
                 <div class="gwButtons">
                     <span class="basicBtn collapseBtn">-</span>
                     <span class="basicBtn closeBtn">x</span>
@@ -1517,6 +1611,7 @@ function createGenericWindow(key, cfg) {
             <div class="basicContent" id="content_${key}"></div>
         `;
     } else {
+        // Fenêtre avec chrome complet (utilisé pour chat si tu le souhaites)
         div.innerHTML = `
             <div class="windowChrome">
                 <div class="winCorner tl"></div>
@@ -1536,21 +1631,50 @@ function createGenericWindow(key, cfg) {
                         <span class="gwBtn closeBtn"></span>
                     </div>
                 </div>
-                <div class="gwContent" id="content_${key}">
-                    </div>
+                <div class="gwContent" id="content_${key}"></div>
             </div>
         `;
     }
+
     document.body.appendChild(div);
 
     const content = div.querySelector('.gwContent') || div.querySelector('.basicContent');
-    // Gestion Fermeture (X)
-    div.querySelector('.closeBtn').addEventListener('click', () => {
-        toggleWindow(key, false); // Force fermeture
-    });
 
+    // ---------- Icône dans le header (comme dans le main.swf) ----------
+    const header = div.querySelector('.gwHeader') || div.querySelector('.basicHeader');
+    if (header && BASIC_WINDOW_KEYS.has(key)) {
+        const headerIcon = document.createElement('div');
+        headerIcon.className = 'windowHeaderIcon';
+        headerIcon.id = 'header_icon_' + key;
+
+        const iconPath = WINDOW_ICON_PATHS[key];
+        if (iconPath) {
+            headerIcon.style.backgroundImage = `url('${iconPath}')`;
+        } else if (cfg.icon) {
+            // Fallback : caractère si jamais aucune image n’est définie
+            headerIcon.textContent = cfg.icon;
+        }
+
+        // Clic sur l’icône = replie la fenêtre dans la colonne de gauche
+        headerIcon.addEventListener('click', () => {
+            toggleWindow(key, false);
+        });
+
+        // On insère l’icône tout à gauche, avant le titre
+        header.insertBefore(headerIcon, header.firstChild);
+    }
+
+    // ---------- Bouton fermeture (X) ----------
+    const closeBtn = div.querySelector('.closeBtn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            toggleWindow(key, false);
+        });
+    }
+
+    // ---------- Bouton réduire / étendre (-) ----------
     const collapseBtn = div.querySelector('.collapseBtn');
-    if (collapseBtn) {
+    if (collapseBtn && content) {
         collapseBtn.addEventListener('click', () => {
             const collapsed = content.dataset.collapsed === '1';
             content.dataset.collapsed = collapsed ? '0' : '1';
@@ -1558,9 +1682,13 @@ function createGenericWindow(key, cfg) {
         });
     }
 
-    // Gestion Déplacement (Drag & Drop HTML)
-    makeElementDraggable(div, div.querySelector('.gwHeader') || div.querySelector('.basicHeader'));
+    // ---------- Drag & drop ----------
+    const dragHandle = div.querySelector('.gwHeader') || div.querySelector('.basicHeader');
+    if (dragHandle) {
+        makeElementDraggable(div, dragHandle);
+    }
 }
+
 
 function toggleWindow(key, forceState) {
     // Si forceState est défini, on l'utilise, sinon on inverse l'état actuel
@@ -1571,34 +1699,51 @@ function toggleWindow(key, forceState) {
 
 function refreshWindowsVisibility() {
     for (const key in windowStates) {
-        const isVisible = windowStates[key];
-        const icon = document.getElementById('icon_' + key);
-        
-        // C'est ici la correction : on cherche 'win_chat' comme les autres fenêtres
-        // On garde une exception uniquement pour 'quest' (quêtes) qui est encore à l'ancienne
+        const isOpen = !!windowStates[key];
+
+        // Icône de la colonne de gauche
+        const iconEl = document.getElementById('icon_' + key);
+
+        // Id HTML de la fenêtre correspondante
         let winId = 'win_' + key;
         if (key === 'quest') winId = 'questWindow';
-        if (key === 'log') winId = 'gameLogWindow';
-        
-        const win = document.getElementById(winId);
+        if (key === 'log')   winId = 'gameLogWindow';
 
-        // 1. Allumer/Eteindre l'icône
-        if (icon) {
-            if (isVisible) icon.classList.add('active');
-            else icon.classList.remove('active');
+        const winEl = document.getElementById(winId);
+        const headerIcon = winEl ? winEl.querySelector('.windowHeaderIcon') : null;
+
+        // --- Colonne de gauche (équivalent leftDynamicSlot du main.swf) ---
+        if (iconEl) {
+            if (key === 'map') {
+                // La minimap garde toujours son bouton, comme sur le client d’origine
+                iconEl.style.display = 'flex';
+                iconEl.classList.toggle('active', isOpen);
+            } else {
+                // Pour user / ship / chat / group / quest / log :
+                //  - fenêtre ouverte  -> icône cachée à gauche
+                //  - fenêtre fermée   -> icône visible à gauche
+                iconEl.style.display = isOpen ? 'none' : 'flex';
+                iconEl.classList.toggle('active', !isOpen);
+            }
         }
 
-        // 2. Afficher/Cacher la fenêtre HTML
-        if (win) {
-            win.style.display = isVisible ? 'flex' : 'none';
+        // --- Fenêtre elle-même ---
+        if (winEl) {
+            winEl.style.display = isOpen ? 'flex' : 'none';
         }
-        
-        // 3. Cas spécial Minimap (dessinée sur le Canvas)
+
+        // --- Icône dans le header : visible seulement quand la fenêtre est ouverte ---
+        if (headerIcon) {
+            headerIcon.style.display = isOpen ? 'inline-flex' : 'none';
+        }
+
+        // Cas spécial minimap (pour le dessin dans le canvas)
         if (key === 'map') {
-            window.showMinimap = isVisible; 
+            window.showMinimap = isOpen;
         }
     }
 }
+
 
 // Utilitaire pour rendre n'importe quelle div déplaçable
 function makeElementDraggable(elmnt, handle) {
@@ -1770,4 +1915,3 @@ function initChatInterface() {
         }
     }, 500);
 }
-

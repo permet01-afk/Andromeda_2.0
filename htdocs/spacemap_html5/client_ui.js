@@ -1781,15 +1781,15 @@ window.toggleSettingsWindow = toggleSettingsWindow;
 	// -------------------------------------------------
     // FENETRE HTML "MISSIONS / QUETES"
     // -------------------------------------------------
- let questWindowInitialized = false;
- let lastQuestSignature = "";
- 
-    function initQuestWindow() {
+    let questWindowInitialized = false;
+let lastQuestSignature = "";
+
+function initQuestWindow() {
     if (questWindowInitialized) return;
     questWindowInitialized = true;
 
-    const style = document.createElement('style');
-    const questTop = (WINDOW_DEFAULT_POS.quest && WINDOW_DEFAULT_POS.quest.top) || 120;
+    const style = document.createElement("style");
+    const questTop  = (WINDOW_DEFAULT_POS.quest && WINDOW_DEFAULT_POS.quest.top)  || 120;
     const questLeft = (WINDOW_DEFAULT_POS.quest && WINDOW_DEFAULT_POS.quest.left) || 0;
 
     style.innerHTML = `
@@ -1799,66 +1799,64 @@ window.toggleSettingsWindow = toggleSettingsWindow;
             left: ${questLeft}px;
             width: 500px;
             height: 380px;
-
-            /* ancien fond + nouveau skin ScrollPane du main.swf */
-            background: rgba(0, 10, 20, 0.95);
-            background-image: url('assets/spirites/log/ScrollPane_upSkin.png');
-            background-repeat: repeat;
-            background-size: auto;
-
-            border: 2px solid #4a6b8c;
-            ${UI_SPRITES.windowSide ? `border-image: url('${UI_SPRITES.windowSide}') 4 fill stretch;` : ""}
-            color: #ccc;
-            font-family: Consolas, monospace;
-            font-size: 12px;
             padding: 8px;
-            z-index: 1000;
+            background: #0b1118;
+            border: 1px solid #202a33;
+            box-shadow: 0 0 8px rgba(0,0,0,0.7);
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            color: #e0efff;
             display: none;
+            z-index: 1200;
         }
 
         .questHeader {
+            height: 24px;
+            background: #151515;
+            color: #ffffff;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #4a6b8c;
-            padding-bottom: 4px;
-            margin-bottom: 6px;
+            justify-content: space-between;
+            padding: 2px 4px;
+            font-size: 12px;
+        }
+
+        .questHeaderLeft {
+            display: flex;
+            align-items: center;
+        }
+
+        .questHeaderIcon {
+            width: 20px;
+            height: 20px;
+            margin-right: 4px;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
+            /* même icône que dans le main.swf */
+            background-image: url("graphics/ui/window1/images/10_quest_icon.png.png");
         }
 
         .questTitleBar {
-            color: #00aaff;
             font-weight: bold;
-            font-size: 14px;
         }
 
         .questClose {
-            color: #ff4444;
             cursor: pointer;
-            font-weight: bold;
-            padding: 2px 6px;
+            padding: 0 4px;
         }
 
         .questBody {
             display: flex;
-            height: calc(100% - 26px);
+            margin-top: 6px;
+            height: calc(100% - 28px);
         }
 
         .questListPane {
-            width: 170px;
-            border-right: 1px solid #2a4b6c;
+            width: 180px;
+            border-right: 1px solid #333;
             padding-right: 6px;
             overflow-y: auto;
-        }
-
-        .questDetailPane {
-            flex: 1;
-            padding-left: 8px;
-            overflow-y: auto;
-
-            /* fond type List_skin (comme le texte du journal) */
-            background-image: url('assets/spirites/log/List_skin.png');
-            background-repeat: repeat;
-            background-size: auto;
         }
 
         #questList {
@@ -1867,57 +1865,35 @@ window.toggleSettingsWindow = toggleSettingsWindow;
             padding: 0;
         }
 
-                /* Ligne de quête = CellRenderer_upSkin par défaut */
         #questList li {
             padding: 3px 4px;
             cursor: pointer;
-            color: #aaa;
-            border-bottom: 1px solid #1a2b3c;
-            background-image: url('assets/spirites/DefineSprite_124_CellRenderer_upSkin_CellRenderer_upSkin/1.png');
-            background-repeat: repeat-x;
+            border-bottom: 1px solid #222;
+        }
+
+        #questList li:hover {
+            background: rgba(255,255,255,0.08);
+        }
+
+        #questList li.activeQuest {
+            background-image: url("assets/spirites/DefineSprite_131_CellRenderer_selectedOverSkin_CellRenderer_selectedOverSkin/1.png");
             background-size: 100% 100%;
         }
 
-        /* Survol = CellRenderer_overSkin */
-        #questList li:hover {
-            background-image: url('assets/spirites/DefineSprite_130_CellRenderer_overSkin_CellRenderer_overSkin/1.png');
-        }
-
-        /* Clic maintenu = CellRenderer_downSkin */
-        #questList li:active {
-            background-image: url('assets/spirites/DefineSprite_128_CellRenderer_downSkin_CellRenderer_downSkin/1.png');
-        }
-
-        /* Quête active = CellRenderer_selectedUpSkin */
-        #questList li.activeQuest {
-            color: #00aaff;
-            font-weight: bold;
-            background-image: url('assets/spirites/DefineSprite_138_CellRenderer_selectedUpSkin_CellRenderer_selectedUpSkin/1.png');
-        }
-
-        /* Quête active + survol = CellRenderer_selectedOverSkin */
-        #questList li.activeQuest:hover {
-            background-image: url('assets/spirites/DefineSprite_136_CellRenderer_selectedOverSkin_CellRenderer_selectedOverSkin/1.png');
-        }
-		
-		        /* Quête active + clic (down) = CellRenderer_selectedDownSkin */
-        #questList li.activeQuest:active {
-            background-image: url('assets/spirites/DefineSprite_134_CellRenderer_selectedDownSkin_CellRenderer_selectedDownSkin/1.png');
-        }
-
-
-        /* Quête désactivée = CellRenderer_disabledSkin */
         #questList li.disabledQuest {
-            cursor: default;
-            color: #666;
-            background-image: url('assets/spirites/DefineSprite_126_CellRenderer_disabledSkin_CellRenderer_disabledSkin/1.png');
+            color: #777;
         }
 
-        /* Quête active mais désactivée = CellRenderer_selectedDisabledSkin */
         #questList li.disabledQuest.activeQuest {
-            background-image: url('assets/spirites/DefineSprite_132_CellRenderer_selectedDisabledSkin_CellRenderer_selectedDisabledSkin/1.png');
+            background-image: url("assets/spirites/DefineSprite_132_CellRenderer_selectedDisabledSkin_CellRenderer_selectedDisabledSkin/1.png");
+            background-size: 100% 100%;
         }
 
+        .questDetailPane {
+            flex: 1;
+            padding-left: 8px;
+            overflow-y: auto;
+        }
 
         #questDetailTitle {
             color: #00ffcc;
@@ -1971,11 +1947,14 @@ window.toggleSettingsWindow = toggleSettingsWindow;
     `;
     document.head.appendChild(style);
 
-    const div = document.createElement('div');
-    div.id = 'questWindow';
+    const div = document.createElement("div");
+    div.id = "questWindow";
     div.innerHTML = `
         <div class="questHeader" id="questWindowHeader">
-            <span class="questTitleBar">Missions / Quêtes</span>
+            <div class="questHeaderLeft">
+                <span class="questHeaderIcon"></span>
+                <span class="questTitleBar">Missions / Quêtes</span>
+            </div>
             <span class="questClose" id="questCloseBtn">X</span>
         </div>
         <div class="questBody">
@@ -1988,59 +1967,66 @@ window.toggleSettingsWindow = toggleSettingsWindow;
                 <ul id="questObjectives"></ul>
                 <div class="questButtons">
                     <button id="questBtnAccept" class="doButton">Accepter / Continuer</button>
-                    <button id="questBtnCancel"  class="doButton">Annuler</button>
-                    <button id="questBtnTurnIn"  class="doButton">Valider (si terminée)</button>
+                    <button id="questBtnCancel" class="doButton">Annuler</button>
+                    <button id="questBtnTurnIn" class="doButton">Valider (si terminée)</button>
                 </div>
             </div>
         </div>
     `;
     document.body.appendChild(div);
 
-    document.getElementById('questCloseBtn').addEventListener('click', () => {
-        if (typeof toggleWindow === 'function') toggleWindow('quest', false);
-        else div.style.display = 'none';
+    // Bouton X
+    document.getElementById("questCloseBtn").addEventListener("click", () => {
+        if (typeof toggleWindow === "function") {
+            toggleWindow("quest", false);
+        } else {
+            div.style.display = "none";
+        }
     });
 
-    const questHeader = document.getElementById('questWindowHeader');
-    if (questHeader && typeof makeElementDraggable === 'function') {
+    // Drag de la fenêtre par la barre du haut
+    const questHeader = document.getElementById("questWindowHeader");
+    if (questHeader && typeof makeElementDraggable === "function") {
         makeElementDraggable(div, questHeader);
     }
 
-    const btnAccept = document.getElementById('questBtnAccept');
-    const btnCancel  = document.getElementById('questBtnCancel');
-    const btnTurnIn  = document.getElementById('questBtnTurnIn');
+    const btnAccept = document.getElementById("questBtnAccept");
+    const btnCancel = document.getElementById("questBtnCancel");
+    const btnTurnIn = document.getElementById("questBtnTurnIn");
 
-    btnAccept.addEventListener('click', () => {
+    btnAccept.addEventListener("click", () => {
         if (privilegedQuestId != null) {
             sendQuestAccept(privilegedQuestId);
         }
     });
 
-    btnCancel.addEventListener('click', () => {
+    btnCancel.addEventListener("click", () => {
         if (privilegedQuestId != null) {
             sendQuestCancel(privilegedQuestId);
         }
     });
 
-    btnTurnIn.addEventListener('click', () => {
+    btnTurnIn.addEventListener("click", () => {
         if (privilegedQuestId != null) {
             sendQuestTurnIn(privilegedQuestId);
         }
     });
 
-    div.addEventListener('click', (ev) => {
-        const li = ev.target.closest('li[data-quest-id]');
+    // Clic sur une ligne de la liste des quêtes
+    div.addEventListener("click", (ev) => {
+        const li = ev.target.closest("li[data-quest-id]");
         if (!li) return;
-        const id = parseInt(li.getAttribute('data-quest-id'), 10);
+        const id = parseInt(li.getAttribute("data-quest-id"), 10);
         if (!isNaN(id)) {
             privilegeQuestById(id);
         }
     });
 
-    if (typeof refreshWindowsVisibility === 'function') {
+    if (typeof refreshWindowsVisibility === "function") {
         refreshWindowsVisibility();
     }
 }
+
 
 
     function toggleQuestWindow() {
@@ -2329,33 +2315,6 @@ window.toggleSettingsWindow = toggleSettingsWindow;
         }
     }
     
-    // Fonction utilitaire pour ajouter une ligne dans la fenêtre
-    function addChatMessage(name, msg, roomId = chatCurrentRoomId, typeClass = "chatGlobal", clanTag = null) {
-        const buffer = (chatBuffers[roomId] = chatBuffers[roomId] || []);
-
-        // Affichage du Tag de Clan s'il existe
-        let nameDisplay = name;
-        if (clanTag && clanTag.length > 0 && name) {
-            nameDisplay = `<span class="chatClanTag">[${clanTag}]</span> ${name}`;
-        }
-
-        const html = name
-            ? `<span class="chatName">${nameDisplay}</span> : ${msg}`
-            : msg;
-
-        buffer.push({ html, typeClass });
-
-        if (roomId === chatCurrentRoomId) {
-            const container = document.getElementById('chatContent');
-            if (container) {
-                const div = document.createElement('div');
-                div.className = "chatLine " + typeClass;
-                div.innerHTML = html;
-                container.appendChild(div);
-                container.scrollTop = container.scrollHeight;
-            }
-        }
-    }
 	
 	// --- SAUVEGARDE DE L'INTERFACE ---
     function saveInterfaceLayout() {
@@ -2778,4 +2737,3 @@ window.toggleSettingsWindow = toggleSettingsWindow;
 
     let lastTime = performance.now();
     let shieldAnimTime = 0;
-

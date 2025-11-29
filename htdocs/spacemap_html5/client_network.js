@@ -225,6 +225,36 @@
     const chatRooms = [];
     let chatCurrentRoomId = 1;
     const chatBuffers = {};
+	
+	    // Fonction utilitaire pour ajouter une ligne dans la fenêtre de chat
+    function addChatMessage(name, msg, roomId = chatCurrentRoomId, typeClass = "chatGlobal", clanTag = null) {
+        const buffer = (chatBuffers[roomId] = chatBuffers[roomId] || []);
+
+        // Affichage du Tag de Clan s'il existe
+        let nameDisplay = name;
+        if (clanTag && clanTag.length > 0 && name) {
+            nameDisplay = `<span class="chatClanTag">[${clanTag}]</span> ${name}`;
+        }
+
+        const html = name
+            ? `<span class="chatName">${nameDisplay}</span> : ${msg}`
+            : msg;
+
+        buffer.push({ html, typeClass });
+
+        // Si c'est le salon actuellement affiché, on ajoute la ligne dans le DOM
+        if (roomId === chatCurrentRoomId) {
+            const container = document.getElementById('chatContent');
+            if (container) {
+                const div = document.createElement('div');
+                div.className = "chatLine " + typeClass;
+                div.innerHTML = html;
+                container.appendChild(div);
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+    }
+
 
     function upsertChatRoom(id, name, faction) {
         const existing = chatRooms.find(r => r.id === id);

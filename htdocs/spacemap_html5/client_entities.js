@@ -753,13 +753,6 @@ canvas.addEventListener("mousemove", (e) => {
             return;
         }
 		
-		// --- INTERFACE QUETES ---
-        // Touche Q : ouvrir/fermer la fenêtre de quêtes
-        if (e.key === "q" || e.key === "Q") {
-            toggleQuestWindow();
-            return;
-        }
-		
 		        // --- INTERFACE PARAMETRES ---
         // Touche O : ouvrir/fermer la fenêtre de paramètres
         if (e.key === "o" || e.key === "O") {

@@ -1249,4 +1249,3 @@
         ctx.restore();
         return { headerHeight, closeRect, collapseRect };
     }
-
