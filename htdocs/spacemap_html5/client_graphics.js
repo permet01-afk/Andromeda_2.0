@@ -93,18 +93,9 @@ function drawMiniMap() {
         );
     }
 
-    // --- NOUVEAU : fond simple sans image ---
-    ctx.save();
-    ctx.globalAlpha = 0.85;
-    ctx.fillStyle = "rgba(0, 0, 0, 0.9)";
+    // Fond noir simple (pas d'image grise)
+    ctx.fillStyle = "black";
     ctx.fillRect(x, y, MINIMAP_WIDTH, MINIMAP_HEIGHT);
-    ctx.restore();
-
-    // Grille (conservée)
-    const mmGrid = getUiImage(UI_SPRITES.minimapGrid);
-    if (mmGrid && mmGrid.complete && mmGrid.width > 0 && mmGrid.height > 0) {
-        ctx.drawImage(mmGrid, x, y, MINIMAP_WIDTH, MINIMAP_HEIGHT);
-    }
 
     // --- SUPPRIMÉ : overlay avec les angles blancs ---
     // const mmOverlay = getMinimapSpriteFrame("overlay", 0);
@@ -181,19 +172,29 @@ function drawMiniMap() {
     }
 
     // 5. STATIONS
-    const stationIcon = getUiImage(UI_SPRITES.minimapStationIcon);
-    if (stationIcon && stationIcon.complete && stationIcon.width > 0) {
-        for (const s of stations) {
-            const mx = toMiniX(s.x);
-            const my = toMiniY(s.y);
-            if (mx >= x && mx <= x + MINIMAP_WIDTH && my >= y && my <= y + MINIMAP_HEIGHT) {
+    for (const s of stations) {
+        const mx = toMiniX(s.x);
+        const my = toMiniY(s.y);
+        if (mx >= x && mx <= x + MINIMAP_WIDTH && my >= y && my <= y + MINIMAP_HEIGHT) {
+            const stationImg = stationImages[s.type];
+            if (stationImg && stationImg.complete && stationImg.width > 0) {
+                const targetHeight = 26;
+                const scale = targetHeight / stationImg.height;
+                const drawW = stationImg.width * scale;
+                const drawH = stationImg.height * scale;
                 ctx.drawImage(
-                    stationIcon,
-                    mx - stationIcon.width / 2,
-                    my - stationIcon.height / 2,
-                    stationIcon.width,
-                    stationIcon.height
+                    stationImg,
+                    mx - drawW / 2,
+                    my - drawH / 2,
+                    drawW,
+                    drawH
                 );
+            } else {
+                ctx.strokeStyle = "#00aaff";
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(mx, my, 6, 0, Math.PI * 2);
+                ctx.stroke();
             }
         }
     }

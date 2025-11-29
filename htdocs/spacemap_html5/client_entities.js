@@ -703,33 +703,35 @@ canvas.addEventListener("mousemove", (e) => {
 
         // --- INTERFACE (Zoom / Filtres) ---
 
-                // Zoom minimap : + / - / 0
+                // Ajustement de la taille de la minimap : + / - / 0
         if (e.key === "+" || e.key === "=") {
             if (minimapZoom < 4) {
                 minimapZoom *= 2;
-                // On convertit en "scaleFactor" façon DO : 8 = x1
+                updateMinimapSize();
                 const serverScale = Math.round(minimapZoom * 8);
                 sendSetting('MINIMAP_SCALE', serverScale);
             }
-            addInfoMessage("Zoom minimap x" + minimapZoom.toFixed(2));
+            addInfoMessage("Taille minimap x" + minimapZoom.toFixed(2));
             return;
         }
 
         if (e.key === "-" || e.key === "_") {
             if (minimapZoom > 0.5) {
                 minimapZoom /= 2;
+                updateMinimapSize();
                 const serverScale = Math.round(minimapZoom * 8);
                 sendSetting('MINIMAP_SCALE', serverScale);
             }
-            addInfoMessage("Zoom minimap x" + minimapZoom.toFixed(2));
+            addInfoMessage("Taille minimap x" + minimapZoom.toFixed(2));
             return;
         }
 
         if (e.key === "0") {
             minimapZoom = 1;
+            updateMinimapSize();
             const serverScale = 8; // valeur "normale" côté serveur / FULL_MERGE_AS
             sendSetting('MINIMAP_SCALE', serverScale);
-            addInfoMessage("Zoom minimap réinitialisé");
+            addInfoMessage("Taille minimap réinitialisée");
             return;
         }
 
