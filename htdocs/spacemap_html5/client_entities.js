@@ -652,11 +652,15 @@ canvas.addEventListener("mousemove", (e) => {
                 h: MINIMAP_HEADER_HEIGHT
             };
             const overIcon = minimapHitboxes.icon && isPointInRect(screenX, screenY, minimapHitboxes.icon);
+            const overZoomIn = minimapHitboxes.zoomIn && isPointInRect(screenX, screenY, minimapHitboxes.zoomIn);
+            const overZoomOut = minimapHitboxes.zoomOut && isPointInRect(screenX, screenY, minimapHitboxes.zoomOut);
             const overHeader = isPointInRect(screenX, screenY, headerRect);
             hoverState.icon = !!overIcon;
             hoverState.header = !!overHeader;
+            hoverState.zoomIn = !!overZoomIn;
+            hoverState.zoomOut = !!overZoomOut;
 
-            if (overIcon) {
+            if (overIcon || overZoomIn || overZoomOut) {
                 cursor = "pointer";
             } else if (overHeader || isDraggingMinimap) {
                 cursor = "move";
