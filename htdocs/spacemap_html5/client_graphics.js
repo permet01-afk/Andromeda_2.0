@@ -731,7 +731,17 @@ function drawMiniMap() {
                 const img = getDroneSpriteFrame(kind, directionIndex);
                 if (!img || !img.complete || img.width === 0 || img.height === 0) continue;
 
-                const droneAngle = baseAngle + positionOffset(drone.position);
+                let droneAngle = baseAngle + positionOffset(drone.position);
+
+                // Les 4 drones situés derrière le vaisseau sont légèrement écartés
+                // (même rayon, mais arc plus large) pour correspondre au placement
+                // observé sur le client Flash.
+                if (group.position === DRONE_POSITION_DOWN) {
+                    const spread = Math.PI / 18; // ~10°
+                    if (drone.position === DRONE_POSITION_LEFT) droneAngle -= spread;
+                    if (drone.position === DRONE_POSITION_RIGHT) droneAngle += spread;
+                }
+
                 const droneRadius = (drone.position === DRONE_POSITION_CENTER ? 1 : (drone.dimension || DRONE_DEFAULT_DIMENSION));
                 const droneWorldX = groupWorldX + Math.cos(droneAngle) * droneRadius;
                 const droneWorldY = groupWorldY + Math.sin(droneAngle) * droneRadius;
