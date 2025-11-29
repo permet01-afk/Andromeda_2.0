@@ -643,7 +643,7 @@ function drawMiniMap() {
 
         drawShieldAura(shipScreenX, sy, heroShield, heroMaxShield, heroIshActive, heroInvincible, heroIshSince, heroIshUntil, heroInvSince, heroInvUntil);
 
-        if (setting_show_drones && window.heroDrones && window.heroDrones.length > 0) {
+        if (setting_show_drones && window.heroDrones && window.heroDrones.groups && window.heroDrones.groups.length > 0) {
             drawDrones(shipX, shipY, window.heroDrones, heroAngle);
         }
 
@@ -667,8 +667,14 @@ function drawMiniMap() {
         ctx.restore();
     }
     const DRONE_DIRECTION_FRAME_COUNT = 32;
-    const DRONE_MAX_COUNT = 8;
-    const DRONE_ORBIT_RADIUS = 38;              // distance en pixels autour du centre du vaisseau
+    var DRONE_GROUP_RADIUS = (typeof DRONE_GROUP_RADIUS !== "undefined") ? DRONE_GROUP_RADIUS : 75; // patterns.drones.@groupRadius dans game.xml
+    var DRONE_GROUP_DIMENSION = DRONE_GROUP_RADIUS * 2;
+    const DRONE_DEFAULT_DIMENSION = 15 * 2;    // patterns.drones.drone.@droneRadius * 2
+    const DRONE_POSITION_TOP = 0;
+    const DRONE_POSITION_RIGHT = 1;
+    const DRONE_POSITION_DOWN = 2;
+    const DRONE_POSITION_LEFT = 3;
+    const DRONE_POSITION_CENTER = 4;
 
     const IRIS_DRONE_FRAMES = [
         131, 132, 133, 134, 135, 136, 137, 138,
@@ -699,30 +705,46 @@ function drawMiniMap() {
         return "iris";
     }
 
-    // Dessin générique des drones autour d'un vaisseau
-    function drawDrones(worldX, worldY, drones, shipAngle = 0) {
-        if (!drones || !drones.length) return;
+    function positionOffset(pos) {
+        if (pos === DRONE_POSITION_TOP) return 0;
+        if (pos === DRONE_POSITION_RIGHT) return Math.PI / 2;
+        if (pos === DRONE_POSITION_DOWN) return Math.PI;
+        if (pos === DRONE_POSITION_LEFT) return Math.PI * 1.5;
+        return 0;
+    }
 
-        const count = Math.min(drones.length, DRONE_MAX_COUNT);
-        const centerX = mapToScreenX(worldX);
-        const centerY = mapToScreenY(worldY);
+    // Dessin générique des drones autour d'un vaisseau (structure inspirée du client Flash)
+    function drawDrones(worldX, worldY, droneConnector, shipAngle = 0) {
+        if (!droneConnector || !droneConnector.groups || !droneConnector.groups.length) return;
+
         const baseAngle = (isFinite(shipAngle) ? shipAngle : 0) - Math.PI;
         const directionIndex = getDirectionFrameIndex(isFinite(shipAngle) ? shipAngle : 0, DRONE_DIRECTION_FRAME_COUNT);
+        const groupDimension = droneConnector.groupDimension || DRONE_GROUP_DIMENSION;
 
         ctx.save();
         ctx.globalCompositeOperation = "source-over";
 
-        for (let i = 0; i < count; i++) {
-            const drone = drones[i] || {};
-            const kind = pickDroneKind(drone);
-            const img = getDroneSpriteFrame(kind, directionIndex);
-            if (!img || !img.complete || img.width === 0 || img.height === 0) continue;
+        for (const group of droneConnector.groups) {
+            const groupAngle = baseAngle + positionOffset(group.position);
+            const groupWorldX = worldX + Math.cos(groupAngle) * groupDimension;
+            const groupWorldY = worldY + Math.sin(groupAngle) * groupDimension;
+            const groupScreenX = mapToScreenX(groupWorldX);
+            const groupScreenY = mapToScreenY(groupWorldY);
 
-            const angle = baseAngle + (Math.PI * 2 * i) / count;
-            const droneScreenX = centerX + Math.cos(angle) * DRONE_ORBIT_RADIUS;
-            const droneScreenY = centerY + Math.sin(angle) * DRONE_ORBIT_RADIUS;
+            for (const drone of group.drones || []) {
+                const kind = pickDroneKind(drone);
+                const img = getDroneSpriteFrame(kind, directionIndex);
+                if (!img || !img.complete || img.width === 0 || img.height === 0) continue;
 
-            ctx.drawImage(img, droneScreenX - img.width / 2, droneScreenY - img.height / 2);
+                const droneAngle = baseAngle + positionOffset(drone.position);
+                const droneRadius = (drone.position === DRONE_POSITION_CENTER ? 1 : (drone.dimension || DRONE_DEFAULT_DIMENSION));
+                const droneWorldX = groupWorldX + Math.cos(droneAngle) * droneRadius;
+                const droneWorldY = groupWorldY + Math.sin(droneAngle) * droneRadius;
+                const droneScreenX = mapToScreenX(droneWorldX);
+                const droneScreenY = mapToScreenY(droneWorldY);
+
+                ctx.drawImage(img, droneScreenX - img.width / 2, droneScreenY - img.height / 2);
+            }
         }
 
         ctx.restore();
@@ -803,7 +825,7 @@ function drawMiniMap() {
         }
 
         // Drones de l'entité
-        if (setting_show_drones && e.drones && e.drones.length > 0) {
+        if (setting_show_drones && e.drones && e.drones.groups && e.drones.groups.length > 0) {
             drawDrones(e.x, e.y, e.drones, e.angle || 0);
         }
 

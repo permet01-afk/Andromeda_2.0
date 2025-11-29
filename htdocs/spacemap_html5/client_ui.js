@@ -1,3 +1,14 @@
+if (typeof WINDOW_DEFAULT_POS === 'undefined') {
+    window.WINDOW_DEFAULT_POS = {
+        ship: { top: 80, left: 70 },
+        user: { top: 200, left: 70 },
+        group: { top: 80, left: 280 },
+        log: { top: 360, left: 70 },
+        chat: { top: 540, left: 70 },
+        quest: { top: 140, left: 520 }
+    };
+}
+
 function initGlobalButtonStyles() {
     const btnUp = UI_SPRITES.chatButton || UI_SPRITES.buttonCollapse || UI_SPRITES.windowHeader;
     const btnOver = UI_SPRITES.buttonClose || btnUp;
