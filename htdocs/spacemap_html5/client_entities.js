@@ -410,9 +410,17 @@ function handleQuickbarClick(screenX, screenY, e) {
             w: MINIMAP_WIDTH,
             h: MINIMAP_HEIGHT
         } : null);
+        const headerRect = layout ? {
+            x: layout.outerX,
+            y: layout.outerY,
+            w: layout.outerWidth,
+            h: MINIMAP_HEADER_HEIGHT
+        } : null;
 
-        if (minimapHitboxes.icon && isPointInRect(screenX, screenY, minimapHitboxes.icon)) {
-            window.showMinimap = !isMinimapOpen;
+        if (minimapHitboxes.close && isPointInRect(screenX, screenY, minimapHitboxes.close)) {
+            windowStates.map = false;
+            refreshWindowsVisibility();
+            saveInterfaceLayout();
             return;
         }
 
@@ -423,6 +431,16 @@ function handleQuickbarClick(screenX, screenY, e) {
 
         if (minimapHitboxes.zoomOut && isPointInRect(screenX, screenY, minimapHitboxes.zoomOut)) {
             zoomMinimapOut();
+            return;
+        }
+
+        if (isMinimapOpen && headerRect && isPointInRect(screenX, screenY, headerRect) && e.button === 0) {
+            isDraggingMinimap = true;
+            minimapDragOffset = {
+                x: screenX - layout.outerX,
+                y: screenY - layout.outerY
+            };
+            minimapPositionDirty = false;
             return;
         }
 
@@ -568,6 +586,14 @@ canvas.addEventListener("mousemove", (e) => {
         quickbarPosition.y = screenY - quickbarDragOffset.y;
     }
 
+    if (isDraggingMinimap && minimapHitboxes.frame) {
+        minimapPosition = {
+            x: screenX - minimapDragOffset.x,
+            y: screenY - minimapDragOffset.y
+        };
+        minimapPositionDirty = true;
+    }
+
     // 2) Tooltips de la Quickbar
     activeTooltip = null; // Reset par défaut
     if (!quickbarMinimized) {
@@ -622,9 +648,15 @@ canvas.addEventListener("mousemove", (e) => {
     window.addEventListener("mouseup", () => {
         // Si on était en train de bouger la Quickbar, on sauvegarde sa nouvelle place
         if (isDraggingQuickbar) {
-            saveInterfaceLayout(); 
+            saveInterfaceLayout();
         }
         isDraggingQuickbar = false;
+
+        if (isDraggingMinimap && minimapPositionDirty) {
+            saveInterfaceLayout();
+        }
+        isDraggingMinimap = false;
+        minimapPositionDirty = false;
 
         // On stoppe aussi le suivi souris façon Flash
         if (isMouseDownOnMap) {

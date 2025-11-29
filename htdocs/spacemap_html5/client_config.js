@@ -24,20 +24,26 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
     let mapCenterX = (MAP_MIN_X + MAP_MAX_X) / 2;
     let mapCenterY = (MAP_MIN_Y + MAP_MAX_Y) / 2;
 
-    const MINIMAP_BASE_WIDTH  = 200;
-    const MINIMAP_BASE_HEIGHT = 150;
     const MINIMAP_MARGIN = 10;
     const MINIMAP_FRAME_PADDING = 8;
     const MINIMAP_HEADER_HEIGHT = 26;
     const MINIMAP_BUTTON_SIZE = 16;
+    const MINIMAP_SCALE_MIN = 3;
+    const MINIMAP_SCALE_MAX = 11;
+    const MINIMAP_SCALE_DEFAULT = 8;
 
-    let MINIMAP_WIDTH  = MINIMAP_BASE_WIDTH;
-    let MINIMAP_HEIGHT = MINIMAP_BASE_HEIGHT;
-    let minimapZoom = 1;
+    let MINIMAP_WIDTH  = 0;
+    let MINIMAP_HEIGHT = 0;
+    let minimapScaleFactor = MINIMAP_SCALE_DEFAULT;
+    let minimapPosition = null; // { x, y } = coin supérieur gauche du cadre
+    let minimapDragOffset = { x: 0, y: 0 };
+    let isDraggingMinimap = false;
+    let minimapPositionDirty = false;
     let minimapHitboxes = {
         icon: null,
         zoomIn: null,
         zoomOut: null,
+        close: null,
         content: null,
         frame: null
     };
@@ -45,57 +51,50 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
 
     // Échelle de la minimap (équivalent du combinedScaleFactor de l'AS3)
     function getMiniMapScale() {
-        // Échelle de base : toute la map dans la minimap
-        const baseScaleX = MINIMAP_BASE_WIDTH  / MAP_WIDTH;
-        const baseScaleY = MINIMAP_BASE_HEIGHT / MAP_HEIGHT;
-        const baseScale  = Math.min(baseScaleX, baseScaleY);
-
         // Dans le client Flash, combinedScaleFactor = 1 / (zoomFactor * 10)
-        // => plus le zoomFactor est grand, plus on "voit large" (zoom OUT).
-        // Ici on reproduit la même idée : scale ∝ 1 / minimapZoom.
-        return baseScale * minimapZoom;
+        return 1 / (minimapScaleFactor * 10);
     }
 
     function updateMinimapSize() {
-        MINIMAP_WIDTH  = MINIMAP_BASE_WIDTH  * minimapZoom;
-        MINIMAP_HEIGHT = MINIMAP_BASE_HEIGHT * minimapZoom;
+        const scale = getMiniMapScale();
+        MINIMAP_WIDTH  = Math.round(MAP_WIDTH  * scale);
+        MINIMAP_HEIGHT = Math.round(MAP_HEIGHT * scale);
     }
 
-    function updateMinimapZoom(newZoom, options = {}) {
-        const previous = minimapZoom;
-        const clamped  = Math.max(0.5, Math.min(4, newZoom));
-        minimapZoom = clamped;
+    function clampMinimapScale(value) {
+        return Math.max(MINIMAP_SCALE_MIN, Math.min(MINIMAP_SCALE_MAX, value));
+    }
+
+    function setMinimapScale(newScale, options = {}) {
+        const previous = minimapScaleFactor;
+        const clamped  = clampMinimapScale(Math.round(newScale));
+        minimapScaleFactor = clamped;
         updateMinimapSize();
 
         if ((clamped !== previous || options.forceSend) && typeof sendSetting === "function") {
-            const serverScale = Math.round(minimapZoom * 8);
-            sendSetting('MINIMAP_SCALE', serverScale);
+            sendSetting('MINIMAP_SCALE', minimapScaleFactor);
         }
 
         if (options.message) {
             const msg = (typeof options.message === "function")
-                ? options.message(minimapZoom, previous)
+                ? options.message(minimapScaleFactor, previous)
                 : options.message;
             addInfoMessage(msg);
         }
 
-        return { previous, current: minimapZoom, changed: clamped !== previous };
+        return { previous, current: minimapScaleFactor, changed: clamped !== previous };
     }
 
     function zoomMinimapIn() {
-        updateMinimapZoom(minimapZoom * 2, {
-            message: (zoom) => `Taille minimap x${zoom.toFixed(2)}`
-        });
+        setMinimapScale(minimapScaleFactor - 1);
     }
 
     function zoomMinimapOut() {
-        updateMinimapZoom(minimapZoom / 2, {
-            message: (zoom) => `Taille minimap x${zoom.toFixed(2)}`
-        });
+        setMinimapScale(minimapScaleFactor + 1);
     }
 
     function resetMinimapZoom() {
-        updateMinimapZoom(1, { forceSend: true });
+        setMinimapScale(MINIMAP_SCALE_DEFAULT, { forceSend: true });
         addInfoMessage("Taille minimap réinitialisée");
     }
 
@@ -105,8 +104,21 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
 
         const outerWidth  = MINIMAP_WIDTH + MINIMAP_FRAME_PADDING * 2;
         const outerHeight = MINIMAP_HEADER_HEIGHT + MINIMAP_FRAME_PADDING * 2 + contentHeight;
-        const outerX = canvas.width  - outerWidth  - MINIMAP_MARGIN;
-        const outerY = canvas.height - outerHeight - MINIMAP_MARGIN;
+
+        if (!minimapPosition) {
+            minimapPosition = {
+                x: canvas.width  - outerWidth  - MINIMAP_MARGIN,
+                y: canvas.height - outerHeight - MINIMAP_MARGIN
+            };
+        }
+
+        const maxX = canvas.width  - outerWidth - MINIMAP_MARGIN;
+        const maxY = canvas.height - outerHeight - MINIMAP_MARGIN;
+        minimapPosition.x = Math.min(Math.max(MINIMAP_MARGIN, minimapPosition.x), Math.max(MINIMAP_MARGIN, maxX));
+        minimapPosition.y = Math.min(Math.max(MINIMAP_MARGIN, minimapPosition.y), Math.max(MINIMAP_MARGIN, maxY));
+
+        const outerX = minimapPosition.x;
+        const outerY = minimapPosition.y;
 
         const contentX = outerX + MINIMAP_FRAME_PADDING;
         const contentY = outerY + MINIMAP_HEADER_HEIGHT + MINIMAP_FRAME_PADDING;

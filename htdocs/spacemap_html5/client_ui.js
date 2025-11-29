@@ -2334,6 +2334,13 @@ function initQuestWindow() {
                 locked: quickbarLocked,
                 minimized: quickbarMinimized
             },
+            // Minimap (Canvas)
+            mm: {
+                x: minimapPosition ? minimapPosition.x : null,
+                y: minimapPosition ? minimapPosition.y : null,
+                open: !!windowStates.map,
+                scale: minimapScaleFactor
+            },
             // Action Drawer (HTML)
             ad: {
                 x: drawer ? drawer.offsetLeft : (window.innerWidth/2 - 300),
@@ -2362,6 +2369,19 @@ function initQuestWindow() {
                 quickbarLocked = data.qb.locked;
                 quickbarMinimized = !!data.qb.minimized;
                 quickbarInitialized = true; // Empêche le centrage auto au démarrage
+            }
+
+            if (data.mm) {
+                if (data.mm.x != null && data.mm.y != null) {
+                    minimapPosition = { x: data.mm.x, y: data.mm.y };
+                }
+                if (typeof data.mm.open === 'boolean') {
+                    windowStates.map = data.mm.open;
+                    window.showMinimap = data.mm.open;
+                }
+                if (data.mm.scale) {
+                    setMinimapScale(data.mm.scale, { forceSend: false });
+                }
             }
 
             // 2. Appliquer Action Drawer
