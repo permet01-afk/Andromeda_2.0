@@ -712,7 +712,7 @@ function handlePacket_N(parts, i) {
         }
     }
 
-    var DRONE_GROUP_RADIUS = (typeof DRONE_GROUP_RADIUS !== "undefined") ? DRONE_GROUP_RADIUS : 75; // game.xml patterns.drones.@groupRadius
+    var DRONE_GROUP_RADIUS = (typeof DRONE_GROUP_RADIUS !== "undefined") ? DRONE_GROUP_RADIUS : 100; // game.xml patterns.drones.@groupRadius
     var DRONE_RADIUS = (typeof DRONE_RADIUS !== "undefined") ? DRONE_RADIUS : 15;                   // game.xml patterns.drones.drone.@droneRadius
     var DRONE_GROUP_DIMENSION = DRONE_GROUP_RADIUS * 2;
 
