@@ -164,6 +164,7 @@
                     // On clamp pour éviter les valeurs absurdes en BDD
                     normalized = Math.max(0.25, Math.min(4, normalized));
                     minimapZoom = normalized;
+                    updateMinimapSize();
                     console.log("[SETTINGS] MINIMAP_SCALE reçu → minimapZoom =", minimapZoom);
                 }
                 break;

@@ -24,15 +24,17 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
     let mapCenterX = (MAP_MIN_X + MAP_MAX_X) / 2;
     let mapCenterY = (MAP_MIN_Y + MAP_MAX_Y) / 2;
 
-    const MINIMAP_WIDTH  = 200;
-    const MINIMAP_HEIGHT = 150;
+    const MINIMAP_BASE_WIDTH  = 200;
+    const MINIMAP_BASE_HEIGHT = 150;
+    let MINIMAP_WIDTH  = MINIMAP_BASE_WIDTH;
+    let MINIMAP_HEIGHT = MINIMAP_BASE_HEIGHT;
     let minimapZoom = 1;
 
     // Échelle de la minimap (équivalent du combinedScaleFactor de l'AS3)
     function getMiniMapScale() {
         // Échelle de base : toute la map dans la minimap
-        const baseScaleX = MINIMAP_WIDTH  / MAP_WIDTH;
-        const baseScaleY = MINIMAP_HEIGHT / MAP_HEIGHT;
+        const baseScaleX = MINIMAP_BASE_WIDTH  / MAP_WIDTH;
+        const baseScaleY = MINIMAP_BASE_HEIGHT / MAP_HEIGHT;
         const baseScale  = Math.min(baseScaleX, baseScaleY);
 
         // Dans le client Flash, combinedScaleFactor = 1 / (zoomFactor * 10)
@@ -40,6 +42,13 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
         // Ici on reproduit la même idée : scale ∝ 1 / minimapZoom.
             return baseScale * minimapZoom;
     }
+
+    function updateMinimapSize() {
+        MINIMAP_WIDTH  = MINIMAP_BASE_WIDTH  * minimapZoom;
+        MINIMAP_HEIGHT = MINIMAP_BASE_HEIGHT * minimapZoom;
+    }
+
+    updateMinimapSize();
 
     // Distance max pour considérer qu'on est "dans" un portail
     const PORTAL_JUMP_DISTANCE = 400;
