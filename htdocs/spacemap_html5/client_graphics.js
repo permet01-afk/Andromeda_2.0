@@ -670,11 +670,6 @@ function drawMiniMap() {
     var DRONE_GROUP_RADIUS = (typeof DRONE_GROUP_RADIUS !== "undefined") ? DRONE_GROUP_RADIUS : 75; // patterns.drones.@groupRadius dans game.xml
     var DRONE_GROUP_DIMENSION = DRONE_GROUP_RADIUS * 2;
     const DRONE_DEFAULT_DIMENSION = 15 * 2;    // patterns.drones.drone.@droneRadius * 2
-    const DRONE_POSITION_TOP = 0;
-    const DRONE_POSITION_RIGHT = 1;
-    const DRONE_POSITION_DOWN = 2;
-    const DRONE_POSITION_LEFT = 3;
-    const DRONE_POSITION_CENTER = 4;
 
     const IRIS_DRONE_FRAMES = [
         131, 132, 133, 134, 135, 136, 137, 138,
