@@ -737,9 +737,11 @@ function drawMiniMap() {
                 // on applique un léger écart angulaire supplémentaire sur le groupe BACK
                 // pour éviter qu'ils ne se chevauchent.
                 if (group.position === DRONE_POSITION_DOWN) {
-                    const spread = Math.PI / 12; // ~15°
-                    if (drone.position === DRONE_POSITION_LEFT) droneAngle -= spread;
+                    const spread = Math.PI / 9; // ~20°
+                    if (drone.position === DRONE_POSITION_TOP) droneAngle -= spread;
                     if (drone.position === DRONE_POSITION_RIGHT) droneAngle += spread;
+                    if (drone.position === DRONE_POSITION_DOWN) droneAngle += spread;
+                    if (drone.position === DRONE_POSITION_LEFT) droneAngle -= spread;
                 }
 
                 const droneRadius = (drone.position === DRONE_POSITION_CENTER ? 1 : (drone.dimension || DRONE_DEFAULT_DIMENSION));
