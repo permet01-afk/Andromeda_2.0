@@ -157,15 +157,10 @@
 
             case 'MINIMAP_SCALE':
                 // FULL_MERGE_AS : MinimapManager.scaleFactor (int), par défaut 8.
-                // On le convertit en facteur de zoom local.
+                // On l'applique directement comme facteur de zoom interne (bornes 3..11)
                 if (!isNaN(val) && val > 0) {
-                    // 8 = zoom normal → minimapZoom = 1
-                    let normalized = val / 8;
-                    // On clamp pour éviter les valeurs absurdes en BDD
-                    normalized = Math.max(0.25, Math.min(4, normalized));
-                    minimapZoom = normalized;
-                    updateMinimapSize();
-                    console.log("[SETTINGS] MINIMAP_SCALE reçu → minimapZoom =", minimapZoom);
+                    setMinimapScale(val, { forceSend: false });
+                    console.log("[SETTINGS] MINIMAP_SCALE reçu → scale =", val);
                 }
                 break;
 

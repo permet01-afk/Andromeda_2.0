@@ -95,8 +95,13 @@ function drawMiniMap() {
     minimapHitboxes.icon = null;
     minimapHitboxes.zoomIn = null;
     minimapHitboxes.zoomOut = null;
-    minimapHitboxes.frame = { x: layout.outerX, y: layout.outerY, w: layout.outerWidth, h: layout.outerHeight };
+    minimapHitboxes.close = null;
+    minimapHitboxes.frame = isMinimapOpen ? { x: layout.outerX, y: layout.outerY, w: layout.outerWidth, h: layout.outerHeight } : null;
     minimapHitboxes.content = isMinimapOpen ? { x, y, w: MINIMAP_WIDTH, h: MINIMAP_HEIGHT } : null;
+
+    if (!isMinimapOpen) {
+        return;
+    }
 
     // 1. CADRE ET EN-TÊTE
     ctx.save();
@@ -119,16 +124,28 @@ function drawMiniMap() {
     );
     ctx.restore();
 
-    // Icône de la minimap dans l'angle du cadre (clic = ouvrir/fermer)
-    const mmIconImg = getUiImage(UI_SPRITES.mainMenuIconMap);
-    if (mmIconImg && mmIconImg.complete && mmIconImg.width > 0 && mmIconImg.height > 0) {
-        const iconW = 20;
-        const iconH = iconW * (mmIconImg.height / mmIconImg.width);
-        const iconX = layout.outerX + MINIMAP_FRAME_PADDING;
-        const iconY = headerY + (layout.headerHeight - iconH) / 2;
-        ctx.drawImage(mmIconImg, iconX, iconY, iconW, iconH);
-        minimapHitboxes.icon = { x: iconX, y: iconY, w: iconW, h: iconH };
-    }
+    // Bouton de fermeture (style rond rouge comme sur le SWF)
+    const closeSize = MINIMAP_BUTTON_SIZE;
+    const closeX = layout.outerX + MINIMAP_FRAME_PADDING;
+    const closeY = headerY + (layout.headerHeight - closeSize) / 2;
+    ctx.save();
+    ctx.fillStyle = "#7d271d";
+    ctx.strokeStyle = "#d6b48d";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(closeX + closeSize / 2, closeY + closeSize / 2, closeSize / 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = "#f3d1a4";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(closeX + 4, closeY + 4);
+    ctx.lineTo(closeX + closeSize - 4, closeY + closeSize - 4);
+    ctx.moveTo(closeX + closeSize - 4, closeY + 4);
+    ctx.lineTo(closeX + 4, closeY + closeSize - 4);
+    ctx.stroke();
+    ctx.restore();
+    minimapHitboxes.close = { x: closeX, y: closeY, w: closeSize, h: closeSize };
 
     // Titre
     ctx.fillStyle = "#f5d1a4";
@@ -161,20 +178,9 @@ function drawMiniMap() {
     drawHeaderButton(zoomOutX, "-");
     minimapHitboxes.zoomIn = { x: zoomInX, y: buttonY, w: MINIMAP_BUTTON_SIZE, h: MINIMAP_BUTTON_SIZE };
     minimapHitboxes.zoomOut = { x: zoomOutX, y: buttonY, w: MINIMAP_BUTTON_SIZE, h: MINIMAP_BUTTON_SIZE };
-
     // Fond noir simple (pas d'image grise)
-    if (isMinimapOpen) {
-        ctx.fillStyle = "black";
-        ctx.fillRect(x, y, MINIMAP_WIDTH, MINIMAP_HEIGHT);
-    } else {
-        ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
-        ctx.fillRect(x, y, MINIMAP_WIDTH, MINIMAP_HEIGHT);
-        ctx.fillStyle = "#d6b48d";
-        ctx.font = "italic 11px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText("Minimap fermée", x + MINIMAP_WIDTH / 2, y + MINIMAP_HEIGHT / 2);
-        return;
-    }
+    ctx.fillStyle = "black";
+    ctx.fillRect(x, y, MINIMAP_WIDTH, MINIMAP_HEIGHT);
 
     // 2. CALCULS D'ÉCHELLE
     const scale   = (typeof getMiniMapScale === "function")
@@ -406,20 +412,23 @@ function drawMiniMap() {
         }
     }
 
-    // 11. Textes (ID de carte + coordonnées)
+    // 11. Textes (ID de carte + coordonnées en haut comme sur le client Flash)
     const displayX  = Math.round(shipX / 100);
     const displayY  = Math.round(shipY / 100);
-    const coordText = `${displayX} / ${displayY}`;
-    const mapText   = `${cfg.mapID || 1}-1`;
+    const coordText = `${displayX}/${displayY}`;
+    const mapText   = (currentMapId && currentMapId > 0)
+        ? `${Math.floor(currentMapId / 10)}-${currentMapId % 10}`
+        : "1-1";
 
-    ctx.fillStyle = "#ccc";
-    ctx.font      = "10px Arial";
+    ctx.fillStyle = "#f5d1a4";
+    ctx.font      = "bold 12px Arial";
     ctx.textAlign = "left";
     ctx.fillText(mapText, x + 4, y + 12);
 
-    ctx.fillStyle = "#fff";
-    ctx.textAlign = "center";
-    ctx.fillText(coordText, x + MINIMAP_WIDTH / 2, y + MINIMAP_HEIGHT - 4);
+    const mapLabelWidth = ctx.measureText(mapText).width;
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "left";
+    ctx.fillText(coordText, x + 4 + mapLabelWidth + 8, y + 12);
 }
 
 
@@ -1751,6 +1760,7 @@ function toggleWindow(key, forceState) {
     const newState = (forceState !== undefined) ? forceState : !windowStates[key];
     windowStates[key] = newState;
     refreshWindowsVisibility();
+    saveInterfaceLayout();
 }
 
 function refreshWindowsVisibility() {
@@ -1770,17 +1780,9 @@ function refreshWindowsVisibility() {
 
         // --- Colonne de gauche (équivalent leftDynamicSlot du main.swf) ---
         if (iconEl) {
-            if (key === 'map') {
-                // La minimap garde toujours son bouton, comme sur le client d’origine
-                iconEl.style.display = 'flex';
-                iconEl.classList.toggle('active', isOpen);
-            } else {
-                // Pour user / ship / chat / group / quest / log :
-                //  - fenêtre ouverte  -> icône cachée à gauche
-                //  - fenêtre fermée   -> icône visible à gauche
-                iconEl.style.display = isOpen ? 'none' : 'flex';
-                iconEl.classList.toggle('active', !isOpen);
-            }
+            // Fenêtre ouverte -> icône masquée, fenêtre fermée -> icône visible (minimap comprise)
+            iconEl.style.display = isOpen ? 'none' : 'flex';
+            iconEl.classList.toggle('active', !isOpen);
         }
 
         // --- Fenêtre elle-même ---
@@ -1796,6 +1798,7 @@ function refreshWindowsVisibility() {
         // Cas spécial minimap (pour le dessin dans le canvas)
         if (key === 'map') {
             window.showMinimap = isOpen;
+            minimapPositionDirty = true;
         }
     }
 }
