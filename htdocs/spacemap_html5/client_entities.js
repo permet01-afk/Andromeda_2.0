@@ -402,19 +402,38 @@ function handleQuickbarClick(screenX, screenY, e) {
         }
 
         // --- 2. MINIMAP ---
-        const margin = 10;
-        const miniMapX = canvas.width  - MINIMAP_WIDTH  - margin;
-        const miniMapY = canvas.height - MINIMAP_HEIGHT - margin;
+        const isMinimapOpen = window.showMinimap !== false;
+        const layout = (typeof getMinimapLayout === "function") ? getMinimapLayout(isMinimapOpen) : null;
+        const mapRect = minimapHitboxes.content || (layout ? {
+            x: layout.contentX,
+            y: layout.contentY,
+            w: MINIMAP_WIDTH,
+            h: MINIMAP_HEIGHT
+        } : null);
 
-        if (screenX >= miniMapX && screenX <= miniMapX + MINIMAP_WIDTH &&
-            screenY >= miniMapY && screenY <= miniMapY + MINIMAP_HEIGHT) {
+        if (minimapHitboxes.icon && isPointInRect(screenX, screenY, minimapHitboxes.icon)) {
+            window.showMinimap = !isMinimapOpen;
+            return;
+        }
+
+        if (minimapHitboxes.zoomIn && isPointInRect(screenX, screenY, minimapHitboxes.zoomIn)) {
+            zoomMinimapIn();
+            return;
+        }
+
+        if (minimapHitboxes.zoomOut && isPointInRect(screenX, screenY, minimapHitboxes.zoomOut)) {
+            zoomMinimapOut();
+            return;
+        }
+
+        if (isMinimapOpen && mapRect && isPointInRect(screenX, screenY, mapRect)) {
             const scale = getMiniMapScale ? getMiniMapScale() : (MINIMAP_WIDTH / MAP_WIDTH);
             const realW = MAP_WIDTH * scale;
             const realH = MAP_HEIGHT * scale;
             const offsetX = (MINIMAP_WIDTH  - realW) / 2;
             const offsetY = (MINIMAP_HEIGHT - realH) / 2;
-            const clickLocalX = screenX - miniMapX - offsetX;
-            const clickLocalY = screenY - miniMapY - offsetY;
+            const clickLocalX = screenX - mapRect.x - offsetX;
+            const clickLocalY = screenY - mapRect.y - offsetY;
             let targetX = clickLocalX / scale;
             let targetY = clickLocalY / scale;
             targetX = Math.max(0, Math.min(MAP_WIDTH,  targetX));
@@ -703,35 +722,19 @@ canvas.addEventListener("mousemove", (e) => {
 
         // --- INTERFACE (Zoom / Filtres) ---
 
-                // Ajustement de la taille de la minimap : + / - / 0
+        // Ajustement de la taille de la minimap : + / - / 0
         if (e.key === "+" || e.key === "=") {
-            if (minimapZoom < 4) {
-                minimapZoom *= 2;
-                updateMinimapSize();
-                const serverScale = Math.round(minimapZoom * 8);
-                sendSetting('MINIMAP_SCALE', serverScale);
-            }
-            addInfoMessage("Taille minimap x" + minimapZoom.toFixed(2));
+            zoomMinimapIn();
             return;
         }
 
         if (e.key === "-" || e.key === "_") {
-            if (minimapZoom > 0.5) {
-                minimapZoom /= 2;
-                updateMinimapSize();
-                const serverScale = Math.round(minimapZoom * 8);
-                sendSetting('MINIMAP_SCALE', serverScale);
-            }
-            addInfoMessage("Taille minimap x" + minimapZoom.toFixed(2));
+            zoomMinimapOut();
             return;
         }
 
         if (e.key === "0") {
-            minimapZoom = 1;
-            updateMinimapSize();
-            const serverScale = 8; // valeur "normale" côté serveur / FULL_MERGE_AS
-            sendSetting('MINIMAP_SCALE', serverScale);
-            addInfoMessage("Taille minimap réinitialisée");
+            resetMinimapZoom();
             return;
         }
 
