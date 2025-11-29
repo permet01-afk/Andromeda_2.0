@@ -686,8 +686,8 @@ function handlePacket_N(parts, i) {
         else if (sub === "d") {
             const targetId = parseInt(parts[i + 1], 10);
             const droneStr = parts[i + 2] || "";
-            
-            const parsedDrones = parseDrones(droneStr); 
+
+            const parsedDrones = parseDrones(droneStr);
             
             if (targetId === heroId) {
                 window.heroDrones = parsedDrones;
@@ -699,7 +699,15 @@ function handlePacket_N(parts, i) {
             }
         }
     }
-	    function parseDrones(droneStr) {
+
+    function resolveDroneKind(typeId) {
+        // Dans le client Flash, les types 1 = Flax, 2/3 = Iris (et dérivés). Ici on ne gère
+        // que Flax/Iris au niveau max : on mappe 1 -> "flax", tout le reste -> "iris".
+        if (typeId === 1) return "flax";
+        return "iris";
+    }
+
+    function parseDrones(droneStr) {
         const result = [];
         if (!droneStr || typeof droneStr !== "string") return result;
 
@@ -737,6 +745,7 @@ function handlePacket_N(parts, i) {
 
             result.push({
                 type: Number.isNaN(typeId) ? null : typeId,
+                kind: resolveDroneKind(typeId),
                 level: level,
                 upgrades: upgrades,
                 raw: rawEntry
