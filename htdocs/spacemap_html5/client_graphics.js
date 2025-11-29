@@ -667,8 +667,8 @@ function drawMiniMap() {
         ctx.restore();
     }
     const DRONE_DIRECTION_FRAME_COUNT = 32;
-    const DRONE_GROUP_RADIUS = 75;             // patterns.drones.@groupRadius dans game.xml
-    const DRONE_GROUP_DIMENSION = DRONE_GROUP_RADIUS * 2;
+    var DRONE_GROUP_RADIUS = (typeof DRONE_GROUP_RADIUS !== "undefined") ? DRONE_GROUP_RADIUS : 75; // patterns.drones.@groupRadius dans game.xml
+    var DRONE_GROUP_DIMENSION = DRONE_GROUP_RADIUS * 2;
     const DRONE_DEFAULT_DIMENSION = 15 * 2;    // patterns.drones.drone.@droneRadius * 2
     const DRONE_POSITION_TOP = 0;
     const DRONE_POSITION_RIGHT = 1;
