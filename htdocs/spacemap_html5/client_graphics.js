@@ -666,18 +666,28 @@ function drawMiniMap() {
 
         ctx.restore();
     }
-    const DRONE_SPRITE_SETS = {
-        iris: { start: 131, frameCount: 63 },
-        flax: { start: 196, frameCount: 63 }
-    };
-
-    const DRONE_FRAME_DURATION_MS = 1000 / 24; // animation ~24 fps comme le client Flash
+    const DRONE_DIRECTION_FRAME_COUNT = 32;
+    const DRONE_MAX_COUNT = 8;
     const DRONE_ORBIT_RADIUS = 38;              // distance en pixels autour du centre du vaisseau
 
-    function getDroneSpriteFrame(kind, frameIndex) {
-        const def = DRONE_SPRITE_SETS[kind] || DRONE_SPRITE_SETS.iris;
-        const idx = ((frameIndex % def.frameCount) + def.frameCount) % def.frameCount;
-        const fileNumber = def.start + idx;
+    const IRIS_DRONE_FRAMES = [
+        131, 132, 133, 134, 135, 136, 137, 138,
+        139, 140, 141, 142, 143, 144, 145, 146,
+        147, 148, 149, 150, 151, 152, 153, 154,
+        155, 156, 157, 158, 159, 160, 161, 162
+    ];
+
+    const FLAX_DRONE_FRAMES = [
+        196, 197, 198, 199, 200, 201, 202, 203,
+        204, 205, 206, 207, 208, 209, 210, 211,
+        212, 213, 214, 215, 216, 217, 218, 219,
+        220, 221, 222, 223, 224, 225, 226, 227
+    ];
+
+    function getDroneSpriteFrame(kind, directionIndex) {
+        const frames = (kind === "flax") ? FLAX_DRONE_FRAMES : IRIS_DRONE_FRAMES;
+        const idx = ((directionIndex % DRONE_DIRECTION_FRAME_COUNT) + DRONE_DIRECTION_FRAME_COUNT) % DRONE_DIRECTION_FRAME_COUNT;
+        const fileNumber = frames[idx];
         return getUiImage(`graphics/assets/drones/images/${fileNumber}.png`);
     }
 
@@ -693,17 +703,19 @@ function drawMiniMap() {
     function drawDrones(worldX, worldY, drones, shipAngle = 0) {
         if (!drones || !drones.length) return;
 
-        const count = drones.length;
+        const count = Math.min(drones.length, DRONE_MAX_COUNT);
         const centerX = mapToScreenX(worldX);
         const centerY = mapToScreenY(worldY);
-        const now = performance.now();
-        const animFrame = Math.floor(now / DRONE_FRAME_DURATION_MS);
         const baseAngle = (isFinite(shipAngle) ? shipAngle : 0) - Math.PI;
+        const directionIndex = getDirectionFrameIndex(isFinite(shipAngle) ? shipAngle : 0, DRONE_DIRECTION_FRAME_COUNT);
+
+        ctx.save();
+        ctx.globalCompositeOperation = "source-over";
 
         for (let i = 0; i < count; i++) {
             const drone = drones[i] || {};
             const kind = pickDroneKind(drone);
-            const img = getDroneSpriteFrame(kind, animFrame);
+            const img = getDroneSpriteFrame(kind, directionIndex);
             if (!img || !img.complete || img.width === 0 || img.height === 0) continue;
 
             const angle = baseAngle + (Math.PI * 2 * i) / count;
@@ -712,6 +724,8 @@ function drawMiniMap() {
 
             ctx.drawImage(img, droneScreenX - img.width / 2, droneScreenY - img.height / 2);
         }
+
+        ctx.restore();
     }
 
 
