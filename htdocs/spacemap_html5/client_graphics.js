@@ -731,7 +731,16 @@ function drawMiniMap() {
                 const img = getDroneSpriteFrame(kind, directionIndex);
                 if (!img || !img.complete || img.width === 0 || img.height === 0) continue;
 
-                const droneAngle = baseAngle + positionOffset(drone.position);
+                let droneAngle = baseAngle + positionOffset(drone.position);
+
+                // Les 4 drones arrière forment un arc plus ouvert dans le client Flash :
+                // on applique un léger écart angulaire supplémentaire sur le groupe BACK
+                // pour éviter qu'ils ne se chevauchent.
+                if (group.position === DRONE_POSITION_DOWN) {
+                    const spread = Math.PI / 12; // ~15°
+                    if (drone.position === DRONE_POSITION_LEFT) droneAngle -= spread;
+                    if (drone.position === DRONE_POSITION_RIGHT) droneAngle += spread;
+                }
 
                 const droneRadius = (drone.position === DRONE_POSITION_CENTER ? 1 : (drone.dimension || DRONE_DEFAULT_DIMENSION));
                 const droneWorldX = groupWorldX + Math.cos(droneAngle) * droneRadius;
