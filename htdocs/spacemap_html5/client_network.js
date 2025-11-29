@@ -62,6 +62,18 @@
         }
     }
 
+    // Permet d'éviter les erreurs si l'UI du chat n'est pas encore chargée
+    function renderChatTabsSafe(attempt = 0) {
+        if (typeof renderChatTabs === 'function') {
+            renderChatTabs();
+            return;
+        }
+
+        if (attempt < 10) {
+            setTimeout(() => renderChatTabsSafe(attempt + 1), 100);
+        }
+    }
+
     function connectToChat() {
         const url = `ws://${cfg.host}:${cfg.port}`;
         console.log("[CHAT-WS] Connexion au canal Chat/Groupe...");
@@ -72,7 +84,7 @@
             console.log("[CHAT-WS] Connecté ! Attente avant init...");
 
             ensureDefaultChatRooms();
-            renderChatTabs();
+            renderChatTabsSafe();
             
             // On attend 500ms avant d'envoyer le paquet d'auth Chat
             // pour être sûr que le serveur a fini le handshake WebSocket
@@ -285,7 +297,7 @@
                 const faction = parseInt(parts[2], 10) || 0;
                 if (!isNaN(roomId)) {
                     upsertChatRoom(roomId, roomName, faction);
-                    renderChatTabs();
+                    renderChatTabsSafe();
                 }
             }
         }
