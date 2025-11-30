@@ -85,6 +85,8 @@
     const BOX_SPRITE_BASE_PATH = "graphics/collectables/box1/";
     const boxSpriteCache = {};
     const boxAnimationStates = {};
+    const BOOTY_KEY_SPRITE_PATH = UI_SPRITES.iconBootyKey || "graphics/ui/ui/images/59_shipInfoIcon_bootykey.png";
+    const bootyKeySprite = getUiImage(BOOTY_KEY_SPRITE_PATH);
 
     function getBoxSpriteFrame(frameIndex) {
         const idx = ((frameIndex % BOX_ANIMATION_FRAME_COUNT) + BOX_ANIMATION_FRAME_COUNT) % BOX_ANIMATION_FRAME_COUNT;
@@ -99,6 +101,25 @@
     function clearBoxAnimationState(id) {
         if (id == null) return;
         delete boxAnimationStates[id];
+    }
+
+    function drawBootyKey(boxScreenX, boxScreenY, now) {
+        const img = bootyKeySprite;
+        if (img && img.complete && img.width > 0 && img.height > 0) {
+            const pulse = 1 + 0.15 * Math.sin((now % 900) / 900 * Math.PI * 2);
+            const alpha = 0.75 + 0.25 * Math.sin((now % 650) / 650 * Math.PI * 2);
+            const w = img.width * pulse;
+            const h = img.height * pulse;
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.drawImage(img, boxScreenX - w / 2, boxScreenY - h / 2, w, h);
+            ctx.restore();
+        } else {
+            ctx.fillStyle = "#ffffff";
+            ctx.beginPath();
+            ctx.arc(boxScreenX, boxScreenY, 8, 0, Math.PI * 2, false);
+            ctx.fill();
+        }
     }
 
     function updateEngineAnimationState(key, worldX, worldY, forceMoving = false) {
@@ -1101,22 +1122,39 @@ function drawMiniMap() {
         const boxScreenY = mapToScreenY(e.y);
 
         const now = performance.now();
-        const animState = boxAnimationStates[e.id] || { frameIndex: 0, lastUpdate: now };
+        const category = e.category || "other";
+        const isCargo = category === "cargoFree" || category === "cargoNotFree";
+        const isBootyKey = category === "bootyKey";
 
-        if (now - animState.lastUpdate >= BOX_ANIMATION_FRAME_DURATION) {
-            const steps = Math.floor((now - animState.lastUpdate) / BOX_ANIMATION_FRAME_DURATION);
-            animState.frameIndex = (animState.frameIndex + steps) % BOX_ANIMATION_FRAME_COUNT;
-            animState.lastUpdate = animState.lastUpdate + steps * BOX_ANIMATION_FRAME_DURATION;
-        }
+        if (isCargo) {
+            const animState = boxAnimationStates[e.id] || { frameIndex: 0, lastUpdate: now };
 
-        const frameImg = getBoxSpriteFrame(animState.frameIndex);
-        boxAnimationStates[e.id] = animState;
+            if (now - animState.lastUpdate >= BOX_ANIMATION_FRAME_DURATION) {
+                const steps = Math.floor((now - animState.lastUpdate) / BOX_ANIMATION_FRAME_DURATION);
+                animState.frameIndex = (animState.frameIndex + steps) % BOX_ANIMATION_FRAME_COUNT;
+                animState.lastUpdate = animState.lastUpdate + steps * BOX_ANIMATION_FRAME_DURATION;
+            }
 
-        if (frameImg && frameImg.complete && frameImg.width > 0 && frameImg.height > 0) {
-            ctx.drawImage(frameImg, boxScreenX - frameImg.width / 2, boxScreenY - frameImg.height / 2);
+            const frameImg = getBoxSpriteFrame(animState.frameIndex);
+            boxAnimationStates[e.id] = animState;
+
+            if (frameImg && frameImg.complete && frameImg.width > 0 && frameImg.height > 0) {
+                ctx.drawImage(frameImg, boxScreenX - frameImg.width / 2, boxScreenY - frameImg.height / 2);
+            } else {
+                ctx.fillStyle = getEntityColor(e);
+                ctx.fillRect(boxScreenX - size / 2, boxScreenY - size / 2, size, size);
+            }
         } else {
-            ctx.fillStyle = getEntityColor(e);
-            ctx.fillRect(boxScreenX - size / 2, boxScreenY - size / 2, size, size);
+            if (boxAnimationStates[e.id]) clearBoxAnimationState(e.id);
+
+            if (isBootyKey) {
+                drawBootyKey(boxScreenX, boxScreenY, now);
+            } else {
+                ctx.fillStyle = getEntityColor(e);
+                ctx.beginPath();
+                ctx.arc(boxScreenX, boxScreenY, size / 2, 0, Math.PI * 2, false);
+                ctx.fill();
+            }
         }
     }
 }
