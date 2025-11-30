@@ -74,6 +74,76 @@
         drawBeamSprite(img, startX, startY, endX, endY, alpha, scale);
     }
 
+    const ENGINE_FRAME_DURATION = 1000 / ((ENGINE_SPRITE_DEFS[DEFAULT_ENGINE_KEY]?.fps) || ENGINE_ANIM_FPS || 20);
+    const ENGINE_MOVING_COOLDOWN_TICKS = 3;
+    const ENGINE_MOVE_EPS = 0.5;
+    const engineAnimationState = {};
+
+    function updateEngineAnimationState(key, worldX, worldY, forceMoving = false) {
+        const now = performance.now();
+        const state = engineAnimationState[key] || {
+            frameIndex: 0,
+            lastUpdate: now,
+            lastFrameChange: now,
+            cooldown: 0,
+            lastX: worldX,
+            lastY: worldY
+        };
+
+        const moved = forceMoving || (Math.hypot(worldX - state.lastX, worldY - state.lastY) > ENGINE_MOVE_EPS);
+        if (moved) {
+            state.cooldown = ENGINE_MOVING_COOLDOWN_TICKS;
+        } else if (state.cooldown > 0 && now - state.lastUpdate >= ENGINE_FRAME_DURATION) {
+            state.cooldown -= 1;
+        }
+
+        const active = state.cooldown > 0;
+        const engineFrames = ENGINE_SPRITE_DEFS[DEFAULT_ENGINE_KEY]?.frames?.length
+            || ENGINE_SPRITE_DEFS[DEFAULT_ENGINE_KEY]?.frameCount
+            || 1;
+
+        if (active && now - state.lastFrameChange >= ENGINE_FRAME_DURATION) {
+            state.frameIndex = (state.frameIndex + 1) % engineFrames;
+            state.lastFrameChange = now;
+        } else if (!active) {
+            state.frameIndex = 0;
+        }
+
+        state.lastX = worldX;
+        state.lastY = worldY;
+        state.lastUpdate = now;
+        engineAnimationState[key] = state;
+
+        return { active, frameIndex: state.frameIndex };
+    }
+
+    function drawEngineTrail(key, worldX, worldY, angleRad, spriteHeight, offsetY = 0) {
+        const engineDef = ENGINE_SPRITE_DEFS[DEFAULT_ENGINE_KEY];
+        if (!engineDef) return;
+
+        const { active, frameIndex } = updateEngineAnimationState(key, worldX, worldY);
+        if (!active) return;
+
+        const img = getEngineSpriteFrame(DEFAULT_ENGINE_KEY, frameIndex);
+        if (!img || !img.complete || img.width === 0 || img.height === 0) return;
+
+        const offset = Math.max(spriteHeight * 0.35, 18);
+        const thrusterX = worldX - Math.cos(angleRad || 0) * offset;
+        const thrusterY = worldY - Math.sin(angleRad || 0) * offset;
+        const screenX = mapToScreenX(thrusterX);
+        const screenY = mapToScreenY(thrusterY) + offsetY;
+
+        const scale = Math.max(0.55, Math.min(1.0, spriteHeight / 80));
+        const drawW = img.width * scale;
+        const drawH = img.height * scale;
+
+        ctx.save();
+        ctx.translate(screenX, screenY);
+        ctx.rotate((angleRad || 0) + Math.PI);
+        ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+        ctx.restore();
+    }
+
     // =====================================================================
 function drawMiniMap() {
     const layout = (typeof getMinimapLayout === "function") ? getMinimapLayout() : {
@@ -638,8 +708,11 @@ function drawMiniMap() {
         if (def) {
             const frameIndex = getDirectionFrameIndex(heroAngle, def.frameCount);
 
+            let glowImg = null;
+            let img = null;
+
             if (typeof getShipGlowFrame === "function") {
-                const glowImg = getShipGlowFrame(shipId, frameIndex);
+                glowImg = getShipGlowFrame(shipId, frameIndex);
                 if (glowImg && glowImg.complete && glowImg.width > 0 && glowImg.height > 0) {
                     const gw = glowImg.width;
                     const gh = glowImg.height;
@@ -647,7 +720,12 @@ function drawMiniMap() {
                 }
             }
 
-            const img = getShipSpriteFrame(shipId, frameIndex);
+            img = getShipSpriteFrame(shipId, frameIndex);
+
+            const candidateHeight = (img && img.complete && img.height > 0)
+                ? img.height
+                : shipDrawnHeight;
+            drawEngineTrail("hero", shipX, shipY, heroAngle || 0, candidateHeight, bobOffset);
 
             if (img && img.complete && img.width > 0 && img.height > 0) {
                 const w = img.width;
@@ -811,6 +889,7 @@ function drawMiniMap() {
         const def = SHIP_SPRITE_DEFS[e.shipId];
         let drewSprite = false;
         let spriteHeight = size;
+        let img = null;
 
         // Si on a des sprites pour ce shipId, on les utilise
         if (def) {
@@ -832,7 +911,11 @@ function drawMiniMap() {
             }
 
             // --- SPRITE DU VAISSEAU ---
-            const img = getShipSpriteFrame(e.shipId, frameIndex);
+            img = getShipSpriteFrame(e.shipId, frameIndex);
+            const candidateHeight = (img && img.complete && img.height > 0)
+                ? img.height
+                : spriteHeight;
+            drawEngineTrail(`entity_${e.id}`, e.x, e.y, e.angle || 0, candidateHeight);
             if (img && img.complete && img.width > 0 && img.height > 0) {
                 const w = img.width;
                 const h = img.height;

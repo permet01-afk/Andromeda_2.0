@@ -549,6 +549,17 @@ const SHIP_SPRITE_DEFS = {
     39: { frameCount: 1,  basePath: "graphics/ships/80/" }  // Boss Cubikon    -> Cubikon
 };
 
+const ENGINE_ANIM_FPS = 20;
+const DEFAULT_ENGINE_KEY = "engine0";
+const ENGINE_SPRITE_DEFS = {
+    engine0: {
+        frameCount: 12,
+        basePath: "graphics/engines/engine0/",
+        frames: [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23],
+        fps: ENGINE_ANIM_FPS
+    }
+};
+
 // --- CONFIGURATION DES STATIONS ---
 const STATION_SPRITE_DEFS = {
     "blueStation":  { path: "graphics/stations/blueStation/1.png" },
@@ -722,6 +733,7 @@ const shieldSpriteCache = {};
 const portalSpriteCache = {};
 const portalJumpSpriteCache = {};
 const uiImageCache = {};
+const engineSpriteCache = {};
 
     const QUICKBAR_ICON_LOOKUP = {
         ammo: {
@@ -850,6 +862,28 @@ function getShipSpriteFrame(shipId, frameIndex) {
     const fileNumber = idx + 1;
     img.src = def.basePath + fileNumber + ".png";
     shipSpriteCache[key] = img;
+    return img;
+}
+
+function getEngineSpriteFrame(engineKey, frameIndex) {
+    const key = engineKey || DEFAULT_ENGINE_KEY;
+    const def = ENGINE_SPRITE_DEFS[key];
+    if (!def) return null;
+
+    const frames = def.frames && def.frames.length > 0
+        ? def.frames
+        : Array.from({ length: def.frameCount }, (_, idx) => idx + 1);
+
+    let idx = frameIndex % frames.length;
+    if (idx < 0) idx += frames.length;
+
+    const fileNumber = frames[idx];
+    const cacheKey = `${key}_${fileNumber}`;
+    if (engineSpriteCache[cacheKey]) return engineSpriteCache[cacheKey];
+
+    const img = new Image();
+    img.src = def.basePath + fileNumber + ".png";
+    engineSpriteCache[cacheKey] = img;
     return img;
 }
 
