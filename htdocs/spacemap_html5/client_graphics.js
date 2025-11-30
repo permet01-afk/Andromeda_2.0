@@ -259,14 +259,14 @@
         engineSmokeState[key] = state;
     }
 
-    function drawEngineTrail(key, shipId, worldX, worldY, frameIndex, angleRad, offsetY = 0) {
+    function drawEngineTrail(key, shipId, worldX, worldY, frameIndex, angleRad, offsetY = 0, forceMoving = false) {
         const engineDef = ENGINE_SPRITE_DEFS[DEFAULT_ENGINE_KEY];
         if (!engineDef) return;
 
         const engineOffset = getEngineOffsetForFrame(shipId, frameIndex || 0);
         if (!engineOffset) return;
 
-        const { frameIndex: animFrameIndex, isMoving } = updateEngineAnimationState(key, worldX, worldY);
+        const { frameIndex: animFrameIndex, isMoving } = updateEngineAnimationState(key, worldX, worldY, forceMoving);
 
         const img = getEngineSpriteFrame(DEFAULT_ENGINE_KEY, animFrameIndex);
         if (!img || !img.complete || img.width === 0 || img.height === 0) return;
@@ -1053,7 +1053,8 @@ function drawMiniMap() {
 
             // --- SPRITE DU VAISSEAU ---
             img = getShipSpriteFrame(e.shipId, frameIndex);
-            drawEngineTrail(`entity_${e.id}`, e.shipId, e.x, e.y, frameIndex, e.angle || 0);
+            const forceEngineMoving = typeof e.speed === "number" && e.speed > 0;
+            drawEngineTrail(`entity_${e.id}`, e.shipId, e.x, e.y, frameIndex, e.angle || 0, 0, forceEngineMoving);
             if (img && img.complete && img.width > 0 && img.height > 0) {
                 const w = img.width;
                 const h = img.height;
