@@ -81,7 +81,7 @@
 
     // --- BOX (CARGO) ANIMATION SPRITES ---
     const BOX_ANIMATION_FRAME_DURATION = 25; // ms (Flash client timer cadence)
-    const BONUS_BOX_ANIMATION_FRAME_DURATION = 40; // ms (Flash pacing for bonus boxes ~25 fps)
+    const BONUS_BOX_ANIMATION_FRAME_DURATION = 25; // ms (Flash timer cadence matches Flash box loop)
     const BOX_SPRITE_CONFIG = {
         cargo: { basePath: "graphics/collectables/box1/", frameCount: 25 },
         bonus: { basePath: "graphics/collectables/box2/", frameCount: 25 }
