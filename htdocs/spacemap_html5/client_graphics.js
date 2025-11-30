@@ -700,11 +700,14 @@ function drawMiniMap() {
         return "iris";
     }
 
-    function positionOffset(pos) {
+    const RAD_TO_DEG = 180 / Math.PI;
+    const DEG_TO_RAD = Math.PI / 180;
+
+    function positionOffsetDegrees(pos) {
         if (pos === DRONE_POSITION_TOP) return 0;
-        if (pos === DRONE_POSITION_RIGHT) return Math.PI / 2;
-        if (pos === DRONE_POSITION_DOWN) return Math.PI;
-        if (pos === DRONE_POSITION_LEFT) return Math.PI * 1.5;
+        if (pos === DRONE_POSITION_RIGHT) return 90;
+        if (pos === DRONE_POSITION_DOWN) return 180;
+        if (pos === DRONE_POSITION_LEFT) return 270;
         return 0;
     }
 
@@ -712,17 +715,19 @@ function drawMiniMap() {
     function drawDrones(worldX, worldY, droneConnector, shipAngle = 0) {
         if (!droneConnector || !droneConnector.groups || !droneConnector.groups.length) return;
 
-        const baseAngle = (isFinite(shipAngle) ? shipAngle : 0) - Math.PI;
-        const directionIndex = getDirectionFrameIndex(isFinite(shipAngle) ? shipAngle : 0, DRONE_DIRECTION_FRAME_COUNT);
+        const normalizedShipAngle = isFinite(shipAngle) ? shipAngle : 0;
+        const baseRotationDeg = normalizedShipAngle * RAD_TO_DEG - 180;
+        const directionIndex = getDirectionFrameIndex(normalizedShipAngle, DRONE_DIRECTION_FRAME_COUNT);
         const groupDimension = droneConnector.groupDimension || DRONE_GROUP_DIMENSION;
 
         ctx.save();
         ctx.globalCompositeOperation = "source-over";
 
         for (const group of droneConnector.groups) {
-            const groupAngle = baseAngle + positionOffset(group.position);
-            const groupWorldX = worldX + Math.cos(groupAngle) * groupDimension;
-            const groupWorldY = worldY + Math.sin(groupAngle) * groupDimension;
+            const groupAngleDeg = baseRotationDeg + positionOffsetDegrees(group.position);
+            const groupAngleRad = groupAngleDeg * DEG_TO_RAD;
+            const groupWorldX = worldX + Math.cos(groupAngleRad) * groupDimension;
+            const groupWorldY = worldY + Math.sin(groupAngleRad) * groupDimension;
             const groupScreenX = mapToScreenX(groupWorldX);
             const groupScreenY = mapToScreenY(groupWorldY);
 
@@ -731,11 +736,12 @@ function drawMiniMap() {
                 const img = getDroneSpriteFrame(kind, directionIndex);
                 if (!img || !img.complete || img.width === 0 || img.height === 0) continue;
 
-                let droneAngle = baseAngle + positionOffset(drone.position);
+                const droneAngleDeg = baseRotationDeg + positionOffsetDegrees(drone.position);
+                const droneAngleRad = droneAngleDeg * DEG_TO_RAD;
 
                 const droneRadius = (drone.position === DRONE_POSITION_CENTER ? 1 : (drone.dimension || DRONE_DEFAULT_DIMENSION));
-                const droneWorldX = groupWorldX + Math.cos(droneAngle) * droneRadius;
-                const droneWorldY = groupWorldY + Math.sin(droneAngle) * droneRadius;
+                const droneWorldX = groupWorldX + Math.cos(droneAngleRad) * droneRadius;
+                const droneWorldY = groupWorldY + Math.sin(droneAngleRad) * droneRadius;
                 const droneScreenX = mapToScreenX(droneWorldX);
                 const droneScreenY = mapToScreenY(droneWorldY);
 
