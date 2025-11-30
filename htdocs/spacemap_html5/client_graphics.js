@@ -81,6 +81,7 @@
 
     // --- BOX (CARGO) ANIMATION SPRITES ---
     const BOX_ANIMATION_FRAME_DURATION = 25; // ms (Flash client timer cadence)
+    const BONUS_BOX_ANIMATION_FRAME_DURATION = 25; // ms (Flash timer cadence matches Flash box loop)
     const BOX_SPRITE_CONFIG = {
         cargo: { basePath: "graphics/collectables/box1/", frameCount: 25 },
         bonus: { basePath: "graphics/collectables/box2/", frameCount: 25 }
@@ -118,7 +119,7 @@
         if (bonusBoxAnimationTimer !== null) return;
         bonusBoxAnimationTimer = setInterval(() => {
             bonusBoxFrameIndex = (bonusBoxFrameIndex + 1) % BOX_SPRITE_CONFIG.bonus.frameCount;
-        }, BOX_ANIMATION_FRAME_DURATION);
+        }, BONUS_BOX_ANIMATION_FRAME_DURATION);
     }
 
     function drawBootyKey(boxScreenX, boxScreenY, now) {
