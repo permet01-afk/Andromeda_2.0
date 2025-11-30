@@ -53,6 +53,10 @@
     // Cible de collecte en attente
     let pendingCollectBoxId = null;
     let pendingCollectTarget = null;
+    // Délai de collecte (rejoue l'attente du client Flash)
+    let collectDelayTimerId = null;
+    let collectDelayBoxId = null;
+    let collectDelayEndsAt = 0;
     // Collectes envoyées au serveur en attente de confirmation (pour lever l'immunité 2s)
     const collectedBoxRequestIds = new Set();
 
@@ -64,6 +68,61 @@
     function clearPendingCollectState() {
         pendingCollectBoxId = null;
         pendingCollectTarget = null;
+        cancelCollectDelay();
+    }
+
+    function cancelCollectDelay() {
+        if (collectDelayTimerId !== null) {
+            clearTimeout(collectDelayTimerId);
+            collectDelayTimerId = null;
+        }
+        collectDelayBoxId = null;
+        collectDelayEndsAt = 0;
+        if (typeof stopHeroCollectorBeam === "function") {
+            stopHeroCollectorBeam();
+        }
+    }
+
+    function isCollectDelayActiveFor(boxId) {
+        return collectDelayTimerId !== null && collectDelayBoxId === boxId;
+    }
+
+    function shouldUseCollectDelay(box) {
+        if (!box || box.kind !== "box") return false;
+        return [
+            "cargoFree",
+            "cargoNotFree",
+            "bonusBox",
+            "bootyBox",
+            "bootyKey",
+            "ore"
+        ].includes(box.category);
+    }
+
+    function startCollectDelay(boxId, durationMs = BOX_COLLECT_DELAY_MS) {
+        if (boxId == null) return;
+
+        if (collectDelayBoxId !== boxId) {
+            cancelCollectDelay();
+        }
+
+        collectDelayBoxId = boxId;
+        collectDelayEndsAt = performance.now() + durationMs;
+
+        if (typeof startHeroCollectorBeam === "function") {
+            startHeroCollectorBeam(durationMs);
+        }
+
+        collectDelayTimerId = setTimeout(() => {
+            collectDelayTimerId = null;
+            collectDelayBoxId = null;
+            collectDelayEndsAt = 0;
+
+            const collectRequested = (typeof collectedBoxRequestIds !== "undefined") && collectedBoxRequestIds.has(boxId);
+            if (pendingCollectBoxId === boxId && !collectRequested) {
+                sendCollectBox(boxId);
+            }
+        }, durationMs);
     }
 
     // Helpers entités / portails
