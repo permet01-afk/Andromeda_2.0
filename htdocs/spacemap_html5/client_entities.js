@@ -60,36 +60,14 @@
     // Collectes envoyées au serveur en attente de confirmation (pour lever l'immunité 2s)
     const collectedBoxRequestIds = new Set();
 
-    function getCollectableDimensions(box) {
-        if (!box) return null;
-
-        // Essaye de récupérer la taille réelle du sprite (comme le client Flash qui se base sur la hitbox visuelle)
-        if (box.kind === "box") {
-            const category = box.category || "cargoFree";
-            const spriteCategory = category === "bonusBox" ? "bonusBox" : (category === "bootyBox" ? "bootyBox" : category);
-
-            if (typeof getBoxSpriteFrame === "function") {
-                const sprite = getBoxSpriteFrame(spriteCategory, 0);
-                if (sprite && sprite.complete && sprite.width > 0 && sprite.height > 0) {
-                    return { width: sprite.width, height: sprite.height };
-                }
-            }
-
-            // Fallback générique (valeurs proches des dimensions des assets PNG 128x128)
-            return { width: 128, height: 128 };
-        }
-
-        return null;
-    }
-
     function computeCollectApproach(box) {
         if (!box) return null;
 
-        const dims = getCollectableDimensions(box);
-        const targetX = (dims && typeof dims.width === "number") ? box.x + dims.width / 2 : box.x;
-        const targetY = (dims && typeof dims.height === "number") ? box.y + dims.height / 2 : box.y;
-
-        return { x: targetX, y: targetY };
+        // Le client Flash place le vaisseau exactement au centre visuel de l'objet collecté.
+        // Les coordonnées envoyées par le serveur correspondent déjà au centre des sprites
+        // (voir le dessin des boxes dans client_graphics.js), donc on n'ajoute plus d'offset
+        // vertical qui faisait arriver le vaisseau en dessous de la box.
+        return { x: box.x, y: box.y };
     }
 
     function clearPendingCollectState() {
