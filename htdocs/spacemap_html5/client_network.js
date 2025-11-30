@@ -1782,8 +1782,9 @@ function handlePacket_N(parts, i) {
                 if (typeof stopHeroCollectorBeam === "function") stopHeroCollectorBeam();
             }
 
-            if (e.kind === "box" && typeof clearBoxAnimationState === "function") {
-                clearBoxAnimationState(id);
+            if (e.kind === "box") {
+                if (typeof clearBoxAnimationState === "function") clearBoxAnimationState(id);
+                if (typeof clearOreAnimationState === "function") clearOreAnimationState(id);
             }
 
             delete entities[id];
@@ -1853,8 +1854,9 @@ function handlePacket_s(parts, i) {
                 if (typeof stopHeroCollectorBeam === "function") stopHeroCollectorBeam();
             }
 
-            if (e.kind === "box" && typeof clearBoxAnimationState === "function") {
-                clearBoxAnimationState(id);
+            if (e.kind === "box") {
+                if (typeof clearBoxAnimationState === "function") clearBoxAnimationState(id);
+                if (typeof clearOreAnimationState === "function") clearOreAnimationState(id);
             }
 
             // Suppression définitive de l'entité en mémoire

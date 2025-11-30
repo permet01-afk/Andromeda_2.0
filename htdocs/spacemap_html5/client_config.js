@@ -174,6 +174,12 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
     const TARGET_FADE_OVERLAY_RADIUS = 26;
 
     // Types d'objets (bonus, cargos, etc.)
+    const ORE_TYPE_SPRITES = {
+        30: "oreRed",     // Prometium (rouge)
+        31: "oreBlue",    // Endurium (bleu)
+        32: "oreYellow"   // Terbium (jaune)
+    };
+
     const OBJECT_TYPE_META = {
         1:  { label: "CargoBox / SpaceballBox", category: "cargoFree",  kind: "box"  },
         2:  { label: "BonusBox",                category: "bonusBox",   kind: "box"  },
@@ -183,7 +189,12 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
         23: { label: "RedBootyBox",             category: "bootyBox",   kind: "box"  },
         24: { label: "GoldBootyBox",            category: "bootyBox",   kind: "box"  },
         26: { label: "ApocalypseBox",           category: "bootyBox",   kind: "box"  },
-        25: { label: "SilverBootyKey",          category: "bootyKey",   kind: "box"  }
+        25: { label: "SilverBootyKey",          category: "bootyKey",   kind: "box"  },
+
+        // Minerais collectables (type = CollectablePattern.TYPE_ORE)
+        30: { label: "Ore (Prometium)",         category: "ore",        kind: "box", oreSprite: ORE_TYPE_SPRITES[30] },
+        31: { label: "Ore (Endurium)",          category: "ore",        kind: "box", oreSprite: ORE_TYPE_SPRITES[31] },
+        32: { label: "Ore (Terbium)",           category: "ore",        kind: "box", oreSprite: ORE_TYPE_SPRITES[32] }
     };
 
     // Visibilité des objets

@@ -94,6 +94,16 @@
     const BOOTY_KEY_SPRITE_PATH = UI_SPRITES.iconBootyKey || "graphics/ui/ui/images/59_shipInfoIcon_bootykey.png";
     const bootyKeySprite = getUiImage(BOOTY_KEY_SPRITE_PATH);
 
+    // --- ORE ANIMATION SPRITES ---
+    const ORE_ANIMATION_FRAME_DURATION = 25; // ms, aligné sur le timer Flash
+    const ORE_SPRITE_CONFIG = {
+        oreBlue:   { basePath: "graphics/collectables/oreBlue/",   frameCount: 26 },
+        oreRed:    { basePath: "graphics/collectables/oreRed/",    frameCount: 26 },
+        oreYellow: { basePath: "graphics/collectables/oreYellow/", frameCount: 26 }
+    };
+    const oreSpriteCache = {};
+    const oreAnimationStates = {};
+
     // --- COLLECTOR BEAM (effet local au joueur) ---
     const COLLECTOR_BEAM_FRAME_COUNT = 15;
     const COLLECTOR_BEAM_FPS = 30;
@@ -149,6 +159,34 @@
     function clearBoxAnimationState(id) {
         if (id == null) return;
         delete boxAnimationStates[id];
+    }
+
+    function getOreSpriteKeyFromType(type, oreSpriteOverride = null) {
+        if (oreSpriteOverride) return oreSpriteOverride;
+        return ORE_TYPE_SPRITES?.[type] || null;
+    }
+
+    function getOreSpriteConfig(spriteKey) {
+        if (!spriteKey) return null;
+        return ORE_SPRITE_CONFIG[spriteKey] || null;
+    }
+
+    function getOreSpriteFrame(spriteKey, frameIndex) {
+        const cfg = getOreSpriteConfig(spriteKey);
+        if (!cfg) return null;
+        const frameCount = cfg.frameCount;
+        const idx = ((frameIndex % frameCount) + frameCount) % frameCount;
+        const path = `${cfg.basePath}${idx + 1}.png`;
+        if (oreSpriteCache[path]) return oreSpriteCache[path];
+        const img = new Image();
+        img.src = path;
+        oreSpriteCache[path] = img;
+        return img;
+    }
+
+    function clearOreAnimationState(id) {
+        if (id == null) return;
+        delete oreAnimationStates[id];
     }
 
     function ensureBonusBoxAnimationTimer() {
@@ -1212,10 +1250,39 @@ function drawMiniMap() {
         const isCargo = category === "cargoFree" || category === "cargoNotFree";
         const isBonus = category === "bonusBox";
         const isBootyBox = category === "bootyBox";
+        const isOre = category === "ore";
         const shouldAnimate = isCargo || isBonus || isBootyBox;
         const isBootyKey = category === "bootyKey";
 
-        if (shouldAnimate) {
+        if (isOre) {
+            const spriteKey = getOreSpriteKeyFromType(e.type, e.oreSprite);
+            const cfg = getOreSpriteConfig(spriteKey);
+            if (cfg) {
+                const frameCount = cfg.frameCount;
+                const animState = oreAnimationStates[e.id] || { frameIndex: Math.floor(Math.random() * frameCount), lastUpdate: now };
+
+                if (now - animState.lastUpdate >= ORE_ANIMATION_FRAME_DURATION) {
+                    const steps = Math.floor((now - animState.lastUpdate) / ORE_ANIMATION_FRAME_DURATION);
+                    animState.frameIndex = (animState.frameIndex + steps) % frameCount;
+                    animState.lastUpdate = animState.lastUpdate + steps * ORE_ANIMATION_FRAME_DURATION;
+                }
+
+                const frameImg = getOreSpriteFrame(spriteKey, animState.frameIndex);
+                oreAnimationStates[e.id] = animState;
+
+                if (frameImg && frameImg.complete && frameImg.width > 0 && frameImg.height > 0) {
+                    ctx.drawImage(frameImg, boxScreenX - frameImg.width / 2, boxScreenY - frameImg.height / 2);
+                } else {
+                    ctx.fillStyle = getEntityColor(e);
+                    ctx.fillRect(boxScreenX - size / 2, boxScreenY - size / 2, size, size);
+                }
+            } else {
+                ctx.fillStyle = getEntityColor(e);
+                ctx.beginPath();
+                ctx.arc(boxScreenX, boxScreenY, size / 2, 0, Math.PI * 2, false);
+                ctx.fill();
+            }
+        } else if (shouldAnimate) {
             const spriteCategory = isBonus ? "bonusBox" : isBootyBox ? "bootyBox" : category;
             const cfg = getBoxSpriteConfig(spriteCategory);
             let frameIndex;
