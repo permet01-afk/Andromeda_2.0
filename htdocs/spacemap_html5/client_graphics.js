@@ -76,52 +76,58 @@
 
     const ENGINE_FRAME_DURATION = 1000 / ((ENGINE_SPRITE_DEFS[DEFAULT_ENGINE_KEY]?.fps) || ENGINE_ANIM_FPS || 20);
     const ENGINE_MOVING_MAX_TICKS = 3;
-    const ENGINE_MOVE_EPS = 0.5;
     const engineAnimationState = {};
 
     function updateEngineAnimationState(key, worldX, worldY, forceMoving = false) {
         const now = performance.now();
-        const state = engineAnimationState[key] || {
-            frameIndex: Math.max(
-                0,
-                ((ENGINE_SPRITE_DEFS[DEFAULT_ENGINE_KEY]?.frames?.length)
-                    || ENGINE_SPRITE_DEFS[DEFAULT_ENGINE_KEY]?.frameCount
-                    || 1) - 1
-            ),
-            lastUpdate: now,
-            lastFrameChange: now,
-            movingTicks: 0,
-            lastX: worldX,
-            lastY: worldY
-        };
-
-        const moved = forceMoving || (Math.hypot(worldX - state.lastX, worldY - state.lastY) > ENGINE_MOVE_EPS);
-        if (moved) {
-            state.movingTicks = Math.min(ENGINE_MOVING_MAX_TICKS, state.movingTicks + 1);
-        } else if (state.movingTicks > 0 && now - state.lastUpdate >= ENGINE_FRAME_DURATION) {
-            state.movingTicks -= 1;
-        }
-
         const engineFrames = ENGINE_SPRITE_DEFS[DEFAULT_ENGINE_KEY]?.frames?.length
             || ENGINE_SPRITE_DEFS[DEFAULT_ENGINE_KEY]?.frameCount
             || 1;
 
-        if (now - state.lastFrameChange >= ENGINE_FRAME_DURATION) {
-            if (state.movingTicks > 0) {
-                state.frameIndex = Math.max(0, state.frameIndex - 1);
-            } else if (state.frameIndex < engineFrames - 1) {
-                state.frameIndex += 1;
+        const state = engineAnimationState[key] || {
+            frameIndex: Math.max(0, engineFrames - 1),
+            lastUpdate: now,
+            lastFrameChange: now,
+            movingTicks: 0,
+            lastX: worldX,
+            lastY: worldY,
+            isMoving: false
+        };
+
+        const moved = forceMoving || (worldX !== state.lastX || worldY !== state.lastY);
+        if (moved) {
+            if (state.movingTicks === 0) {
+                state.isMoving = true;
             }
-            state.lastFrameChange = now;
+            state.movingTicks = Math.min(ENGINE_MOVING_MAX_TICKS, state.movingTicks + 1);
+        }
+
+        const shouldAdvance = now - state.lastFrameChange >= ENGINE_FRAME_DURATION;
+        const movingNow = state.isMoving || state.movingTicks > 0;
+
+        if (shouldAdvance) {
+            if (movingNow && state.frameIndex > 0) {
+                state.frameIndex -= 1;
+                state.lastFrameChange = now;
+            } else if (!movingNow && state.frameIndex < engineFrames - 1) {
+                state.frameIndex += 1;
+                state.lastFrameChange = now;
+            }
         }
 
         state.lastX = worldX;
         state.lastY = worldY;
         state.lastUpdate = now;
-        engineAnimationState[key] = state;
 
-        const active = state.movingTicks > 0 || state.frameIndex < engineFrames - 1;
-        return { active, frameIndex: state.frameIndex };
+        if (state.movingTicks > 0) {
+            state.movingTicks -= 1;
+            if (state.movingTicks === 0) {
+                state.isMoving = false;
+            }
+        }
+
+        engineAnimationState[key] = state;
+        return { frameIndex: state.frameIndex, isMoving: movingNow };
     }
 
     function drawEngineTrail(key, shipId, worldX, worldY, frameIndex, angleRad, offsetY = 0) {
@@ -131,8 +137,7 @@
         const engineOffset = getEngineOffsetForFrame(shipId, frameIndex || 0);
         if (!engineOffset) return;
 
-        const { active, frameIndex: animFrameIndex } = updateEngineAnimationState(key, worldX, worldY);
-        if (!active) return;
+        const { frameIndex: animFrameIndex } = updateEngineAnimationState(key, worldX, worldY);
 
         const img = getEngineSpriteFrame(DEFAULT_ENGINE_KEY, animFrameIndex);
         if (!img || !img.complete || img.width === 0 || img.height === 0) return;
