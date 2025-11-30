@@ -560,13 +560,6 @@ const SHIP_SPRITE_DEFS = {
     39: { frameCount: 1,  basePath: "graphics/ships/80/" }  // Boss Cubikon    -> Cubikon
 };
 
-// Extensions visuelles de vaisseaux (overlay synchronisé sur les frames du ship)
-const SHIP_EXPANSION_DEFS = {
-    10: { frameCount: 32, basePath: "graphics/expansions/ship10_Emax/" }, // Goliath
-    56: { frameCount: 32, basePath: "graphics/expansions/ship10_Emax/" }, // Goliath Enforcer
-    59: { frameCount: 32, basePath: "graphics/expansions/ship10_Emax/" }  // Goliath Bastion
-};
-
 const ENGINE_ANIM_FPS = 20;
 const DEFAULT_ENGINE_KEY = "engine0";
 const DEFAULT_ENGINE_SMOKE_KEY = "engineSmoke0";
@@ -813,7 +806,6 @@ let stationImages = {};  // Stockage des images chargées
 
 // Cache des images déjà chargées
 const shipSpriteCache = {};
-const shipExpansionCache = {};
 const shieldSpriteCache = {};
 const portalSpriteCache = {};
 const portalJumpSpriteCache = {};
@@ -966,25 +958,6 @@ function getShipSpriteFrame(shipId, frameIndex) {
     const fileNumber = idx + 1;
     img.src = def.basePath + fileNumber + ".png";
     shipSpriteCache[key] = img;
-    return img;
-}
-
-// Récupère (ou charge) l'overlay d'expansion pour un shipId + frameIndex
-function getShipExpansionFrame(shipId, frameIndex) {
-    const def = SHIP_EXPANSION_DEFS[shipId];
-    if (!def) return null;
-
-    const frameCount = def.frameCount;
-    let idx = frameIndex % frameCount;
-    if (idx < 0) idx += frameCount;
-
-    const key = shipId + "_expansion_" + idx;
-    if (shipExpansionCache[key]) return shipExpansionCache[key];
-
-    const img = new Image();
-    const fileNumber = idx + 1;
-    img.src = def.basePath + fileNumber + ".png";
-    shipExpansionCache[key] = img;
     return img;
 }
 

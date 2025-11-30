@@ -979,13 +979,7 @@ function drawMiniMap() {
                 ctx.drawImage(img, shipScreenX - w / 2, sy - h / 2);
             }
 
-            const expansionImg = getShipExpansionFrame(shipId, frameIndex);
-            if (expansionImg && expansionImg.complete && expansionImg.width > 0 && expansionImg.height > 0) {
-                const ew = expansionImg.width;
-                const eh = expansionImg.height;
-                shipDrawnHeight = Math.max(shipDrawnHeight, eh);
-                ctx.drawImage(expansionImg, shipScreenX - ew / 2, sy - eh / 2);
-            }
+         
         } else {
             shipDrawnHeight = 0;
         }
@@ -1175,13 +1169,6 @@ function drawMiniMap() {
                 drewSprite = true;
             }
 
-            const expansionImg = getShipExpansionFrame(e.shipId, frameIndex);
-            if (expansionImg && expansionImg.complete && expansionImg.width > 0 && expansionImg.height > 0) {
-                const ew = expansionImg.width;
-                const eh = expansionImg.height;
-                spriteHeight = Math.max(spriteHeight, eh);
-                ctx.drawImage(expansionImg, entityScreenX - ew / 2, entityScreenY - eh / 2);
-            }
         }
 
         // Fallback : si pas de sprite (ou pas encore chargé), on garde le carré
