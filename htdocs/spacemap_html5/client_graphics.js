@@ -936,6 +936,19 @@ function drawMiniMap() {
         }
     }
 
+    function drawShipExpansionOverlay(shipId, frameIndex, screenX, screenY) {
+        const expansionDef = SHIP_EXPANSION_DEFS && SHIP_EXPANSION_DEFS[shipId];
+        if (!expansionDef) return;
+
+        const img = getShipExpansionFrame(shipId, frameIndex);
+        if (!img || !img.complete || img.width === 0 || img.height === 0) return;
+
+        const offset = expansionDef.offset || { x: 0, y: 0 };
+        const drawX = screenX - img.width / 2 + (offset.x || 0);
+        const drawY = screenY - img.height / 2 + (offset.y || 0);
+        ctx.drawImage(img, drawX, drawY);
+    }
+
     function drawShip() {
         const shipScreenX = mapToScreenX(shipX);
         const syBase = mapToScreenY(shipY);
@@ -979,7 +992,9 @@ function drawMiniMap() {
                 ctx.drawImage(img, shipScreenX - w / 2, sy - h / 2);
             }
 
-         
+            drawShipExpansionOverlay(shipId, frameIndex, shipScreenX, sy);
+
+
         } else {
             shipDrawnHeight = 0;
         }
@@ -1168,6 +1183,8 @@ function drawMiniMap() {
                   ctx.drawImage(img, entityScreenX - w / 2, entityScreenY - h / 2);
                 drewSprite = true;
             }
+
+            drawShipExpansionOverlay(e.shipId, frameIndex, entityScreenX, entityScreenY);
 
         }
 

@@ -560,6 +560,16 @@ const SHIP_SPRITE_DEFS = {
     39: { frameCount: 1,  basePath: "graphics/ships/80/" }  // Boss Cubikon    -> Cubikon
 };
 
+// Extensions visuelles spécifiques à certains vaisseaux (ex : lasers additionnels Phoenix)
+const SHIP_EXPANSION_DEFS = {
+    1: {
+        frameCount: 32,
+        basePath: "graphics/expansions/ship1_Emax/",
+        frames: Array.from({ length: 32 }, (_, idx) => idx * 2 + 1),
+        offset: { x: 0, y: 0 }
+    }
+};
+
 const ENGINE_ANIM_FPS = 20;
 const DEFAULT_ENGINE_KEY = "engine0";
 const DEFAULT_ENGINE_SMOKE_KEY = "engineSmoke0";
@@ -812,6 +822,7 @@ const portalJumpSpriteCache = {};
 const uiImageCache = {};
 const engineSpriteCache = {};
 const engineSmokeSpriteCache = {};
+const shipExpansionSpriteCache = {};
 
     const QUICKBAR_ICON_LOOKUP = {
         ammo: {
@@ -958,6 +969,27 @@ function getShipSpriteFrame(shipId, frameIndex) {
     const fileNumber = idx + 1;
     img.src = def.basePath + fileNumber + ".png";
     shipSpriteCache[key] = img;
+    return img;
+}
+
+function getShipExpansionFrame(shipId, frameIndex) {
+    const def = SHIP_EXPANSION_DEFS[shipId];
+    if (!def) return null;
+
+    const frames = def.frames && def.frames.length > 0
+        ? def.frames
+        : Array.from({ length: def.frameCount || 1 }, (_, idx) => idx + 1);
+
+    let idx = frameIndex % frames.length;
+    if (idx < 0) idx += frames.length;
+
+    const fileNumber = frames[idx];
+    const cacheKey = `${shipId}_${fileNumber}`;
+    if (shipExpansionSpriteCache[cacheKey]) return shipExpansionSpriteCache[cacheKey];
+
+    const img = new Image();
+    img.src = def.basePath + fileNumber + ".png";
+    shipExpansionSpriteCache[cacheKey] = img;
     return img;
 }
 
