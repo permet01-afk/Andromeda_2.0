@@ -79,6 +79,28 @@
     const engineAnimationState = {};
     const engineSmokeState = {};
 
+    // --- BOX (CARGO) ANIMATION SPRITES ---
+    const BOX_ANIMATION_FRAME_COUNT = 25;
+    const BOX_ANIMATION_FRAME_DURATION = 25; // ms (Flash client timer cadence)
+    const BOX_SPRITE_BASE_PATH = "graphics/collectables/box1/";
+    const boxSpriteCache = {};
+    const boxAnimationStates = {};
+
+    function getBoxSpriteFrame(frameIndex) {
+        const idx = ((frameIndex % BOX_ANIMATION_FRAME_COUNT) + BOX_ANIMATION_FRAME_COUNT) % BOX_ANIMATION_FRAME_COUNT;
+        const path = `${BOX_SPRITE_BASE_PATH}${idx + 1}.png`;
+        if (boxSpriteCache[path]) return boxSpriteCache[path];
+        const img = new Image();
+        img.src = path;
+        boxSpriteCache[path] = img;
+        return img;
+    }
+
+    function clearBoxAnimationState(id) {
+        if (id == null) return;
+        delete boxAnimationStates[id];
+    }
+
     function updateEngineAnimationState(key, worldX, worldY, forceMoving = false) {
         const now = performance.now();
         const engineFrames = ENGINE_SPRITE_DEFS[DEFAULT_ENGINE_KEY]?.frames?.length
@@ -1078,8 +1100,24 @@ function drawMiniMap() {
         const boxScreenX = mapToScreenX(e.x);
         const boxScreenY = mapToScreenY(e.y);
 
-        ctx.fillStyle = getEntityColor(e);
-        ctx.fillRect(boxScreenX - size / 2, boxScreenY - size / 2, size, size);
+        const now = performance.now();
+        const animState = boxAnimationStates[e.id] || { frameIndex: 0, lastUpdate: now };
+
+        if (now - animState.lastUpdate >= BOX_ANIMATION_FRAME_DURATION) {
+            const steps = Math.floor((now - animState.lastUpdate) / BOX_ANIMATION_FRAME_DURATION);
+            animState.frameIndex = (animState.frameIndex + steps) % BOX_ANIMATION_FRAME_COUNT;
+            animState.lastUpdate = animState.lastUpdate + steps * BOX_ANIMATION_FRAME_DURATION;
+        }
+
+        const frameImg = getBoxSpriteFrame(animState.frameIndex);
+        boxAnimationStates[e.id] = animState;
+
+        if (frameImg && frameImg.complete && frameImg.width > 0 && frameImg.height > 0) {
+            ctx.drawImage(frameImg, boxScreenX - frameImg.width / 2, boxScreenY - frameImg.height / 2);
+        } else {
+            ctx.fillStyle = getEntityColor(e);
+            ctx.fillRect(boxScreenX - size / 2, boxScreenY - size / 2, size, size);
+        }
     }
 }
 
