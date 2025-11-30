@@ -534,9 +534,26 @@ function handlePacket_ps(parts) {
 function handlePacket_N(parts, i) {
     // 0|N|id|nom|sh|maxSh|hp|maxHp
     const id = parseInt(parts[i], 10);
-    if (id === selectedTargetId) {
-        // On peut stocker les infos précises ici si on veut les afficher
-        // Pour l'instant, on fait juste en sorte que ça ne plante pas
+    const name = parts[i + 1] || "";
+    const shield = parseInt(parts[i + 2], 10);
+    const maxShield = parseInt(parts[i + 3], 10);
+    const hp = parseInt(parts[i + 4], 10);
+    const maxHp = parseInt(parts[i + 5], 10);
+
+    if (isNaN(id)) return;
+
+    if (heroId !== null && id === heroId) {
+        if (!isNaN(shield))    heroShield = shield;
+        if (!isNaN(maxShield)) heroMaxShield = maxShield;
+        if (!isNaN(hp))        heroHp = hp;
+        if (!isNaN(maxHp))     heroMaxHp = maxHp;
+    } else {
+        const ent = ensureEntity(id);
+        if (name) ent.name = name;
+        if (!isNaN(shield))    ent.shield = shield;
+        if (!isNaN(maxShield)) ent.maxShield = maxShield;
+        if (!isNaN(hp))        ent.hp = hp;
+        if (!isNaN(maxHp))     ent.maxHp = maxHp;
     }
 }
 
