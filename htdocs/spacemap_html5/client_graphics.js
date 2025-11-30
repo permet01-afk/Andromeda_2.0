@@ -77,6 +77,29 @@
     const ENGINE_FRAME_DURATION = 1000 / ((ENGINE_SPRITE_DEFS[DEFAULT_ENGINE_KEY]?.fps) || ENGINE_ANIM_FPS || 20);
     const ENGINE_MOVING_MAX_TICKS = 3;
     const engineAnimationState = {};
+    const engineSmokeState = {};
+
+    // --- BOX (CARGO) ANIMATION SPRITES ---
+    const BOX_ANIMATION_FRAME_COUNT = 25;
+    const BOX_ANIMATION_FRAME_DURATION = 25; // ms (Flash client timer cadence)
+    const BOX_SPRITE_BASE_PATH = "graphics/collectables/box1/";
+    const boxSpriteCache = {};
+    const boxAnimationStates = {};
+
+    function getBoxSpriteFrame(frameIndex) {
+        const idx = ((frameIndex % BOX_ANIMATION_FRAME_COUNT) + BOX_ANIMATION_FRAME_COUNT) % BOX_ANIMATION_FRAME_COUNT;
+        const path = `${BOX_SPRITE_BASE_PATH}${idx + 1}.png`;
+        if (boxSpriteCache[path]) return boxSpriteCache[path];
+        const img = new Image();
+        img.src = path;
+        boxSpriteCache[path] = img;
+        return img;
+    }
+
+    function clearBoxAnimationState(id) {
+        if (id == null) return;
+        delete boxAnimationStates[id];
+    }
 
     function updateEngineAnimationState(key, worldX, worldY, forceMoving = false) {
         const now = performance.now();
@@ -130,6 +153,72 @@
         return { frameIndex: state.frameIndex, isMoving: movingNow };
     }
 
+    function drawEngineSmokeTrail(key, thrusterX, thrusterY, angleRad, isMoving, screenOffsetY = 0) {
+        const def = ENGINE_SMOKE_DEFS[DEFAULT_ENGINE_SMOKE_KEY];
+        if (!def) return;
+
+        const now = performance.now();
+        const state = engineSmokeState[key] || { particles: [], lastSpawn: 0 };
+
+        if (isMoving && now - state.lastSpawn >= (def.spawnInterval || 50)) {
+            state.lastSpawn = now;
+            state.particles.push({
+                x: thrusterX,
+                y: thrusterY,
+                angle: (angleRad || 0) + Math.PI,
+                createdAt: now
+            });
+        }
+
+        const particles = state.particles;
+        const frames = def.frames && def.frames.length > 0
+            ? def.frames
+            : Array.from({ length: def.frameCount || 1 }, (_, idx) => idx + 1);
+        const frameCount = frames.length;
+        const duration = def.duration || 750;
+        const drift = def.drift || 0;
+
+        const remainingParticles = [];
+        for (const p of particles) {
+            const age = now - p.createdAt;
+            if (age > duration) {
+                continue;
+            }
+
+            const lifeRatio = age / duration;
+            const frameIdx = Math.min(frameCount - 1, Math.floor(lifeRatio * frameCount));
+            const img = getEngineSmokeSpriteFrame(DEFAULT_ENGINE_SMOKE_KEY, frameIdx);
+            if (img && img.complete && img.width > 0 && img.height > 0) {
+                const travel = drift * lifeRatio;
+                const drawX = mapToScreenX(p.x + Math.cos(p.angle) * travel);
+                const drawY = mapToScreenY(p.y + Math.sin(p.angle) * travel) + screenOffsetY;
+                const alpha = Math.max(0, 1 - lifeRatio);
+
+                ctx.save();
+                ctx.translate(drawX, drawY);
+                if (def.rotate !== false) {
+                    ctx.rotate(p.angle);
+                }
+                ctx.globalAlpha *= alpha;
+                const scale = def.scale || 1;
+                const drawW = img.width * scale;
+                const drawH = img.height * scale;
+                ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+                ctx.restore();
+            }
+
+            remainingParticles.push(p);
+        }
+
+        if (remainingParticles.length === 0 && !isMoving) {
+            delete engineSmokeState[key];
+            return;
+        }
+
+        state.particles = remainingParticles;
+        engineSmokeState[key] = state;
+    }
+
     function drawEngineTrail(key, shipId, worldX, worldY, frameIndex, angleRad, offsetY = 0) {
         const engineDef = ENGINE_SPRITE_DEFS[DEFAULT_ENGINE_KEY];
         if (!engineDef) return;
@@ -137,13 +226,14 @@
         const engineOffset = getEngineOffsetForFrame(shipId, frameIndex || 0);
         if (!engineOffset) return;
 
-        const { frameIndex: animFrameIndex } = updateEngineAnimationState(key, worldX, worldY);
+        const { frameIndex: animFrameIndex, isMoving } = updateEngineAnimationState(key, worldX, worldY);
 
         const img = getEngineSpriteFrame(DEFAULT_ENGINE_KEY, animFrameIndex);
         if (!img || !img.complete || img.width === 0 || img.height === 0) return;
 
         const thrusterX = worldX + engineOffset.x;
         const thrusterY = worldY + engineOffset.y;
+        drawEngineSmokeTrail(key, thrusterX, thrusterY, angleRad || 0, isMoving, offsetY);
         const screenX = mapToScreenX(thrusterX);
         const screenY = mapToScreenY(thrusterY) + offsetY;
 
@@ -1010,8 +1100,24 @@ function drawMiniMap() {
         const boxScreenX = mapToScreenX(e.x);
         const boxScreenY = mapToScreenY(e.y);
 
-        ctx.fillStyle = getEntityColor(e);
-        ctx.fillRect(boxScreenX - size / 2, boxScreenY - size / 2, size, size);
+        const now = performance.now();
+        const animState = boxAnimationStates[e.id] || { frameIndex: 0, lastUpdate: now };
+
+        if (now - animState.lastUpdate >= BOX_ANIMATION_FRAME_DURATION) {
+            const steps = Math.floor((now - animState.lastUpdate) / BOX_ANIMATION_FRAME_DURATION);
+            animState.frameIndex = (animState.frameIndex + steps) % BOX_ANIMATION_FRAME_COUNT;
+            animState.lastUpdate = animState.lastUpdate + steps * BOX_ANIMATION_FRAME_DURATION;
+        }
+
+        const frameImg = getBoxSpriteFrame(animState.frameIndex);
+        boxAnimationStates[e.id] = animState;
+
+        if (frameImg && frameImg.complete && frameImg.width > 0 && frameImg.height > 0) {
+            ctx.drawImage(frameImg, boxScreenX - frameImg.width / 2, boxScreenY - frameImg.height / 2);
+        } else {
+            ctx.fillStyle = getEntityColor(e);
+            ctx.fillRect(boxScreenX - size / 2, boxScreenY - size / 2, size, size);
+        }
     }
 }
 

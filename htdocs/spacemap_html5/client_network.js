@@ -1356,7 +1356,11 @@ function handlePacket_N(parts, i) {
         if (isNaN(x) || isNaN(y)) return;
 
         const e = ensureEntity(idStr);
-        
+
+        if (typeof clearBoxAnimationState === "function") {
+            clearBoxAnimationState(idStr);
+        }
+
         // On transforme l'entité en BOÎTE
         e.id     = idStr;
         e.type   = type;
@@ -1761,9 +1765,13 @@ function handlePacket_N(parts, i) {
              
              if (isMyCollection) {
                 pendingCollectBoxId = null;
-                moveTargetX = null; 
+                moveTargetX = null;
                 moveTargetY = null;
                 isChasingTarget = false;
+            }
+
+            if (e.kind === "box" && typeof clearBoxAnimationState === "function") {
+                clearBoxAnimationState(id);
             }
 
             delete entities[id];
@@ -1825,14 +1833,18 @@ function handlePacket_s(parts, i) {
             // Nettoyage des variables de mouvement si c'était ma collecte
             if (isMyCollection) {
                 pendingCollectBoxId = null;
-                moveTargetX = null; 
+                moveTargetX = null;
                 moveTargetY = null;
                 isChasingTarget = false;
             }
 
+            if (e.kind === "box" && typeof clearBoxAnimationState === "function") {
+                clearBoxAnimationState(id);
+            }
+
             // Suppression définitive de l'entité en mémoire
             delete entities[id];
-            
+
             // Nettoyage des logs de debug (optionnel)
             if (loggedEntities.has(id)) loggedEntities.delete(id);
         }
