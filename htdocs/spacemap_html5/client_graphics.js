@@ -84,7 +84,7 @@
     const BONUS_BOX_ANIMATION_FRAME_DURATION = 25; // ms (Flash timer cadence matches Flash box loop)
     const BOX_SPRITE_CONFIG = {
         cargo: { basePath: "graphics/collectables/box1/", frameCount: 25 },
-        bonus: { basePath: "graphics/collectables/box2/", frameCount: 25 }
+        bonus: { basePath: "graphics/collectables/box2/", frameCount: 24 }
     };
     const boxSpriteCache = {};
     const boxAnimationStates = {};
