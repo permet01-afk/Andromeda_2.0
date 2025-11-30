@@ -381,8 +381,14 @@
     function handleCollectRange(targetBox, distToBox, collectRequested) {
         if (!targetBox || collectRequested) return;
 
+        const collectApproach = (typeof computeCollectApproach === "function") ? computeCollectApproach(targetBox) : null;
+        const distToApproach = collectApproach
+            ? Math.hypot((collectApproach.x ?? targetBox.x) - shipX, (collectApproach.y ?? targetBox.y) - shipY)
+            : distToBox;
+        const effectiveDistance = collectApproach ? distToApproach : distToBox;
+
         const needsDelay = shouldUseCollectDelay(targetBox);
-        if (distToBox <= BOX_COLLECT_RANGE) {
+        if (effectiveDistance <= BOX_COLLECT_RANGE) {
             if (needsDelay) {
                 if (!isCollectDelayActiveFor(targetBox.id)) {
                     startCollectDelay(targetBox.id, BOX_COLLECT_DELAY_MS);

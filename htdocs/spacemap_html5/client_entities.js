@@ -50,6 +50,9 @@
     let lastMouseScreenY = 0;
 
 
+    // Décalage vertical pour caler le vaisseau au-dessus de la box (mimique Flash)
+    const COLLECTABLE_Y_OFFSET = 120;
+
     // Cible de collecte en attente
     let pendingCollectBoxId = null;
     let pendingCollectTarget = null;
@@ -60,36 +63,12 @@
     // Collectes envoyées au serveur en attente de confirmation (pour lever l'immunité 2s)
     const collectedBoxRequestIds = new Set();
 
-    function getCollectableDimensions(box) {
-        if (!box) return null;
-
-        // Essaye de récupérer la taille réelle du sprite (comme le client Flash qui se base sur la hitbox visuelle)
-        if (box.kind === "box") {
-            const category = box.category || "cargoFree";
-            const spriteCategory = category === "bonusBox" ? "bonusBox" : (category === "bootyBox" ? "bootyBox" : category);
-
-            if (typeof getBoxSpriteFrame === "function") {
-                const sprite = getBoxSpriteFrame(spriteCategory, 0);
-                if (sprite && sprite.complete && sprite.width > 0 && sprite.height > 0) {
-                    return { width: sprite.width, height: sprite.height };
-                }
-            }
-
-            // Fallback générique (valeurs proches des dimensions des assets PNG 128x128)
-            return { width: 128, height: 128 };
-        }
-
-        return null;
-    }
-
     function computeCollectApproach(box) {
         if (!box) return null;
 
-        const dims = getCollectableDimensions(box);
-        const targetX = (dims && typeof dims.width === "number") ? box.x + dims.width / 2 : box.x;
-        const targetY = (dims && typeof dims.height === "number") ? box.y + dims.height / 2 : box.y;
-
-        return { x: targetX, y: targetY };
+        // Le client Flash cible le centre de la box mais avec un léger décalage vertical
+        // pour que le vaisseau soit positionné au-dessus pendant la collecte (COLLECTABLE_Y_OFFSET).
+        return { x: box.x, y: box.y - COLLECTABLE_Y_OFFSET };
     }
 
     function clearPendingCollectState() {
