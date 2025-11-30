@@ -75,38 +75,44 @@
     }
 
     const ENGINE_FRAME_DURATION = 1000 / ((ENGINE_SPRITE_DEFS[DEFAULT_ENGINE_KEY]?.fps) || ENGINE_ANIM_FPS || 20);
-    const ENGINE_MOVING_COOLDOWN_TICKS = 3;
+    const ENGINE_MOVING_MAX_TICKS = 3;
     const ENGINE_MOVE_EPS = 0.5;
     const engineAnimationState = {};
 
     function updateEngineAnimationState(key, worldX, worldY, forceMoving = false) {
         const now = performance.now();
         const state = engineAnimationState[key] || {
-            frameIndex: 0,
+            frameIndex: Math.max(
+                0,
+                ((ENGINE_SPRITE_DEFS[DEFAULT_ENGINE_KEY]?.frames?.length)
+                    || ENGINE_SPRITE_DEFS[DEFAULT_ENGINE_KEY]?.frameCount
+                    || 1) - 1
+            ),
             lastUpdate: now,
             lastFrameChange: now,
-            cooldown: 0,
+            movingTicks: 0,
             lastX: worldX,
             lastY: worldY
         };
 
         const moved = forceMoving || (Math.hypot(worldX - state.lastX, worldY - state.lastY) > ENGINE_MOVE_EPS);
         if (moved) {
-            state.cooldown = ENGINE_MOVING_COOLDOWN_TICKS;
-        } else if (state.cooldown > 0 && now - state.lastUpdate >= ENGINE_FRAME_DURATION) {
-            state.cooldown -= 1;
+            state.movingTicks = Math.min(ENGINE_MOVING_MAX_TICKS, state.movingTicks + 1);
+        } else if (state.movingTicks > 0 && now - state.lastUpdate >= ENGINE_FRAME_DURATION) {
+            state.movingTicks -= 1;
         }
 
-        const active = state.cooldown > 0;
         const engineFrames = ENGINE_SPRITE_DEFS[DEFAULT_ENGINE_KEY]?.frames?.length
             || ENGINE_SPRITE_DEFS[DEFAULT_ENGINE_KEY]?.frameCount
             || 1;
 
-        if (active && now - state.lastFrameChange >= ENGINE_FRAME_DURATION) {
-            state.frameIndex = (state.frameIndex + 1) % engineFrames;
+        if (now - state.lastFrameChange >= ENGINE_FRAME_DURATION) {
+            if (state.movingTicks > 0) {
+                state.frameIndex = Math.max(0, state.frameIndex - 1);
+            } else if (state.frameIndex < engineFrames - 1) {
+                state.frameIndex += 1;
+            }
             state.lastFrameChange = now;
-        } else if (!active) {
-            state.frameIndex = 0;
         }
 
         state.lastX = worldX;
@@ -114,6 +120,7 @@
         state.lastUpdate = now;
         engineAnimationState[key] = state;
 
+        const active = state.movingTicks > 0 || state.frameIndex < engineFrames - 1;
         return { active, frameIndex: state.frameIndex };
     }
 
