@@ -66,11 +66,10 @@
         // G. Interfaces (HUD, Minimap, Fenêtres)
         drawRadiationOverlay();
         drawPvpOverlay();
-        
+
         drawMiniMap();
-        
+
         updateHtmlWindows();
-        drawTargetWindow();
         drawQuickbar();
         drawDebugInfo();
         drawTooltip();

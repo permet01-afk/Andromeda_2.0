@@ -1272,73 +1272,7 @@ function drawPlayerStatsHUD() {
     }
 
 
-    function drawTargetWindow() {
-        if (selectedTargetId == null) return;
-        let target = null;
-        let isHero = false;
-        if (heroId !== null && selectedTargetId === heroId) isHero = true;
-        else if (entities[selectedTargetId]) target = entities[selectedTargetId];
-        if (!isHero && !target) return;
-
-        const name = isHero ? (heroName || "Vous") : (target.name || `ID ${selectedTargetId}`);
-        const hp   = isHero ? heroHp : target.hp;
-        const shd  = isHero ? heroShield : target.shield;
-        const tx   = isHero ? shipX : target.x;
-        const ty   = isHero ? shipY : target.y;
-        const dist = Math.round(Math.hypot(tx - shipX, ty - shipY));
-
-        const width  = 260;
-        const height = 80;
-        const x = (canvas.width  - width) / 2;
-        const y = canvas.height - height - 20;
-
-        const chrome = drawWindowChrome(x, y, width, height, name, { showButtons: true });
-
-        ctx.save();
-        ctx.font = "12px Consolas, monospace";
-        ctx.fillStyle = "#dfefff";
-        ctx.textAlign = "right";
-        ctx.textBaseline = "middle";
-        ctx.fillText(`${dist} u`, x + width - 10, y + chrome.headerHeight / 2);
-
-        const barX = x + 10;
-        let barY = y + chrome.headerHeight + 6;
-        const barW = width - 20;
-
-        ctx.fillStyle = "#222";
-        ctx.fillRect(barX, barY, barW, 12);
-        if (hp != null) {
-            const denomHp = target && target.maxHp ? target.maxHp : (isHero ? heroMaxHp : hp || 1);
-            const ratio = denomHp ? Math.max(0, Math.min(1, hp / denomHp)) : 0;
-            ctx.fillStyle = "#0f0";
-            ctx.fillRect(barX, barY, barW * ratio, 12);
-        }
-        ctx.strokeStyle = "#000";
-        ctx.strokeRect(barX + 0.5, barY + 0.5, barW - 1, 12 - 1);
-        ctx.fillStyle = "#fff";
-        ctx.textAlign = "center";
-        ctx.font = "11px Consolas, monospace";
-        const hpText = hp != null ? `${hp}${target && target.maxHp ? " / " + target.maxHp : (isHero && heroMaxHp ? " / " + heroMaxHp : "")}` : "HP:?";
-        ctx.fillText(hpText, barX + barW / 2, barY + 1);
-
-        barY += 18;
-        ctx.fillStyle = "#222";
-        ctx.fillRect(barX, barY, barW, 10);
-        if (shd != null) {
-            const denomSh = target && target.maxShield ? target.maxShield : (isHero ? heroMaxShield : shd || 1);
-            const ratio = denomSh ? Math.max(0, Math.min(1, shd / denomSh)) : 0;
-            ctx.fillStyle = "#00bfff";
-            ctx.fillRect(barX, barY, barW * ratio, 10);
-        }
-        ctx.strokeStyle = "#000";
-        ctx.strokeRect(barX + 0.5, barY + 0.5, barW - 1, 10 - 1);
-        ctx.fillStyle = "#fff";
-        const shText = shd != null ? `${shd}${target && target.maxShield ? " / " + target.maxShield : (isHero && heroMaxShield ? " / " + heroMaxShield : "")}` : "SHD:?";
-        ctx.fillText(shText, barX + barW / 2, barY - 1);
-        ctx.restore();
-    }
-
-   function drawQuickbar() {
+    function drawQuickbar() {
         const slotCount = 10;
         const slotSize  = 40;
         const padding   = 6;
