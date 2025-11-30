@@ -1078,11 +1078,18 @@ function handlePacket_N(parts, i) {
             addInfoMessage(clean);
             break;
         }
+        case "BK": {
+            const count = parseInt(parts[i + 1], 10);
+            if (!isNaN(count)) {
+                heroBootyKeys = count;
+            }
+            break;
+        }
         case "ITM": { // Paquet Inventory (A|ITM) - Chargement des stocks
             // Lasers Spéciaux
-            ammoStock[4] = parseInt(parts[i + 4], 10) || 0;  // MCB-50 (x4) 
-            ammoStock[6] = parseInt(parts[i + 5], 10) || 0;  // RSB-75 
-            ammoStock[5] = parseInt(parts[i + 6], 10) || 0;  // SAB-50 
+            ammoStock[4] = parseInt(parts[i + 4], 10) || 0;  // MCB-50 (x4)
+            ammoStock[6] = parseInt(parts[i + 5], 10) || 0;  // RSB-75
+            ammoStock[5] = parseInt(parts[i + 6], 10) || 0;  // SAB-50
             
             // Lasers de base
             ammoStock[1] = parseInt(parts[i + 8], 10) || 0;  // x1 Laser
