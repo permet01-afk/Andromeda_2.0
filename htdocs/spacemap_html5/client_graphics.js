@@ -94,6 +94,40 @@
     const BOOTY_KEY_SPRITE_PATH = UI_SPRITES.iconBootyKey || "graphics/ui/ui/images/59_shipInfoIcon_bootykey.png";
     const bootyKeySprite = getUiImage(BOOTY_KEY_SPRITE_PATH);
 
+    // --- COLLECTOR BEAM (effet local au joueur) ---
+    const COLLECTOR_BEAM_FRAME_COUNT = 15;
+    const COLLECTOR_BEAM_FPS = 30;
+    const COLLECTOR_BEAM_FRAME_DURATION = 1000 / COLLECTOR_BEAM_FPS;
+    const COLLECTOR_BEAM_DEFAULT_DURATION_MS = 1500;
+    const COLLECTOR_BEAM_BASE_PATH = "graphics/effects/loopingCollectorBeam/";
+
+    const collectorBeamCache = [];
+    let heroCollectorBeamState = null;
+
+    function getCollectorBeamFrame(frameIndex) {
+        const idx = ((frameIndex % COLLECTOR_BEAM_FRAME_COUNT) + COLLECTOR_BEAM_FRAME_COUNT) % COLLECTOR_BEAM_FRAME_COUNT;
+        const path = `${COLLECTOR_BEAM_BASE_PATH}${idx + 1}.png`;
+        if (collectorBeamCache[path]) return collectorBeamCache[path];
+        const img = new Image();
+        img.src = path;
+        collectorBeamCache[path] = img;
+        return img;
+    }
+
+    function startHeroCollectorBeam(durationMs = COLLECTOR_BEAM_DEFAULT_DURATION_MS) {
+        const now = performance.now();
+        heroCollectorBeamState = {
+            frameIndex: 0,
+            lastUpdate: now,
+            startedAt: now,
+            durationMs: durationMs || COLLECTOR_BEAM_DEFAULT_DURATION_MS
+        };
+    }
+
+    function stopHeroCollectorBeam() {
+        heroCollectorBeamState = null;
+    }
+
     function getBoxSpriteConfig(category) {
         if (category === "bonusBox") return BOX_SPRITE_CONFIG.bonus;
         if (category === "bootyBox") return BOX_SPRITE_CONFIG.booty;
@@ -836,6 +870,32 @@ function drawMiniMap() {
         }
     }
 
+    function drawHeroCollectorBeamAt(shipScreenX, shipScreenY) {
+        if (!heroCollectorBeamState) return;
+
+        const now = performance.now();
+        const state = heroCollectorBeamState;
+        const lifespan = state.durationMs || COLLECTOR_BEAM_DEFAULT_DURATION_MS;
+
+        if (now - state.startedAt >= lifespan) {
+            stopHeroCollectorBeam();
+            return;
+        }
+
+        if (now - state.lastUpdate >= COLLECTOR_BEAM_FRAME_DURATION) {
+            const steps = Math.floor((now - state.lastUpdate) / COLLECTOR_BEAM_FRAME_DURATION);
+            state.frameIndex = (state.frameIndex + steps) % COLLECTOR_BEAM_FRAME_COUNT;
+            state.lastUpdate = state.lastUpdate + steps * COLLECTOR_BEAM_FRAME_DURATION;
+        }
+
+        const frameImg = getCollectorBeamFrame(state.frameIndex);
+        if (frameImg && frameImg.complete && frameImg.width > 0 && frameImg.height > 0) {
+            const drawX = shipScreenX - frameImg.width / 2;
+            const drawY = shipScreenY - frameImg.height / 2;
+            ctx.drawImage(frameImg, drawX, drawY);
+        }
+    }
+
     function drawShip() {
         const shipScreenX = mapToScreenX(shipX);
         const syBase = mapToScreenY(shipY);
@@ -846,6 +906,8 @@ function drawMiniMap() {
 
         // Transparence si camouflage
         ctx.globalAlpha = heroCloaked ? 0.3 : 1.0;
+
+        drawHeroCollectorBeamAt(shipScreenX, sy);
 
         const shipId = heroShipId;
         const def = SHIP_SPRITE_DEFS[shipId];

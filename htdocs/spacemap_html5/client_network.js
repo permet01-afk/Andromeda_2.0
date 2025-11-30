@@ -579,6 +579,7 @@ function handlePacket_N(parts, i) {
         resetPendingRangeResume();
         pendingCollectBoxId = null;
         if (typeof collectedBoxRequestIds !== "undefined") collectedBoxRequestIds.clear();
+        if (typeof stopHeroCollectorBeam === "function") stopHeroCollectorBeam();
         moveTargetX = null;
         moveTargetY = null;
         isChasingTarget = false;
@@ -1778,6 +1779,7 @@ function handlePacket_N(parts, i) {
                 moveTargetY = null;
                 isChasingTarget = false;
                 if (typeof collectedBoxRequestIds !== "undefined") collectedBoxRequestIds.delete(id);
+                if (typeof stopHeroCollectorBeam === "function") stopHeroCollectorBeam();
             }
 
             if (e.kind === "box" && typeof clearBoxAnimationState === "function") {
@@ -1848,6 +1850,7 @@ function handlePacket_s(parts, i) {
                 moveTargetY = null;
                 isChasingTarget = false;
                 if (typeof collectedBoxRequestIds !== "undefined") collectedBoxRequestIds.delete(id);
+                if (typeof stopHeroCollectorBeam === "function") stopHeroCollectorBeam();
             }
 
             if (e.kind === "box" && typeof clearBoxAnimationState === "function") {
