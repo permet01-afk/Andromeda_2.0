@@ -124,10 +124,10 @@
         const engineOffset = getEngineOffsetForFrame(shipId, frameIndex || 0);
         if (!engineOffset) return;
 
-        const { active, frameIndex } = updateEngineAnimationState(key, worldX, worldY);
+        const { active, frameIndex: animFrameIndex } = updateEngineAnimationState(key, worldX, worldY);
         if (!active) return;
 
-        const img = getEngineSpriteFrame(DEFAULT_ENGINE_KEY, frameIndex);
+        const img = getEngineSpriteFrame(DEFAULT_ENGINE_KEY, animFrameIndex);
         if (!img || !img.complete || img.width === 0 || img.height === 0) return;
 
         const thrusterX = worldX + engineOffset.x;
