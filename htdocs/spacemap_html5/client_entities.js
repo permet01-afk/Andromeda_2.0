@@ -50,6 +50,9 @@
     let lastMouseScreenY = 0;
 
 
+    // Décalage vertical pour caler le vaisseau au-dessus de la box (mimique Flash)
+    const COLLECTABLE_Y_OFFSET = 120;
+
     // Cible de collecte en attente
     let pendingCollectBoxId = null;
     let pendingCollectTarget = null;
@@ -63,11 +66,9 @@
     function computeCollectApproach(box) {
         if (!box) return null;
 
-        // Le client Flash place le vaisseau exactement au centre visuel de l'objet collecté.
-        // Les coordonnées envoyées par le serveur correspondent déjà au centre des sprites
-        // (voir le dessin des boxes dans client_graphics.js), donc on n'ajoute plus d'offset
-        // vertical qui faisait arriver le vaisseau en dessous de la box.
-        return { x: box.x, y: box.y };
+        // Le client Flash cible le centre de la box mais avec un léger décalage vertical
+        // pour que le vaisseau soit positionné au-dessus pendant la collecte (COLLECTABLE_Y_OFFSET).
+        return { x: box.x, y: box.y - COLLECTABLE_Y_OFFSET };
     }
 
     function clearPendingCollectState() {
