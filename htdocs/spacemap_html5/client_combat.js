@@ -293,7 +293,7 @@
         const packet = `x|${id}`;
         console.log("[WS] Envoi COLLECT →", packet);
         sendRaw(packet);
-        if (typeof startHeroCollectorBeam === "function") {
+        if (typeof startHeroCollectorBeam === "function" && !isCollectDelayActiveFor(id)) {
             startHeroCollectorBeam();
         }
     }
@@ -376,6 +376,24 @@
     // -------------------------------------------------
 
     const BOX_COLLECT_RANGE = 70; // Portée de ramassage inspirée du comportement Flash
+    const BOX_COLLECT_DELAY_MS = 1500; // Délai de collecte (identique à l'animation Collector Beam Flash)
+
+    function handleCollectRange(targetBox, distToBox, collectRequested) {
+        if (!targetBox || collectRequested) return;
+
+        const needsDelay = shouldUseCollectDelay(targetBox);
+        if (distToBox <= BOX_COLLECT_RANGE) {
+            if (needsDelay) {
+                if (!isCollectDelayActiveFor(targetBox.id)) {
+                    startCollectDelay(targetBox.id, BOX_COLLECT_DELAY_MS);
+                }
+            } else {
+                sendCollectBox(targetBox.id);
+            }
+        } else if (needsDelay && isCollectDelayActiveFor(targetBox.id)) {
+            cancelCollectDelay();
+        }
+    }
 
     function updateHeroLocalMovement(dt) {
         const prevX = shipX;
@@ -397,15 +415,13 @@
             heroLastPosX = shipX;
             heroLastPosY = shipY;
 
-            // Si on se déplace vers une boîte et qu'on est déjà à portée, on déclenche la collecte immédiatement
+            // Si on se déplace vers une boîte et qu'on est déjà à portée, on déclenche la collecte avec le délai Flash
             if (pendingCollectBoxId !== null) {
                 const collectBox = entities[pendingCollectBoxId];
                 if (collectBox) {
                     const distToBox = Math.hypot(collectBox.x - shipX, collectBox.y - shipY);
                     const collectRequested = (typeof collectedBoxRequestIds !== "undefined") && collectedBoxRequestIds.has(pendingCollectBoxId);
-                    if (distToBox <= BOX_COLLECT_RANGE && !collectRequested) {
-                        sendCollectBox(pendingCollectBoxId);
-                    }
+                    handleCollectRange(collectBox, distToBox, collectRequested);
                 } else {
                     clearPendingCollectState();
                 }
@@ -429,9 +445,7 @@
             : false;
         if (targetBox) {
             const distToBox = Math.hypot(targetBox.x - shipX, targetBox.y - shipY);
-            if (distToBox <= BOX_COLLECT_RANGE && !collectRequested) {
-                sendCollectBox(pendingCollectBoxId);
-            }
+            handleCollectRange(targetBox, distToBox, collectRequested);
         }
 
         if (dist < 1) {
@@ -465,8 +479,9 @@
         }
 
         if (arrivedThisFrame && pendingCollectBoxId !== null && !collectRequested) {
-            console.log("[MOVE] Arrivé sur cible, envoi collecte pending id=", pendingCollectBoxId);
-            sendCollectBox(pendingCollectBoxId);
+            const collectBox = entities[pendingCollectBoxId];
+            const distToBox = collectBox ? Math.hypot(collectBox.x - shipX, collectBox.y - shipY) : Infinity;
+            handleCollectRange(collectBox, distToBox, collectRequested);
         }
 
         if (Math.abs(shipX - prevX) > 0.01 || Math.abs(shipY - prevY) > 0.01) {
