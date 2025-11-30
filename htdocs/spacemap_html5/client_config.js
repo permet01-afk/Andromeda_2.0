@@ -567,6 +567,12 @@ const SHIP_EXPANSION_DEFS = {
         basePath: "graphics/expansions/ship1_Emax/",
         frames: Array.from({ length: 32 }, (_, idx) => idx * 2 + 1),
         offset: { x: 0, y: 0 }
+    },
+    3: {
+        frameCount: 32,
+        basePath: "graphics/expansions/ship3_Emax/",
+        frames: Array.from({ length: 32 }, (_, idx) => idx * 2 + 1),
+        offset: { x: 0, y: 0 }
     }
 };
 
