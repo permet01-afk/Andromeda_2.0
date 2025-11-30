@@ -287,6 +287,9 @@
     function sendCollectBox(id) {
         if (!ws || ws.readyState !== WebSocket.OPEN) return;
         if (id == null) return;
+        if (typeof collectedBoxRequestIds !== "undefined") {
+            collectedBoxRequestIds.add(id);
+        }
         const packet = `x|${id}`;
         console.log("[WS] Envoi COLLECT →", packet);
         sendRaw(packet);

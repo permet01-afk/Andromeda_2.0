@@ -577,6 +577,8 @@ function handlePacket_N(parts, i) {
         currentLaserTargetId = null;
         attackIntentTargetId = null;
         resetPendingRangeResume();
+        pendingCollectBoxId = null;
+        if (typeof collectedBoxRequestIds !== "undefined") collectedBoxRequestIds.clear();
         moveTargetX = null;
         moveTargetY = null;
         isChasingTarget = false;
@@ -1758,7 +1760,7 @@ function handlePacket_N(parts, i) {
 		
         const e = entities[id];
         if (e) {
-             const isMyCollection = (pendingCollectBoxId === id);
+             const isMyCollection = (pendingCollectBoxId === id) || (typeof collectedBoxRequestIds !== "undefined" && collectedBoxRequestIds.has(id));
 
              if (e.kind === "box") {
                  if (!isMyCollection && e.boxSpawnTime && (Date.now() - e.boxSpawnTime < 2000)) {
@@ -1775,6 +1777,7 @@ function handlePacket_N(parts, i) {
                 moveTargetX = null;
                 moveTargetY = null;
                 isChasingTarget = false;
+                if (typeof collectedBoxRequestIds !== "undefined") collectedBoxRequestIds.delete(id);
             }
 
             if (e.kind === "box" && typeof clearBoxAnimationState === "function") {
@@ -1783,6 +1786,7 @@ function handlePacket_N(parts, i) {
 
             delete entities[id];
             if (loggedEntities.has(id)) loggedEntities.delete(id);
+            if (typeof collectedBoxRequestIds !== "undefined") collectedBoxRequestIds.delete(id);
         }
     }
 	
@@ -1821,7 +1825,7 @@ function handlePacket_s(parts, i) {
         const e = entities[id];
         if (e) {
             // Est-ce la boîte que je suis en train de ramasser ?
-            const isMyCollection = (pendingCollectBoxId === id);
+            const isMyCollection = (pendingCollectBoxId === id) || (typeof collectedBoxRequestIds !== "undefined" && collectedBoxRequestIds.has(id));
 
             if (e.kind === "box") {
                  // Si ce N'EST PAS ma collecte active, on applique l'immunité de 2s
@@ -1843,6 +1847,7 @@ function handlePacket_s(parts, i) {
                 moveTargetX = null;
                 moveTargetY = null;
                 isChasingTarget = false;
+                if (typeof collectedBoxRequestIds !== "undefined") collectedBoxRequestIds.delete(id);
             }
 
             if (e.kind === "box" && typeof clearBoxAnimationState === "function") {
@@ -1854,6 +1859,7 @@ function handlePacket_s(parts, i) {
 
             // Nettoyage des logs de debug (optionnel)
             if (loggedEntities.has(id)) loggedEntities.delete(id);
+            if (typeof collectedBoxRequestIds !== "undefined") collectedBoxRequestIds.delete(id);
         }
     }
 
