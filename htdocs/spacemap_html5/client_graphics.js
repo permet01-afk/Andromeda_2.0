@@ -870,6 +870,8 @@ function drawMiniMap() {
         }
     }
 
+    const COLLECTOR_BEAM_SCREEN_OFFSET_Y = 65;
+
     function drawHeroCollectorBeamAt(shipScreenX, shipScreenY) {
         if (!heroCollectorBeamState) return;
 
@@ -891,7 +893,7 @@ function drawMiniMap() {
         const frameImg = getCollectorBeamFrame(state.frameIndex);
         if (frameImg && frameImg.complete && frameImg.width > 0 && frameImg.height > 0) {
             const drawX = shipScreenX - frameImg.width / 2;
-            const drawY = shipScreenY - frameImg.height / 2;
+            const drawY = shipScreenY + COLLECTOR_BEAM_SCREEN_OFFSET_Y - frameImg.height / 2;
             ctx.drawImage(frameImg, drawX, drawY);
         }
     }
