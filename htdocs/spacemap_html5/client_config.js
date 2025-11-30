@@ -575,6 +575,27 @@ const SHIP_ENGINE_CLASS = {
     58: 8,
     59: 10,
 
+    // NPC offsets calqués sur main.swf
+    71: 1,   // Lordakia
+    72: 9,   // Devolarium
+    73: 8,   // Mordon
+    74: 10,  // Sibelon
+    75: 5,   // Saimon
+    76: 5,   // Sibelonit
+    77: 10,  // Lordakium
+    78: 5,   // Kristallin
+    79: 10,  // Kristallon
+    80: 10,  // Cubikon
+    81: 8,   // Protegit
+
+    // Boss NPCs -> même classe que le NPC correspondant
+    36: 1,
+    37: 5,
+    38: 5,
+    35: 10,
+    39: 10,
+    46: 10,
+
     // NPC utilisant l'offset Streuner du client Flash
     2: 84,
     34: 84
