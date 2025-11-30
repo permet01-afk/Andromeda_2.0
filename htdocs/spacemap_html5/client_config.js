@@ -573,6 +573,42 @@ const SHIP_EXPANSION_DEFS = {
         basePath: "graphics/expansions/ship3_Emax/",
         frames: Array.from({ length: 32 }, (_, idx) => idx * 2 + 1),
         offset: { x: 0, y: 0 }
+    },
+    4: {
+        frameCount: 32,
+        basePath: "graphics/expansions/ship4_Emax/",
+        frames: Array.from({ length: 32 }, (_, idx) => idx * 2 + 1),
+        offset: { x: 0, y: 0 }
+    },
+    5: {
+        frameCount: 32,
+        basePath: "graphics/expansions/ship5_Emax/",
+        frames: Array.from({ length: 32 }, (_, idx) => idx * 2 + 1),
+        offset: { x: 0, y: 0 }
+    },
+    6: {
+        frameCount: 32,
+        basePath: "graphics/expansions/ship6_Emax/",
+        frames: Array.from({ length: 32 }, (_, idx) => idx * 2 + 1),
+        offset: { x: 0, y: 0 }
+    },
+    7: {
+        frameCount: 32,
+        basePath: "graphics/expansions/ship7_Emax/",
+        frames: Array.from({ length: 32 }, (_, idx) => idx * 2 + 1),
+        offset: { x: 0, y: 0 }
+    },
+    8: {
+        frameCount: 32,
+        basePath: "graphics/expansions/ship8_Emax/",
+        frames: Array.from({ length: 32 }, (_, idx) => idx * 2 + 1),
+        offset: { x: 0, y: 0 }
+    },
+    9: {
+        frameCount: 32,
+        basePath: "graphics/expansions/ship9_Emax/",
+        frames: Array.from({ length: 32 }, (_, idx) => idx * 2 + 1),
+        offset: { x: 0, y: 0 }
     }
 };
 
