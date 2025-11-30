@@ -84,7 +84,8 @@
     const BONUS_BOX_ANIMATION_FRAME_DURATION = 25; // ms (Flash timer cadence matches Flash box loop)
     const BOX_SPRITE_CONFIG = {
         cargo: { basePath: "graphics/collectables/box1/", frameCount: 25 },
-        bonus: { basePath: "graphics/collectables/box2/", frameCount: 24 }
+        bonus: { basePath: "graphics/collectables/box2/", frameCount: 24 },
+        booty: { basePath: "graphics/collectables/pirateBootyBox/", frameCount: 25 }
     };
     const boxSpriteCache = {};
     const boxAnimationStates = {};
@@ -95,6 +96,7 @@
 
     function getBoxSpriteConfig(category) {
         if (category === "bonusBox") return BOX_SPRITE_CONFIG.bonus;
+        if (category === "bootyBox") return BOX_SPRITE_CONFIG.booty;
         return BOX_SPRITE_CONFIG.cargo;
     }
 
@@ -1145,11 +1147,12 @@ function drawMiniMap() {
         const category = e.category || "other";
         const isCargo = category === "cargoFree" || category === "cargoNotFree";
         const isBonus = category === "bonusBox";
-        const shouldAnimate = isCargo || isBonus;
+        const isBootyBox = category === "bootyBox";
+        const shouldAnimate = isCargo || isBonus || isBootyBox;
         const isBootyKey = category === "bootyKey";
 
         if (shouldAnimate) {
-            const spriteCategory = isBonus ? "bonusBox" : category;
+            const spriteCategory = isBonus ? "bonusBox" : isBootyBox ? "bootyBox" : category;
             const cfg = getBoxSpriteConfig(spriteCategory);
             let frameIndex;
 
