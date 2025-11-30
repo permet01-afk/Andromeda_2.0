@@ -42,8 +42,8 @@
     // Cible de déplacement
     let moveTargetX = null;
     let moveTargetY = null;
-	
-	// Suivi souris façon Timer Flash
+
+        // Suivi souris façon Timer Flash
     let isMouseDownOnMap = false;
     let heroMoveTimerId = null;
     let lastMouseScreenX = 0;
@@ -52,6 +52,8 @@
 
     // Cible de collecte en attente
     let pendingCollectBoxId = null;
+    // Collectes envoyées au serveur en attente de confirmation (pour lever l'immunité 2s)
+    const collectedBoxRequestIds = new Set();
 
     // Helpers entités / portails
     function ensureEntity(id) {
