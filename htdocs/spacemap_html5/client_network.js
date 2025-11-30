@@ -579,6 +579,7 @@ function handlePacket_N(parts, i) {
         resetPendingRangeResume();
         pendingCollectBoxId = null;
         if (typeof collectedBoxRequestIds !== "undefined") collectedBoxRequestIds.clear();
+        if (typeof stopHeroCollectorBeam === "function") stopHeroCollectorBeam();
         moveTargetX = null;
         moveTargetY = null;
         isChasingTarget = false;
@@ -1778,6 +1779,7 @@ function handlePacket_N(parts, i) {
                 moveTargetY = null;
                 isChasingTarget = false;
                 if (typeof collectedBoxRequestIds !== "undefined") collectedBoxRequestIds.delete(id);
+                if (typeof stopHeroCollectorBeam === "function") stopHeroCollectorBeam();
             }
 
             if (e.kind === "box" && typeof clearBoxAnimationState === "function") {
@@ -1848,6 +1850,7 @@ function handlePacket_s(parts, i) {
                 moveTargetY = null;
                 isChasingTarget = false;
                 if (typeof collectedBoxRequestIds !== "undefined") collectedBoxRequestIds.delete(id);
+                if (typeof stopHeroCollectorBeam === "function") stopHeroCollectorBeam();
             }
 
             if (e.kind === "box" && typeof clearBoxAnimationState === "function") {
@@ -1983,21 +1986,17 @@ function handlePacket_s(parts, i) {
 
         // 3. Si c'est une autre entité
         if (e) {
-            // --- CORRECTION CRITIQUE ICI ---
-            // Si l'entité est devenue une BOÎTE (packet 'c' arrivé avant 'K')
-            // et qu'elle est "fraîche" (moins de 2s), ON NE LA SUPPRIME PAS !
+            // Si l'entité est une BOÎTE, on ne la supprime jamais via K (explosion).
+            // Le Flash laisse la boîte jusqu'à un packet de suppression dédié (2/R) ou expiration.
             if (e.kind === "box") {
-                 if (e.boxSpawnTime && (Date.now() - e.boxSpawnTime < 2000)) {
-                     // On arrête juste le tir, mais on laisse l'objet
-                     forceUnlock(id);
-                     return; 
-                 }
+                forceUnlock(id);
+                return;
             }
 
             // Sinon, on nettoie (c'était un vaisseau, il est mort)
             forceUnlock(id);
             delete entities[id];
-            
+
             if (loggedEntities.has(id)) loggedEntities.delete(id);
         }
     }
