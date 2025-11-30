@@ -80,17 +80,28 @@
     const engineSmokeState = {};
 
     // --- BOX (CARGO) ANIMATION SPRITES ---
-    const BOX_ANIMATION_FRAME_COUNT = 25;
     const BOX_ANIMATION_FRAME_DURATION = 25; // ms (Flash client timer cadence)
-    const BOX_SPRITE_BASE_PATH = "graphics/collectables/box1/";
+    const BOX_SPRITE_CONFIG = {
+        cargo: { basePath: "graphics/collectables/box1/", frameCount: 25 },
+        bonus: { basePath: "graphics/collectables/box2/", frameCount: 25 }
+    };
     const boxSpriteCache = {};
     const boxAnimationStates = {};
+    let bonusBoxFrameIndex = 0;
+    let bonusBoxAnimationTimer = null;
     const BOOTY_KEY_SPRITE_PATH = UI_SPRITES.iconBootyKey || "graphics/ui/ui/images/59_shipInfoIcon_bootykey.png";
     const bootyKeySprite = getUiImage(BOOTY_KEY_SPRITE_PATH);
 
-    function getBoxSpriteFrame(frameIndex) {
-        const idx = ((frameIndex % BOX_ANIMATION_FRAME_COUNT) + BOX_ANIMATION_FRAME_COUNT) % BOX_ANIMATION_FRAME_COUNT;
-        const path = `${BOX_SPRITE_BASE_PATH}${idx + 1}.png`;
+    function getBoxSpriteConfig(category) {
+        if (category === "bonusBox") return BOX_SPRITE_CONFIG.bonus;
+        return BOX_SPRITE_CONFIG.cargo;
+    }
+
+    function getBoxSpriteFrame(category, frameIndex) {
+        const cfg = getBoxSpriteConfig(category);
+        const frameCount = cfg.frameCount;
+        const idx = ((frameIndex % frameCount) + frameCount) % frameCount;
+        const path = `${cfg.basePath}${idx + 1}.png`;
         if (boxSpriteCache[path]) return boxSpriteCache[path];
         const img = new Image();
         img.src = path;
@@ -101,6 +112,13 @@
     function clearBoxAnimationState(id) {
         if (id == null) return;
         delete boxAnimationStates[id];
+    }
+
+    function ensureBonusBoxAnimationTimer() {
+        if (bonusBoxAnimationTimer !== null) return;
+        bonusBoxAnimationTimer = setInterval(() => {
+            bonusBoxFrameIndex = (bonusBoxFrameIndex + 1) % BOX_SPRITE_CONFIG.bonus.frameCount;
+        }, BOX_ANIMATION_FRAME_DURATION);
     }
 
     function drawBootyKey(boxScreenX, boxScreenY, now) {
@@ -1124,19 +1142,32 @@ function drawMiniMap() {
         const now = performance.now();
         const category = e.category || "other";
         const isCargo = category === "cargoFree" || category === "cargoNotFree";
+        const isBonus = category === "bonusBox";
+        const shouldAnimate = isCargo || isBonus;
         const isBootyKey = category === "bootyKey";
 
-        if (isCargo) {
-            const animState = boxAnimationStates[e.id] || { frameIndex: 0, lastUpdate: now };
+        if (shouldAnimate) {
+            const spriteCategory = isBonus ? "bonusBox" : category;
+            const cfg = getBoxSpriteConfig(spriteCategory);
+            let frameIndex;
 
-            if (now - animState.lastUpdate >= BOX_ANIMATION_FRAME_DURATION) {
-                const steps = Math.floor((now - animState.lastUpdate) / BOX_ANIMATION_FRAME_DURATION);
-                animState.frameIndex = (animState.frameIndex + steps) % BOX_ANIMATION_FRAME_COUNT;
-                animState.lastUpdate = animState.lastUpdate + steps * BOX_ANIMATION_FRAME_DURATION;
+            if (isBonus) {
+                ensureBonusBoxAnimationTimer();
+                frameIndex = bonusBoxFrameIndex;
+            } else {
+                const animState = boxAnimationStates[e.id] || { frameIndex: 0, lastUpdate: now };
+
+                if (now - animState.lastUpdate >= BOX_ANIMATION_FRAME_DURATION) {
+                    const steps = Math.floor((now - animState.lastUpdate) / BOX_ANIMATION_FRAME_DURATION);
+                    animState.frameIndex = (animState.frameIndex + steps) % cfg.frameCount;
+                    animState.lastUpdate = animState.lastUpdate + steps * BOX_ANIMATION_FRAME_DURATION;
+                }
+
+                frameIndex = animState.frameIndex;
+                boxAnimationStates[e.id] = animState;
             }
 
-            const frameImg = getBoxSpriteFrame(animState.frameIndex);
-            boxAnimationStates[e.id] = animState;
+            const frameImg = getBoxSpriteFrame(spriteCategory, frameIndex);
 
             if (frameImg && frameImg.complete && frameImg.width > 0 && frameImg.height > 0) {
                 ctx.drawImage(frameImg, boxScreenX - frameImg.width / 2, boxScreenY - frameImg.height / 2);
