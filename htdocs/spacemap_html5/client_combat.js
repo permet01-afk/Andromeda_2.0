@@ -375,6 +375,8 @@
     // 6. MOUVEMENT LOCAL
     // -------------------------------------------------
 
+    const BOX_COLLECT_RANGE = 70; // Portée de ramassage inspirée du comportement Flash
+
     function updateHeroLocalMovement(dt) {
         const prevX = shipX;
         const prevY = shipY;
@@ -382,6 +384,20 @@
         if (moveTargetX === null || moveTargetY === null) {
             heroLastPosX = shipX;
             heroLastPosY = shipY;
+
+            // Si on se déplace vers une boîte et qu'on est déjà à portée, on déclenche la collecte immédiatement
+            if (pendingCollectBoxId !== null) {
+                const collectBox = entities[pendingCollectBoxId];
+                if (collectBox) {
+                    const distToBox = Math.hypot(collectBox.x - shipX, collectBox.y - shipY);
+                    if (distToBox <= BOX_COLLECT_RANGE) {
+                        sendCollectBox(pendingCollectBoxId);
+                        pendingCollectBoxId = null;
+                    }
+                } else {
+                    pendingCollectBoxId = null;
+                }
+            }
             return;
         }
 
@@ -395,6 +411,18 @@
 			heroAngle = Math.atan2(dy, dx) + Math.PI; // +180°
 		}
 
+
+        const targetBox = (pendingCollectBoxId !== null) ? entities[pendingCollectBoxId] : null;
+        if (targetBox) {
+            const distToBox = Math.hypot(targetBox.x - shipX, targetBox.y - shipY);
+            if (distToBox <= BOX_COLLECT_RANGE) {
+                moveTargetX = null;
+                moveTargetY = null;
+                sendCollectBox(pendingCollectBoxId);
+                pendingCollectBoxId = null;
+                return;
+            }
+        }
 
         if (dist < 1) {
 
