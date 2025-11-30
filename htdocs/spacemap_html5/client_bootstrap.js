@@ -99,7 +99,9 @@
     initGlobalListStyles();             // wrappers List / CellRenderer
     initGlobalMiscComponentStyles();    // focusRect, thumbIcon, ComponentShim
 	initGlobalSpriteDebugStyles();      // sprites génériques restants
-    initChatInterface();
+    if (typeof initChatInterface === "function") {
+        initChatInterface();
+    }
 	initLabWindow();
 	initQuestWindow();
 	initSpaceballHUD();
