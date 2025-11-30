@@ -52,8 +52,19 @@
 
     // Cible de collecte en attente
     let pendingCollectBoxId = null;
+    let pendingCollectTarget = null;
     // Collectes envoyées au serveur en attente de confirmation (pour lever l'immunité 2s)
     const collectedBoxRequestIds = new Set();
+
+    function computeCollectApproach(box) {
+        if (!box) return null;
+        return { x: box.x, y: box.y };
+    }
+
+    function clearPendingCollectState() {
+        pendingCollectBoxId = null;
+        pendingCollectTarget = null;
+    }
 
     // Helpers entités / portails
     function ensureEntity(id) {
@@ -490,7 +501,7 @@ function handleQuickbarClick(screenX, screenY, e) {
         }
 
         if (e.button !== 0) return;
-        pendingCollectBoxId = null;
+        clearPendingCollectState();
         
         // HUD Repair
         const repairBtnX = HERO_HUD_X + HERO_HUD_WIDTH - HERO_REPAIR_BTN_WIDTH - 10;
@@ -547,8 +558,17 @@ function handleQuickbarClick(screenX, screenY, e) {
         // C) Clic Box
         const clickedBox = findEntityAtScreenPos(screenX, screenY, (ent) => ent.kind === "box", 50); // Augmenté à 50 pour faciliter le ramassage
         if (clickedBox) {
-            moveTargetX = clickedBox.x; moveTargetY = clickedBox.y; pendingCollectBoxId = clickedBox.id;
-            isChasingTarget = false; 
+            const collectTarget = computeCollectApproach(clickedBox);
+            if (collectTarget) {
+                pendingCollectTarget = collectTarget;
+                moveTargetX = collectTarget.x;
+                moveTargetY = collectTarget.y;
+            } else {
+                moveTargetX = clickedBox.x;
+                moveTargetY = clickedBox.y;
+            }
+            pendingCollectBoxId = clickedBox.id;
+            isChasingTarget = false;
             sendMoveToServer(moveTargetX, moveTargetY);
             return;
         }

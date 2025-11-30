@@ -577,7 +577,7 @@ function handlePacket_N(parts, i) {
         currentLaserTargetId = null;
         attackIntentTargetId = null;
         resetPendingRangeResume();
-        pendingCollectBoxId = null;
+        clearPendingCollectState();
         if (typeof collectedBoxRequestIds !== "undefined") collectedBoxRequestIds.clear();
         if (typeof stopHeroCollectorBeam === "function") stopHeroCollectorBeam();
         moveTargetX = null;
@@ -1773,8 +1773,8 @@ function handlePacket_N(parts, i) {
                  forceUnlock(id); 
              }
              
-             if (isMyCollection) {
-                pendingCollectBoxId = null;
+            if (isMyCollection) {
+                clearPendingCollectState();
                 moveTargetX = null;
                 moveTargetY = null;
                 isChasingTarget = false;
@@ -1845,7 +1845,7 @@ function handlePacket_s(parts, i) {
             
             // Nettoyage des variables de mouvement si c'était ma collecte
             if (isMyCollection) {
-                pendingCollectBoxId = null;
+                clearPendingCollectState();
                 moveTargetX = null;
                 moveTargetY = null;
                 isChasingTarget = false;

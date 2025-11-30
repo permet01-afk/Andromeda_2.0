@@ -224,7 +224,7 @@
     }
     
     function sendPortalJump() {
-        pendingCollectBoxId = null;
+        clearPendingCollectState();
         if (!ws || ws.readyState !== WebSocket.OPEN) return;
         const packet = "j";
         console.log("[WS] Envoi PORTAL_JUMP →", packet);
@@ -240,7 +240,7 @@
     }
 
     function sendLaserAttack(targetId) {
-        pendingCollectBoxId = null;
+        clearPendingCollectState();
         if (!ws || ws.readyState !== WebSocket.OPEN) return;
         if (targetId == null) return;
         const packet = `a|${targetId}`;
@@ -270,7 +270,7 @@
     }
 
     function sendRocketAttack(targetId) {
-        pendingCollectBoxId = null;
+        clearPendingCollectState();
         if (!ws || ws.readyState !== WebSocket.OPEN) return;
         if (targetId == null) return;
         const packet = `v|${targetId}`;
@@ -381,6 +381,18 @@
         const prevX = shipX;
         const prevY = shipY;
 
+        const targetBox = (pendingCollectBoxId !== null) ? entities[pendingCollectBoxId] : null;
+        if (targetBox) {
+            const collectTarget = (typeof computeCollectApproach === "function") ? computeCollectApproach(targetBox) : { x: targetBox.x, y: targetBox.y };
+            if (collectTarget) {
+                pendingCollectTarget = collectTarget;
+                moveTargetX = collectTarget.x;
+                moveTargetY = collectTarget.y;
+            }
+        } else {
+            pendingCollectTarget = null;
+        }
+
         if (moveTargetX === null || moveTargetY === null) {
             heroLastPosX = shipX;
             heroLastPosY = shipY;
@@ -390,12 +402,12 @@
                 const collectBox = entities[pendingCollectBoxId];
                 if (collectBox) {
                     const distToBox = Math.hypot(collectBox.x - shipX, collectBox.y - shipY);
-                    if (distToBox <= BOX_COLLECT_RANGE) {
+                    const collectRequested = (typeof collectedBoxRequestIds !== "undefined") && collectedBoxRequestIds.has(pendingCollectBoxId);
+                    if (distToBox <= BOX_COLLECT_RANGE && !collectRequested) {
                         sendCollectBox(pendingCollectBoxId);
-                        pendingCollectBoxId = null;
                     }
                 } else {
-                    pendingCollectBoxId = null;
+                    clearPendingCollectState();
                 }
             }
             return;
@@ -412,15 +424,13 @@
 		}
 
 
-        const targetBox = (pendingCollectBoxId !== null) ? entities[pendingCollectBoxId] : null;
+        const collectRequested = (pendingCollectBoxId !== null && typeof collectedBoxRequestIds !== "undefined")
+            ? collectedBoxRequestIds.has(pendingCollectBoxId)
+            : false;
         if (targetBox) {
             const distToBox = Math.hypot(targetBox.x - shipX, targetBox.y - shipY);
-            if (distToBox <= BOX_COLLECT_RANGE) {
-                moveTargetX = null;
-                moveTargetY = null;
+            if (distToBox <= BOX_COLLECT_RANGE && !collectRequested) {
                 sendCollectBox(pendingCollectBoxId);
-                pendingCollectBoxId = null;
-                return;
             }
         }
 
@@ -454,10 +464,9 @@
             shipY = Math.max(moveMinY, Math.min(moveMaxY, shipY));
         }
 
-        if (arrivedThisFrame && pendingCollectBoxId !== null) {
+        if (arrivedThisFrame && pendingCollectBoxId !== null && !collectRequested) {
             console.log("[MOVE] Arrivé sur cible, envoi collecte pending id=", pendingCollectBoxId);
             sendCollectBox(pendingCollectBoxId);
-            pendingCollectBoxId = null;
         }
 
         if (Math.abs(shipX - prevX) > 0.01 || Math.abs(shipY - prevY) > 0.01) {
