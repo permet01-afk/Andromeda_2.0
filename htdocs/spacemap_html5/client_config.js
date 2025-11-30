@@ -551,12 +551,24 @@ const SHIP_SPRITE_DEFS = {
 
 const ENGINE_ANIM_FPS = 20;
 const DEFAULT_ENGINE_KEY = "engine0";
+const DEFAULT_ENGINE_SMOKE_KEY = "engineSmoke0";
 const ENGINE_SPRITE_DEFS = {
     engine0: {
         frameCount: 12,
         basePath: "graphics/engines/engine0/",
         frames: [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23],
         fps: ENGINE_ANIM_FPS
+    }
+};
+
+const ENGINE_SMOKE_DEFS = {
+    engineSmoke0: {
+        basePath: "graphics/smoke/engineSmoke0/",
+        frames: [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41],
+        duration: 750,
+        spawnInterval: 50,
+        drift: 85,
+        rotate: true
     }
 };
 
@@ -787,6 +799,7 @@ const portalSpriteCache = {};
 const portalJumpSpriteCache = {};
 const uiImageCache = {};
 const engineSpriteCache = {};
+const engineSmokeSpriteCache = {};
 
     const QUICKBAR_ICON_LOOKUP = {
         ammo: {
@@ -955,6 +968,28 @@ function getEngineSpriteFrame(engineKey, frameIndex) {
     const img = new Image();
     img.src = def.basePath + fileNumber + ".png";
     engineSpriteCache[cacheKey] = img;
+    return img;
+}
+
+function getEngineSmokeSpriteFrame(engineSmokeKey, frameIndex) {
+    const key = engineSmokeKey || DEFAULT_ENGINE_SMOKE_KEY;
+    const def = ENGINE_SMOKE_DEFS[key];
+    if (!def) return null;
+
+    const frames = def.frames && def.frames.length > 0
+        ? def.frames
+        : Array.from({ length: def.frameCount || 1 }, (_, idx) => idx + 1);
+
+    let idx = frameIndex % frames.length;
+    if (idx < 0) idx += frames.length;
+
+    const fileNumber = frames[idx];
+    const cacheKey = `${key}_${fileNumber}`;
+    if (engineSmokeSpriteCache[cacheKey]) return engineSmokeSpriteCache[cacheKey];
+
+    const img = new Image();
+    img.src = def.basePath + fileNumber + ".png";
+    engineSmokeSpriteCache[cacheKey] = img;
     return img;
 }
 
