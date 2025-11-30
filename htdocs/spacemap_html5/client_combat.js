@@ -4,6 +4,13 @@
         const meta = OBJECT_TYPE_META[e.type];
 
         if (!meta) {
+            if (ORE_TYPE_SPRITES[e.type]) {
+                e.kind = "box";
+                e.category = "ore";
+                e.oreSprite = ORE_TYPE_SPRITES[e.type];
+                return;
+            }
+
             if (!loggedObjectTypes.has(e.type)) {
                 loggedObjectTypes.add(e.type);
             }
@@ -17,6 +24,10 @@
         else if (e.kind === "unknown") e.kind = "box";
 
         e.category = meta.category || e.category || "other";
+
+        if (meta.oreSprite) {
+            e.oreSprite = meta.oreSprite;
+        }
     }
 
     function isEntityVisibleOnMap(e) {
