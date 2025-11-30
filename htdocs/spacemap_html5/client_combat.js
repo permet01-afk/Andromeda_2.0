@@ -293,6 +293,9 @@
         const packet = `x|${id}`;
         console.log("[WS] Envoi COLLECT →", packet);
         sendRaw(packet);
+        if (typeof startHeroCollectorBeam === "function") {
+            startHeroCollectorBeam();
+        }
     }
 
     function sendSelectAmmo(ammoId) {
