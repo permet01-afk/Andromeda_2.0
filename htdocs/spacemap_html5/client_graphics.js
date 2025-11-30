@@ -512,6 +512,42 @@ function drawMiniMap() {
         ctx.restore();
     }
 
+    function drawHpShieldBars(screenX, screenY, spriteHeight, hp, maxHp, shield, maxShield) {
+        const barWidth = 50;
+        const barHeight = 4;
+        const gap = 2;
+        const visualHeight = Math.max(20, spriteHeight || 0);
+        const topY = screenY - visualHeight / 2 - (barHeight * 2 + gap + 2);
+
+        const safeHp = typeof hp === "number" ? hp : 0;
+        const safeMaxHp = (typeof maxHp === "number" && maxHp > 0) ? maxHp : (safeHp > 0 ? safeHp : 1);
+        const safeShield = typeof shield === "number" ? shield : 0;
+        const safeMaxShield = (typeof maxShield === "number" && maxShield > 0) ? maxShield : (safeShield > 0 ? safeShield : 1);
+
+        const hpRatio = Math.max(0, Math.min(1, safeHp / safeMaxHp));
+        const shieldRatio = Math.max(0, Math.min(1, safeShield / safeMaxShield));
+
+        ctx.save();
+        ctx.lineWidth = 1;
+
+        ctx.fillStyle = "rgba(40,40,40,0.8)";
+        ctx.fillRect(screenX - barWidth / 2, topY, barWidth, barHeight);
+        ctx.fillStyle = "#4cb648";
+        ctx.fillRect(screenX - barWidth / 2, topY, barWidth * hpRatio, barHeight);
+        ctx.strokeStyle = "#000000";
+        ctx.strokeRect(screenX - barWidth / 2 + 0.5, topY + 0.5, barWidth - 1, barHeight - 1);
+
+        const shieldY = topY + barHeight + gap;
+        ctx.fillStyle = "rgba(40,40,40,0.8)";
+        ctx.fillRect(screenX - barWidth / 2, shieldY, barWidth, barHeight);
+        ctx.fillStyle = "#007adf";
+        ctx.fillRect(screenX - barWidth / 2, shieldY, barWidth * shieldRatio, barHeight);
+        ctx.strokeStyle = "#000000";
+        ctx.strokeRect(screenX - barWidth / 2 + 0.5, shieldY + 0.5, barWidth - 1, barHeight - 1);
+
+        ctx.restore();
+    }
+
     // Remplacement du rendu des lasers pour utiliser les sprites PNG (aligné SWF)
     function drawLaserBeams() {
         const now = performance.now();
@@ -663,6 +699,8 @@ function drawMiniMap() {
             ctx.fillText(label, shipScreenX, baseY);
             ctx.restore();
         }
+
+        drawHpShieldBars(shipScreenX, sy, shipDrawnHeight, heroHp, heroMaxHp, heroShield, heroMaxShield);
 
         ctx.restore();
     }
@@ -829,6 +867,10 @@ function drawMiniMap() {
         // Drones de l'entité
         if (setting_show_drones && e.drones && e.drones.groups && e.drones.groups.length > 0) {
             drawDrones(e.x, e.y, e.drones, e.angle || 0);
+        }
+
+        if (selectedTargetId !== null && e.id === selectedTargetId) {
+            drawHpShieldBars(entityScreenX, entityScreenY, spriteHeight, e.hp, e.maxHp, e.shield, e.maxShield);
         }
 
         // Anneau de sélection / cible laser
