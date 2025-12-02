@@ -74,6 +74,33 @@
         drawBeamSprite(img, startX, startY, endX, endY, alpha, scale);
     }
 
+    function drawMapBackground() {
+        const bg = currentBackgroundImage;
+        if (!bg || !bg.complete || bg.width === 0 || bg.height === 0) {
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            return;
+        }
+
+        const tileW = bg.width * gameScale;
+        const tileH = bg.height * gameScale;
+
+        if (tileW < 1 || tileH < 1) {
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            return;
+        }
+
+        const startX = ((-cameraX * gameScale) % tileW) - tileW;
+        const startY = ((-cameraY * gameScale) % tileH) - tileH;
+
+        for (let x = startX; x < canvas.width + tileW; x += tileW) {
+            for (let y = startY; y < canvas.height + tileH; y += tileH) {
+                ctx.drawImage(bg, x, y, tileW, tileH);
+            }
+        }
+    }
+
     const ENGINE_FRAME_DURATION = 1000 / ((ENGINE_SPRITE_DEFS[DEFAULT_ENGINE_KEY]?.fps) || ENGINE_ANIM_FPS || 20);
     const ENGINE_MOVING_MAX_TICKS = 3;
     const engineAnimationState = {};

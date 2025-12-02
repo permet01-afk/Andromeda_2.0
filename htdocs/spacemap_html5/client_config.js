@@ -20,6 +20,32 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
 
     const MAP_WIDTH  = MAP_MAX_X - MAP_MIN_X;
     const MAP_HEIGHT = MAP_MAX_Y - MAP_MIN_Y;
+
+    // --- Fonds de carte (correspondance mapID -> typeID -> dossier backgroundX) ---
+    const MAP_BACKGROUND_TYPES = {
+        1: 15,
+        2: 2,
+        3: 3,
+        4: 4,
+        5: 5,
+        6: 6,
+        7: 7,
+        8: 8,
+        9: 9,
+        10: 10,
+        11: 11,
+        12: 12,
+        13: 13,
+        14: 14,
+        15: 15,
+        16: 16,
+        17: 16,
+        80: 91,
+        81: 61
+    };
+
+    let currentBackgroundTypeId = null;
+    let currentBackgroundImage = null;
 	 // Centre logique de la map (utile pour les futurs paquets "m")
     let mapCenterX = (MAP_MIN_X + MAP_MAX_X) / 2;
     let mapCenterY = (MAP_MIN_Y + MAP_MAX_Y) / 2;
@@ -286,6 +312,36 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
     refreshCanvasScale();
     window.addEventListener("resize", refreshCanvasScale);
 
+    function getBackgroundTypeForMap(mapId) {
+        if (mapId == null) return null;
+        return MAP_BACKGROUND_TYPES[mapId] || null;
+    }
+
+    function getBackgroundImagePath(typeId) {
+        if (!typeId) return null;
+        return `graphics/backgrounds/background${typeId}/1_background.png`;
+    }
+
+    function loadBackgroundImage(typeId) {
+        const path = getBackgroundImagePath(typeId);
+        if (!path) {
+            currentBackgroundImage = null;
+            return;
+        }
+
+        if (currentBackgroundImage && currentBackgroundImage.__bgPath === path) return;
+
+        const img = new Image();
+        img.src = path;
+        img.__bgPath = path;
+        currentBackgroundImage = img;
+    }
+
+    function applyMapBackground(mapId) {
+        currentBackgroundTypeId = getBackgroundTypeForMap(mapId);
+        loadBackgroundImage(currentBackgroundTypeId);
+    }
+
     // Désactiver le menu contextuel
     canvas.addEventListener("contextmenu", (e) => e.preventDefault());
 
@@ -453,7 +509,9 @@ function updateLocalSetting(key, value) {
     let radiationPulseStart = 0;
     let radiationWarningTimer = null;
     let radiationFlashAlpha = 0;
-    
+
+    applyMapBackground(currentMapId);
+
     // --- Quickbar (barre 1-0 configurable avec cadenas) ---
 	
 	// --- ÉTAT VISUEL QUICKBAR ---
