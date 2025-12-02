@@ -723,10 +723,46 @@ function drawMiniMap() {
         const displayY  = Math.round(shipY / 100);
         const coordText = `${displayX}/${displayY}`;
         const formatMapId = (mapId) => {
-            if (!mapId || mapId <= 0) return "1-1";
-            if (mapId < 10) return `1-${mapId}`;
-            return `${Math.floor(mapId / 10)}-${mapId % 10}`;
-        };
+		switch (mapId) {
+        case 1:  return "1-1";
+        case 2:  return "1-2";
+        case 3:  return "1-3";
+        case 4:  return "1-4";
+        case 5:  return "2-1";
+        case 6:  return "2-2";
+        case 7:  return "2-3";
+        case 8:  return "2-4";
+        case 9:  return "3-1";
+        case 10: return "3-2";
+        case 11: return "3-3";
+        case 12: return "3-4";
+        case 13: return "4-1";
+        case 14: return "4-2";
+        case 15: return "4-3";
+        case 16: return "4-4";
+        case 17: return "1-5";
+        case 18: return "1-6";
+        case 19: return "1-7";
+        case 20: return "1-8";
+        case 21: return "2-5";
+        case 22: return "2-6";
+        case 23: return "2-7";
+        case 24: return "2-8";
+        case 25: return "3-5";
+        case 26: return "3-6";
+        case 27: return "3-7";
+        case 28: return "3-8";
+        case 51: return "GGA";
+        case 52: return "GGB";
+        case 53: return "GGG";
+        case 55: return "GGD";
+        case 80: return "Surv";
+        case 81: return "Inva";
+        default:
+            return "1-1"; // fallback
+    }
+};
+
         const mapText   = formatMapId(currentMapId);
 
         ctx.save();
