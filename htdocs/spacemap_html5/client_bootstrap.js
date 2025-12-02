@@ -27,9 +27,8 @@
 
         // --- 2. DESSIN (L'ordre est important !) ---
 
-        // A. Fond noir (Le plus en dessous)
-        ctx.fillStyle = "black";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // A. Fond d'écran (image de fond de la carte)
+        drawMapBackground();
 
         // B. Stations (Elles sont au sol, donc on les dessine AVANT le reste)
         if (typeof stations !== 'undefined' && typeof stationImages !== 'undefined') {
