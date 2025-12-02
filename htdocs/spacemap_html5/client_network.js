@@ -564,6 +564,8 @@ function handlePacket_N(parts, i) {
             cfg.mapID = newMapId;
         }
 
+        applyMapBackground(currentMapId);
+
         for (const id in entities) delete entities[id];
         for (const id in portals) delete portals[id];
 
