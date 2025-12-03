@@ -1661,6 +1661,30 @@ function handlePacket_N(parts, i) {
 
         const duration = (typeof SAB_SHOT_DURATION_MS !== "undefined") ? SAB_SHOT_DURATION_MS : 1000;
 
+        const now = performance.now();
+
+        // FULL_MERGE_AS : une seule instance de sab visuel par couple Attaquant/Cible.
+        // On remet à jour l'instance existante au lieu d'empiler des copies.
+        let updated = false;
+        for (let idx = sabShots.length - 1; idx >= 0; idx--) {
+            const shot = sabShots[idx];
+            if (shot.attackerId === attackerId && shot.targetId === targetId) {
+                if (!updated) {
+                    shot.startX = startX;
+                    shot.startY = startY;
+                    shot.endX = endX;
+                    shot.endY = endY;
+                    shot.duration = duration;
+                    shot.createdAt = now;
+                    updated = true;
+                } else {
+                    sabShots.splice(idx, 1);
+                }
+            }
+        }
+
+        if (updated) return;
+
         sabShots.push({
             attackerId,
             targetId,
@@ -1671,7 +1695,7 @@ function handlePacket_N(parts, i) {
             startScale: 1,
             endScale: 0.1,
             duration,
-            createdAt: performance.now()
+            createdAt: now
         });
     }
 
@@ -1744,6 +1768,35 @@ function handlePacket_N(parts, i) {
         const duration = visual.playLoop ? (visual.attackLengthMs || LASER_ATTACK_LENGTH_MS) : baseDuration;
 
         const shouldDouble = shouldDrawDoubleLaser(attackerId, visual, patternId);
+        const now = performance.now();
+
+        if (visual.playLoop) {
+            let reused = false;
+            for (let idx = laserBeams.length - 1; idx >= 0; idx--) {
+                const beam = laserBeams[idx];
+                if (beam.playLoop && beam.attackerId === attackerId && beam.targetId === targetId && beam.patternId === patternId && beam.skilledLaser === skilledLaser) {
+                    if (!reused) {
+                        beam.startX = startX;
+                        beam.startY = startY;
+                        beam.endX = endX;
+                        beam.endY = endY;
+                        beam.duration = duration;
+                        beam.createdAt = now;
+                        beam.absorber = visual.absorber;
+                        beam.showShieldDamage = showShieldDamage;
+                        beam.angle = angle;
+                        beam.rotation = null;
+                        beam.endScale = visual.absorber ? 0.1 : 1;
+                        beam.hitHandled = false;
+                        reused = true;
+                    } else {
+                        laserBeams.splice(idx, 1);
+                    }
+                }
+            }
+            if (reused) return;
+        }
+
         const beamEntries = shouldDouble && !visual.absorber
             ? buildDoubleLaserEntries({
                 attackerId,
@@ -1776,7 +1829,7 @@ function handlePacket_N(parts, i) {
                 endY,
                 duration,
                 endScale: visual.absorber ? 0.1 : 1,
-                createdAt: performance.now(),
+                createdAt: now,
                 playLoop: visual.playLoop,
                 hitHandled: false
             }];
