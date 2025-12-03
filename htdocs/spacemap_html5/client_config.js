@@ -1549,6 +1549,10 @@ loadQuickbarLayout();
             case "rocket":
                 // Tous les slots roquettes se partagent le cooldown "ROK"
                 return "ROK";
+            case "ammo":
+                // FULL_MERGE_AS : le RSB-75 (ammo id 6) a son propre cooldown visuel
+                if (item.id === 6) return "RSB";
+                return null;
             case "tech":
                 return TECH_ID_TO_CODE[item.id] || null;
             case "cpu":
