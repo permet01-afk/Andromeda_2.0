@@ -1738,7 +1738,10 @@ function handlePacket_N(parts, i) {
         }
 
         const angle = Math.atan2(endY - startY, endX - startX);
-        const duration = visual.speedMs || DEFAULT_LASER_SPEED_MS;
+        const baseDuration = visual.speedMs || DEFAULT_LASER_SPEED_MS;
+        // FULL_MERGE_AS : les lasers "playLoop" (SAB-50 / laser4.swf) restent actifs pendant attackLength
+        // pour éviter toute coupure visuelle entre deux rafraîchissements.
+        const duration = visual.playLoop ? (visual.attackLengthMs || LASER_ATTACK_LENGTH_MS) : baseDuration;
 
         const shouldDouble = shouldDrawDoubleLaser(attackerId, visual, patternId);
         const beamEntries = shouldDouble && !visual.absorber
