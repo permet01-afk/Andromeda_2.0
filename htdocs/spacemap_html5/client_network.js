@@ -1664,6 +1664,8 @@ function handlePacket_N(parts, i) {
             startY,
             endX,
             endY,
+            startScale: 1.35,
+            endScale: 0.65,
             duration,
             createdAt: performance.now()
         });
