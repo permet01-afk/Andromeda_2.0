@@ -817,7 +817,9 @@
     for (const beam of laserBeams) {
         const hasOffset = Number.isFinite(beam.offsetX) && Number.isFinite(beam.offsetY);
 
-        if (beam.attackerId) {
+        const isSabBeam = beam.spriteId === 4; // SAB-50 uniquement : coordonnées dynamiques pendant le tir
+
+        if (isSabBeam && beam.attackerId) {
             const attacker = snapshotEntityById(beam.attackerId);
             if (attacker) {
                 const baseX = attacker.x;
@@ -826,7 +828,7 @@
                 beam.startY = hasOffset ? baseY + beam.offsetY : baseY;
             }
         }
-        if (beam.targetId) {
+        if (isSabBeam && beam.targetId) {
             const target = snapshotEntityById(beam.targetId);
             if (target) {
                 const baseX = target.x;
