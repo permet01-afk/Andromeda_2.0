@@ -9,6 +9,7 @@
 
     // Lasers / dégâts / explosions
     const laserBeams = [];
+    const sabShots = [];
     const rocketAttacks = [];
     const labPrices = {};
     const damageBubbles = [];
