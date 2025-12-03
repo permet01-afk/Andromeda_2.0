@@ -919,17 +919,23 @@ function handlePacket_N(parts, i) {
 
         // 4. LOGIQUE SPÉCIFIQUE TYPE FLASH
         if (item.type === "ammo") {
-            // 1. Sélection de la munition
-            if (currentAmmoId !== item.id) {
+            // Gestion spéciale du RSB : sélection temporaire + retour auto
+            if (item.id === RSB_AMMO_ID) {
+                if (isActionOnCooldown("RSB")) {
+                    addInfoMessage("RSB en cooldown.");
+                    return;
+                }
+
+                triggerRsbBurst();
+            } else if (currentAmmoId !== item.id) {
                 sendSelectAmmo(item.id);
-                currentAmmoId = item.id;
             }
-            
+
             // 2. NOUVEAU : Si on a une cible, on attaque !
             if (selectedTargetId !== null) {
                 // On lance l'attaque
                 sendLaserAttack(selectedTargetId);
-                
+
                 // On active le mode poursuite
                 isChasingTarget = true;
             }
@@ -938,9 +944,8 @@ function handlePacket_N(parts, i) {
             // Sélection uniquement
             if (currentRocketId !== item.id) {
                 sendSelectRocket(item.id);
-                currentRocketId = item.id;
             }
-        } 
+        }
         else if (item.type === "tech") {
             // Activation immédiate
             sendTechActivation(item.id);
@@ -1139,6 +1144,10 @@ function handlePacket_N(parts, i) {
             if (!isNaN(seconds) && seconds > 0) {
                 // On lance le cooldown côté client
                 setActionCooldown(code, seconds);
+            }
+
+            if (code === "RSB") {
+                forceRsbReturnAfterCooldown();
             }
 
             let label = code;
