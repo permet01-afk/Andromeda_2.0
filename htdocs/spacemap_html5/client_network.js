@@ -1641,8 +1641,11 @@ function handlePacket_N(parts, i) {
 
     function handlePacket_sabShot(parts, i) {
         if (parts.length < i + 2) return;
-        const attackerId = parseInt(parts[i], 10);
-        const targetId = parseInt(parts[i + 1], 10);
+
+        // In the Flash client, the SAB animation starts at the target and travels toward the attacker (absorber).
+        // The packet order follows that same convention: first id = target, second id = attacker.
+        const targetId = parseInt(parts[i], 10);
+        const attackerId = parseInt(parts[i + 1], 10);
 
         if (isNaN(attackerId) || isNaN(targetId)) return;
 
