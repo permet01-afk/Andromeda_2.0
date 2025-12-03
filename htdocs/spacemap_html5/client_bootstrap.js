@@ -15,9 +15,10 @@
         updateShieldEffects(now);
 
         updatePortalJumpEffects(now);
-        
+
         updateLaserBeams(now);
         updateRocketAttacks(now);
+        updateSabShots(now);
         updateDamageBubbles(now);
         updateShieldBursts(now);
         updateExplosions(now);
@@ -61,6 +62,7 @@
         drawExplosions();
         drawRocketAttacks();
         drawLaserBeams();
+        drawSabShots();
         drawDamageBubbles();
 
         // G. Interfaces (HUD, Minimap, Fenêtres)

@@ -721,6 +721,7 @@
     };
 
     const DEFAULT_LASER_SPEED_MS = (typeof LASER_BEAM_DURATION !== "undefined") ? LASER_BEAM_DURATION : 150;
+    const SAB_SHOT_DURATION_MS = 500;
     const LASER_PATTERN_META = {
         0: { spriteId: 0, absorber: false, allowOffsets: true,  speed: 0.15, playLoop: false, playLoopRotated: false },
         1: { spriteId: 1, absorber: false, allowOffsets: true,  speed: 0.15, playLoop: false, playLoopRotated: false },
@@ -795,6 +796,18 @@
         }
     }
 
+    function updateSabShots(now) {
+        for (let i = sabShots.length - 1; i >= 0; i--) {
+            const shot = sabShots[i];
+            const attacker = snapshotEntityById(shot.attackerId);
+            const target = snapshotEntityById(shot.targetId);
+
+            if (!attacker || !target || (now - shot.createdAt) >= (shot.duration || SAB_SHOT_DURATION_MS)) {
+                sabShots.splice(i, 1);
+            }
+        }
+    }
+
     function drawLaserBeams() {
         const now = performance.now();
 
@@ -865,6 +878,43 @@
             ctx.beginPath();
             ctx.arc(projX, projY, beam.heavy ? 6 : 4, 0, Math.PI * 2);
             ctx.fill();
+            ctx.restore();
+        }
+    }
+
+    function drawSabShots() {
+        const now = performance.now();
+        const spriteData = getLaserSpriteFrame(4, false);
+        const sprite = spriteData?.img || spriteData;
+        const width = spriteData?.width || sprite?.width || 0;
+        const height = spriteData?.height || sprite?.height || 0;
+
+        if (!sprite || !sprite.complete || width <= 0 || height <= 0) return;
+
+        for (const shot of sabShots) {
+            const attacker = snapshotEntityById(shot.attackerId);
+            const target = snapshotEntityById(shot.targetId);
+            if (!attacker || !target) continue;
+
+            const duration = shot.duration || SAB_SHOT_DURATION_MS;
+            const progress = Math.min(1, (now - shot.createdAt) / duration);
+
+            const endX = shot.endX ?? (attacker.id === heroId ? shipX : attacker.x);
+            const endY = shot.endY ?? (attacker.id === heroId ? shipY : attacker.y);
+            const startX = shot.startX ?? (target.id === heroId ? shipX : target.x);
+            const startY = shot.startY ?? (target.id === heroId ? shipY : target.y);
+
+            const posX = startX + (endX - startX) * progress;
+            const posY = startY + (endY - startY) * progress;
+
+            const scale = 1 - 0.9 * progress;
+            const angle = Math.atan2(endY - startY, endX - startX);
+
+            ctx.save();
+            ctx.translate(mapToScreenX(posX), mapToScreenY(posY));
+            ctx.rotate(angle);
+            ctx.scale(scale, scale);
+            ctx.drawImage(sprite, -width / 2, -height / 2, width, height);
             ctx.restore();
         }
     }
