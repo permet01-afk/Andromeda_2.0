@@ -84,19 +84,57 @@
 
         if (!bg || !bg.complete || bg.width === 0 || bg.height === 0) return;
 
-        const parallax = currentBackgroundParallax || DEFAULT_BACKGROUND_PARALLAX;
-        const scale = gameScale || 1;
-        const drawWidth = bg.width * scale;
-        const drawHeight = bg.height * scale;
+        const viewportWorld = getViewportWorldSize();
 
-        if (drawWidth < 1 || drawHeight < 1) return;
+        const pixelsPerWorldX = bg.width / MAP_WIDTH;
+        const pixelsPerWorldY = bg.height / MAP_HEIGHT;
 
-        const screenX = canvas.width / 2 - (cameraX / parallax) * scale + currentBackgroundOffsets.x * scale;
-        const screenY = canvas.height / 2 - (cameraY / parallax) * scale + currentBackgroundOffsets.y * scale;
+        const srcWidth = viewportWorld.width * pixelsPerWorldX;
+        const srcHeight = viewportWorld.height * pixelsPerWorldY;
+
+        let srcX = (cameraX - viewportWorld.width / 2) * pixelsPerWorldX + currentBackgroundOffsets.x;
+        let srcY = (cameraY - viewportWorld.height / 2) * pixelsPerWorldY + currentBackgroundOffsets.y;
+
+        let drawWidth = canvas.width;
+        let drawHeight = canvas.height;
+        let drawX = 0;
+        let drawY = 0;
+
+        let clampedSrcX = Math.max(0, Math.min(bg.width - srcWidth, srcX));
+        let clampedSrcY = Math.max(0, Math.min(bg.height - srcHeight, srcY));
+        let clampedSrcWidth = Math.min(srcWidth, bg.width);
+        let clampedSrcHeight = Math.min(srcHeight, bg.height);
+
+        // If the requested source rectangle exceeds the image bounds, shift the destination
+        // so the camera stays centered on the visible portion without stretching.
+        if (srcX < 0) {
+            const missingWorld = (-srcX) / pixelsPerWorldX;
+            const offsetPx = (missingWorld * drawWidth) / viewportWorld.width;
+            drawX += offsetPx;
+            drawWidth -= offsetPx;
+        }
+        if (srcY < 0) {
+            const missingWorld = (-srcY) / pixelsPerWorldY;
+            const offsetPx = (missingWorld * drawHeight) / viewportWorld.height;
+            drawY += offsetPx;
+            drawHeight -= offsetPx;
+        }
+        if (srcX + srcWidth > bg.width) {
+            const overflowWorld = (srcX + srcWidth - bg.width) / pixelsPerWorldX;
+            const offsetPx = (overflowWorld * drawWidth) / viewportWorld.width;
+            drawWidth -= offsetPx;
+            clampedSrcWidth = bg.width - clampedSrcX;
+        }
+        if (srcY + srcHeight > bg.height) {
+            const overflowWorld = (srcY + srcHeight - bg.height) / pixelsPerWorldY;
+            const offsetPx = (overflowWorld * drawHeight) / viewportWorld.height;
+            drawHeight -= offsetPx;
+            clampedSrcHeight = bg.height - clampedSrcY;
+        }
 
         const previousSmoothing = ctx.imageSmoothingEnabled;
         ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(bg, screenX, screenY, drawWidth, drawHeight);
+        ctx.drawImage(bg, clampedSrcX, clampedSrcY, clampedSrcWidth, clampedSrcHeight, drawX, drawY, drawWidth, drawHeight);
         ctx.imageSmoothingEnabled = previousSmoothing;
     }
 
