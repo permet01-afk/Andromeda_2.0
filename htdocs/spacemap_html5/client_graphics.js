@@ -74,36 +74,171 @@
         drawBeamSprite(img, startX, startY, endX, endY, alpha, scale);
     }
 
+    function getStarfieldVariantForCell(cellX, cellY) {
+        const seed = (cellX * 73856093) ^ (cellY * 19349663);
+        return (Math.abs(seed) % STARFIELD_TILE_VARIANTS) + 1;
+    }
+
+    function getStarfieldTileImage(layerState, variantIndex) {
+        const clampedIndex = ((variantIndex - 1 + STARFIELD_TILE_VARIANTS) % STARFIELD_TILE_VARIANTS) + 1;
+        if (!layerState.tileCache[clampedIndex]) {
+            const img = new Image();
+            img.src = `${layerState.basePath}/${clampedIndex}_tile_10.png`;
+            layerState.tileCache[clampedIndex] = img;
+        }
+        return layerState.tileCache[clampedIndex];
+    }
+
+    function ensureStarfieldLayersInitialized() {
+        if (!starfieldEnabled) return;
+        if (!Array.isArray(starfieldLayersState)) starfieldLayersState = [];
+        let initialized = false;
+        if (starfieldLayersState.length === 0) {
+            starfieldLayersState = STARFIELD_LAYER_CONFIG.map((cfg) => ({
+                basePath: cfg.basePath,
+                speed: cfg.speed || 1,
+                alpha: cfg.alpha ?? 1,
+                offsetX: Math.random() * STARFIELD_TILE_SIZE,
+                offsetY: Math.random() * STARFIELD_TILE_SIZE,
+                tileCache: new Array(STARFIELD_TILE_VARIANTS + 1)
+            }));
+            initialized = true;
+        }
+
+        if (initialized) {
+            lastStarfieldCamera = {
+                x: typeof cameraX === "number" ? cameraX : 0,
+                y: typeof cameraY === "number" ? cameraY : 0
+            };
+        }
+    }
+
+    function resetStarfieldState() {
+        starfieldLayersState = [];
+        lastStarfieldCamera = {
+            x: typeof cameraX === "number" ? cameraX : 0,
+            y: typeof cameraY === "number" ? cameraY : 0
+        };
+
+        ensureStarfieldLayersInitialized();
+    }
+
+    function setStarfieldEnabled(enabled, color = STARFIELD_DEFAULT_COLOR) {
+        starfieldEnabled = !!enabled;
+        starfieldColor = Number.isFinite(color) ? color : STARFIELD_DEFAULT_COLOR;
+        resetStarfieldState();
+    }
+
+    function setStarfieldStateFromMap(mapId, settings = null) {
+        const cfg = settings || (mapStarfieldSettingsById ? mapStarfieldSettingsById[mapId] : null) || {
+            enabled: DEFAULT_STARFIELD_ENABLED,
+            color: STARFIELD_DEFAULT_COLOR
+        };
+
+        setStarfieldEnabled(cfg.enabled, cfg.color);
+    }
+
+    function updateStarfield(cameraXValue, cameraYValue) {
+        if (!starfieldEnabled) return;
+        ensureStarfieldLayersInitialized();
+        if (!starfieldLayersState.length) return;
+
+        const deltaX = cameraXValue - lastStarfieldCamera.x;
+        const deltaY = cameraYValue - lastStarfieldCamera.y;
+
+        let moveX = -(deltaX || 0);
+        let moveY = -(deltaY || 0);
+
+        if (moveX === 0 && moveY === 0) {
+            moveX = STARFIELD_IDLE_SPEED;
+            moveY = 0;
+        }
+
+        starfieldLayersState.forEach((layer) => {
+            const speed = layer.speed || 1;
+            layer.offsetX += moveX * speed;
+            layer.offsetY += moveY * speed;
+        });
+
+        lastStarfieldCamera.x = cameraXValue;
+        lastStarfieldCamera.y = cameraYValue;
+    }
+
+    function drawStarfieldLayer(layerState) {
+        const tileSize = STARFIELD_TILE_SIZE;
+        const width = canvas.width;
+        const height = canvas.height;
+
+        const offsetX = ((layerState.offsetX % tileSize) + tileSize) % tileSize;
+        const offsetY = ((layerState.offsetY % tileSize) + tileSize) % tileSize;
+        const startCellX = Math.floor(layerState.offsetX / tileSize);
+        const startCellY = Math.floor(layerState.offsetY / tileSize);
+
+        ctx.save();
+        const previousComposite = ctx.globalCompositeOperation;
+        ctx.globalCompositeOperation = "lighter";
+        if (typeof layerState.alpha === "number") {
+            ctx.globalAlpha = layerState.alpha;
+        }
+
+        const previousSmoothing = ctx.imageSmoothingEnabled;
+        ctx.imageSmoothingEnabled = false;
+
+        for (let drawY = -offsetY, cellY = startCellY; drawY < height + tileSize; drawY += tileSize, cellY++) {
+            for (let drawX = -offsetX, cellX = startCellX; drawX < width + tileSize; drawX += tileSize, cellX++) {
+                const variantIndex = getStarfieldVariantForCell(cellX, cellY);
+                const img = getStarfieldTileImage(layerState, variantIndex);
+                if (img && img.complete && img.width > 0 && img.height > 0) {
+                    ctx.drawImage(img, drawX, drawY, tileSize, tileSize);
+                }
+            }
+        }
+
+        ctx.imageSmoothingEnabled = previousSmoothing;
+        ctx.globalCompositeOperation = previousComposite;
+        ctx.restore();
+    }
+
+    function drawStarfield() {
+        if (!starfieldEnabled || !starfieldLayersState.length) return;
+
+        starfieldLayersState.forEach((layer) => drawStarfieldLayer(layer));
+    }
+
     function drawMapBackground() {
         // Clear the full viewport every frame to avoid ghosting / repetition when the
         // background image is smaller than the canvas.
         ctx.fillStyle = "black";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        if (!currentBackgroundLayers || !currentBackgroundLayers.length) return;
+        updateStarfield(cameraX, cameraY);
 
-        const scale = gameScale || 1;
-        const orderedLayers = [...currentBackgroundLayers].sort((a, b) => (a.layer || 0) - (b.layer || 0));
+        if (currentBackgroundLayers && currentBackgroundLayers.length) {
+            const scale = gameScale || 1;
+            const orderedLayers = [...currentBackgroundLayers].sort((a, b) => (a.layer || 0) - (b.layer || 0));
 
-        orderedLayers.forEach((layer) => {
-            const bg = layer.image;
-            if (!bg || !bg.complete || bg.width === 0 || bg.height === 0) return;
+            orderedLayers.forEach((layer) => {
+                const bg = layer.image;
+                if (!bg || !bg.complete || bg.width === 0 || bg.height === 0) return;
 
-            const parallax = layer.parallax || DEFAULT_BACKGROUND_PARALLAX;
-            const drawWidth = bg.width * scale;
-            const drawHeight = bg.height * scale;
+                const parallax = layer.parallax || DEFAULT_BACKGROUND_PARALLAX;
+                const drawWidth = bg.width * scale;
+                const drawHeight = bg.height * scale;
 
-            if (drawWidth < 1 || drawHeight < 1) return;
+                if (drawWidth < 1 || drawHeight < 1) return;
 
-            const offsets = layer.offsets || { x: layer.shiftX || 0, y: layer.shiftY || 0 };
-            const screenX = canvas.width / 2 - (cameraX / parallax) * scale + offsets.x * scale;
-            const screenY = canvas.height / 2 - (cameraY / parallax) * scale + offsets.y * scale;
+                const offsets = layer.offsets || { x: layer.shiftX || 0, y: layer.shiftY || 0 };
+                const screenX = canvas.width / 2 - (cameraX / parallax) * scale + offsets.x * scale;
+                const screenY = canvas.height / 2 - (cameraY / parallax) * scale + offsets.y * scale;
 
-            const previousSmoothing = ctx.imageSmoothingEnabled;
-            ctx.imageSmoothingEnabled = false;
-            ctx.drawImage(bg, screenX, screenY, drawWidth, drawHeight);
-            ctx.imageSmoothingEnabled = previousSmoothing;
-        });
+                const previousSmoothing = ctx.imageSmoothingEnabled;
+                ctx.imageSmoothingEnabled = false;
+                ctx.drawImage(bg, screenX, screenY, drawWidth, drawHeight);
+                ctx.imageSmoothingEnabled = previousSmoothing;
+            });
+        }
+
+        drawStarfield();
     }
 
     const ENGINE_FRAME_DURATION = 1000 / ((ENGINE_SPRITE_DEFS[DEFAULT_ENGINE_KEY]?.fps) || ENGINE_ANIM_FPS || 20);
