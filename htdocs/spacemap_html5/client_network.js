@@ -1767,7 +1767,7 @@ function handlePacket_N(parts, i) {
         // pour éviter toute coupure visuelle entre deux rafraîchissements.
         const duration = visual.playLoop ? (visual.attackLengthMs || LASER_ATTACK_LENGTH_MS) : baseDuration;
 
-        const shouldDouble = shouldDrawDoubleLaser(attackerId, visual, patternId);
+        const shouldDouble = shouldDrawDoubleLaser(attackerId, visual, patternId, attackerSnap);
         const now = performance.now();
 
         if (visual.playLoop) {
@@ -1797,7 +1797,7 @@ function handlePacket_N(parts, i) {
             if (reused) return;
         }
 
-        const beamEntries = shouldDouble && !visual.absorber
+        const beamEntries = shouldDouble
             ? buildDoubleLaserEntries({
                 attackerId,
                 targetId,
@@ -1839,14 +1839,16 @@ function handlePacket_N(parts, i) {
         }
     }
 
-    function shouldDrawDoubleLaser(attackerId, visual, patternId) {
-        if (heroId === null || attackerId !== heroId) return false;
-        if (!visual?.allowOffsets) return false;
+    function shouldDrawDoubleLaser(attackerId, visual, patternId, attackerSnap) {
+        const attacker = attackerSnap || snapshotEntityById(attackerId);
+        if (!attacker || attacker.kind !== "player") return false;
 
-        // FULL_MERGE_AS : les doubles lasers ne concernent que certains types côté joueur
-        // (gestion via ExpansionPattern). On les borne aux patterns standards non-absorbeurs.
-        const heroDoublePatterns = new Set([0, 1, 2, 3, 6]);
-        return heroDoublePatterns.has(patternId);
+        // FULL_MERGE_AS : les joueurs tirent en double avec les munitions basées sur
+        // laser1, laser2, laser3, laser5 (ou "laser") et laser6. Le SAB-50 (laser4)
+        // reste en tir simple et les NPC conservent leur comportement actuel.
+        const spriteId = Number.isFinite(visual?.spriteId) ? visual.spriteId : null;
+        const playerDoubleSprites = new Set([1, 2, 3, 5, 6]);
+        return spriteId !== null && playerDoubleSprites.has(spriteId);
     }
 
     function buildDoubleLaserEntries(base) {
@@ -1863,6 +1865,8 @@ function handlePacket_N(parts, i) {
             const sy = startY + sinP * o;
             const ex = endX + cosP * o;
             const ey = endY + sinP * o;
+            const offsetX = cosP * o;
+            const offsetY = sinP * o;
 
             entries.push({
                 attackerId: base.attackerId,
@@ -1878,6 +1882,8 @@ function handlePacket_N(parts, i) {
                 startY: sy,
                 endX: ex,
                 endY: ey,
+                offsetX,
+                offsetY,
                 duration: base.duration,
                 endScale: visual.absorber ? 0.1 : 1,
                 createdAt: performance.now(),

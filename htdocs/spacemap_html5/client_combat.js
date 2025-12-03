@@ -815,18 +815,24 @@
     const now = performance.now();
 
     for (const beam of laserBeams) {
-		if (beam.attackerId) {
+        const hasOffset = Number.isFinite(beam.offsetX) && Number.isFinite(beam.offsetY);
+
+        if (beam.attackerId) {
             const attacker = snapshotEntityById(beam.attackerId);
             if (attacker) {
-                beam.startX = attacker.x;
-                beam.startY = attacker.y;
+                const baseX = attacker.x;
+                const baseY = attacker.y;
+                beam.startX = hasOffset ? baseX + beam.offsetX : baseX;
+                beam.startY = hasOffset ? baseY + beam.offsetY : baseY;
             }
         }
         if (beam.targetId) {
             const target = snapshotEntityById(beam.targetId);
             if (target) {
-                beam.endX = target.x;
-                beam.endY = target.y;
+                const baseX = target.x;
+                const baseY = target.y;
+                beam.endX = hasOffset ? baseX + beam.offsetX : baseX;
+                beam.endY = hasOffset ? baseY + beam.offsetY : baseY;
             }
         }
         const spriteData = getLaserSpriteFrame(beam.spriteId, beam.skilledLaser);
