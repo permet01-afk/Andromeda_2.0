@@ -726,7 +726,7 @@
         1: { spriteId: 1, absorber: false, allowOffsets: true,  speed: 0.15, playLoop: false, playLoopRotated: false },
         2: { spriteId: 2, absorber: false, allowOffsets: true,  speed: 0.15, playLoop: false, playLoopRotated: false },
         3: { spriteId: 3, absorber: false, allowOffsets: true,  speed: 0.15, playLoop: false, playLoopRotated: false },
-        4: { spriteId: 4, absorber: false, allowOffsets: true,  speed: 0.15, playLoop: false, playLoopRotated: false },
+        4: { spriteId: 4, absorber: true, allowOffsets: false, speed: 0.45, playLoop: true, playLoopRotated: true },
         5: { spriteId: 5, absorber: true,  allowOffsets: false, speed: 0.15, playLoop: false, playLoopRotated: false },
         6: { spriteId: 6, absorber: false, allowOffsets: true,  speed: 0.15, playLoop: false, playLoopRotated: false },
         7: { spriteId: 5, absorber: true,  allowOffsets: false, speed: 0.15, playLoop: false, playLoopRotated: false }
@@ -810,35 +810,97 @@
     }
 
     function drawLaserBeams() {
-        const now = performance.now();
+    const now = performance.now();
 
-        for (const beam of laserBeams) {
-            const spriteData = getLaserSpriteFrame(beam.spriteId, beam.skilledLaser);
-            const sprite = spriteData?.img || spriteData;
-            const width = spriteData?.width || sprite?.width || 0;
-            const height = spriteData?.height || sprite?.height || 0;
+    for (const beam of laserBeams) {
+        const spriteData = getLaserSpriteFrame(beam.spriteId, beam.skilledLaser);
+        const sprite = spriteData?.img || spriteData;
+        const width = spriteData?.width || sprite?.width || 0;
+        const height = spriteData?.height || sprite?.height || 0;
 
-            if (!sprite || !sprite.complete || width <= 0 || height <= 0) continue;
+        if (!sprite || !sprite.complete || width <= 0 || height <= 0) continue;
 
-            const progress = Math.min(1, (now - beam.createdAt) / beam.duration);
+        // Calcul de la progression (0.0 à 1.0)
+        const progress = Math.min(1, (now - beam.createdAt) / beam.duration);
+
+        ctx.save();
+
+        // --- CAS 1 : LASER EN BOUCLE (SAB, RSB...) ---
+        // Si 'playLoop' est activé dans la config, on dessine un rayon continu
+        if (beam.playLoop) {
+            // 1. On se place au point de départ (Target pour le SAB)
+            const startScreenX = mapToScreenX(beam.startX);
+            const startScreenY = mapToScreenY(beam.startY);
+            const endScreenX = mapToScreenX(beam.endX);
+            const endScreenY = mapToScreenY(beam.endY);
+
+            ctx.translate(startScreenX, startScreenY);
+
+            // 2. Rotation vers le point d'arrivée
+            const dx = endScreenX - startScreenX;
+            const dy = endScreenY - startScreenY;
+            const dist = Math.hypot(dx, dy);
+            ctx.rotate(Math.atan2(dy, dx));
+
+            // 3. Effet "Entonnoir" pour le SAB (rétrécissement)
+            // On écrase légèrement la hauteur (Y) vers la fin ou selon le temps
+            if (beam.absorber) {
+                // Variation légère de la largeur du flux
+                const scaleY = 1.0 - (progress * 0.2); 
+                ctx.scale(1, scaleY);
+            }
+
+            // 4. Dessin en boucle (Tiling)
+            // On calcule combien de fois l'image rentre dans la distance
+            const repetitions = Math.ceil(dist / width) + 1;
+
+            // Masque (Clip) pour ne pas dessiner plus loin que la cible
+            ctx.beginPath();
+            ctx.rect(0, -height / 2, dist, height);
+            ctx.clip();
+
+            // Vitesse de défilement de la texture (Animation du flux)
+            // 'speed' vient de ta config (0.45s), on l'utilise pour rythmer
+            const scrollSpeed = 500; // Plus c'est bas, plus ça va vite
+            const scrollOffset = (now % scrollSpeed) / scrollSpeed * width;
+
+            // On dessine l'image plusieurs fois pour créer le rayon
+            for (let i = -1; i < repetitions; i++) {
+                // Le "+ scrollOffset" fait avancer le flux vers la source (effet aspiration)
+                const drawPos = (i * width) + scrollOffset;
+                ctx.drawImage(sprite, drawPos, -height / 2, width, height);
+            }
+
+        } 
+        // --- CAS 2 : LASER PROJECTILE (X1, X2, X3, X4...) ---
+        else {
+            // Calcul de la position actuelle du projectile
             const posX = beam.startX + (beam.endX - beam.startX) * progress;
             const posY = beam.startY + (beam.endY - beam.startY) * progress;
-            const scale = beam.absorber ? 1 + (beam.endScale - 1) * progress : 1;
 
-            ctx.save();
             ctx.translate(mapToScreenX(posX), mapToScreenY(posY));
+
             if (beam.rotation != null) {
                 ctx.rotate(beam.rotation);
+            } else {
+                // Rotation automatique standard
+                const dx = beam.endX - beam.startX;
+                const dy = beam.endY - beam.startY;
+                ctx.rotate(Math.atan2(dy, dx));
             }
+
+            // Gestion de la taille (Scale)
+            // Les lasers classiques gardent leur taille, ou changent selon l'effet
+            const scale = beam.absorber ? 1 + (beam.endScale - 1) * progress : 1;
             ctx.scale(scale, scale);
 
-            const previousSmoothing = ctx.imageSmoothingEnabled;
-            ctx.imageSmoothingEnabled = true;
+            // Dessin simple centré
             ctx.drawImage(sprite, -width / 2, -height / 2, width, height);
-            ctx.imageSmoothingEnabled = previousSmoothing;
-            ctx.restore();
         }
+
+        ctx.restore();
     }
+}
 
     function drawRocketAttacks() {
         const now = performance.now();
@@ -884,56 +946,81 @@
     }
 
     function drawSabShots() {
+        if (!sabShots || sabShots.length === 0) return;
+
         const now = performance.now();
-        const spriteData = getLaserSpriteFrame(4, false);
-        const sprite = spriteData?.img || spriteData;
-        const width = spriteData?.width || sprite?.width || 0;
-        const height = spriteData?.height || sprite?.height || 0;
+        
+        ctx.save();
+        // --- STYLE DU SAB ---
+        ctx.strokeStyle = "#ffffff"; // Anneaux blancs
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = 6;          // Lueur
+        ctx.shadowColor = "#0088ff"; // Couleur lueur (bleu)
 
-        if (!sprite || !sprite.complete || width <= 0 || height <= 0) return;
+        // --- PARAMETRES DE L'EFFET ---
+        const baseRadius = 18; // Taille MAX (sur la cible)
+        const minScale = 0.3;  // Taille MIN (30% sur l'attaquant)
+        const spacing = 45;    // Espace entre les anneaux
+        const animSpeed = 0.005; // Vitesse de défilement
 
-        for (const shot of sabShots) {
+        for (let i = sabShots.length - 1; i >= 0; i--) {
+            const shot = sabShots[i];
+            
+            // On récupère les positions via ta fonction utilitaire
             const attacker = snapshotEntityById(shot.attackerId);
             const target = snapshotEntityById(shot.targetId);
+
+            // Si l'un des deux n'existe plus, on passe
             if (!attacker || !target) continue;
 
-            const duration = shot.duration || SAB_SHOT_DURATION_MS;
-            const progress = Math.min(1, (now - shot.createdAt) / duration);
+            // Vérification de la durée
+            const duration = shot.duration || 1000; // Valeur par défaut si non définie
+            if (now - shot.createdAt > duration) continue;
 
-            const startX = shot.startX ?? (target.id === heroId ? shipX : target.x);
-            const startY = shot.startY ?? (target.id === heroId ? shipY : target.y);
+            const sx = attacker.x;
+            const sy = attacker.y;
+            const tx = target.x;
+            const ty = target.y;
 
-            const endX = shot.endX ?? (attacker.id === heroId ? shipX : attacker.x);
-            const endY = shot.endY ?? (attacker.id === heroId ? shipY : attacker.y);
+            // Distance et vecteur
+            const dx = tx - sx;
+            const dy = ty - sy;
+            const dist = Math.sqrt(dx * dx + dy * dy);
 
-            const posX = startX + (endX - startX) * progress;
-            const posY = startY + (endY - startY) * progress;
+            // Nombre d'anneaux nécessaires
+            const count = Math.floor(dist / spacing);
 
-            const startScale = shot.startScale || 1;
-            const endScale = shot.endScale || 0.1;
-            const scale = startScale + (endScale - startScale) * progress;
+            // Animation (décalage temporel)
+            const timeDelta = now - shot.createdAt;
+            const animOffset = timeDelta * animSpeed;
 
-            ctx.save();
+            for (let j = 0; j < count; j++) {
+                // Calcul de la progression (t) de 0 (Attaquant) à 1 (Cible)
+                // (j + animOffset) % count permet de faire boucler l'animation
+                let loopProgress = (j + animOffset) % count;
+                let t = loopProgress / count;
 
-            // Large absorption ring anchored on the target side
-            ctx.translate(mapToScreenX(startX), mapToScreenY(startY));
-            ctx.globalAlpha = 0.7 * (1 - progress);
-            ctx.drawImage(
-                sprite,
-                -(width * startScale) / 2,
-                -(height * startScale) / 2,
-                width * startScale,
-                height * startScale
-            );
-            ctx.restore();
+                // 1. Position interpolée sur la ligne de tir
+                let worldX = sx + dx * t;
+                let worldY = sy + dy * t;
 
-            // Traveling core ring that shrinks as it approaches the attacker
-            ctx.save();
-            ctx.translate(mapToScreenX(posX), mapToScreenY(posY));
-            ctx.globalAlpha = 0.9;
-            ctx.drawImage(sprite, -(width * scale) / 2, -(height * scale) / 2, width * scale, height * scale);
-            ctx.restore();
+                // 2. Conversion en écran
+                let screenX = mapToScreenX(worldX);
+                let screenY = mapToScreenY(worldY);
+
+                // 3. Calcul de la taille (Cône)
+                // t=0 (Attaquant) -> minScale (petit)
+                // t=1 (Cible) -> 1.0 (gros)
+                let currentScale = minScale + (1 - minScale) * t;
+                let r = baseRadius * currentScale;
+
+                // 4. Dessin de l'anneau
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, r, 0, Math.PI * 2);
+                ctx.stroke();
+            }
         }
+        ctx.restore();
     }
 
     function snapshotEntityById(id) {
