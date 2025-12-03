@@ -1650,10 +1650,10 @@ function handlePacket_N(parts, i) {
         const targetSnap = snapshotEntityById(targetId);
         if (!attackerSnap || !targetSnap) return;
 
-        const startX = targetSnap.id === heroId ? shipX : targetSnap.x;
-        const startY = targetSnap.id === heroId ? shipY : targetSnap.y;
-        const endX = attackerSnap.id === heroId ? shipX : attackerSnap.x;
-        const endY = attackerSnap.id === heroId ? shipY : attackerSnap.y;
+        const startX = attackerSnap.id === heroId ? shipX : attackerSnap.x;
+        const startY = attackerSnap.id === heroId ? shipY : attackerSnap.y;
+        const endX = targetSnap.id === heroId ? shipX : targetSnap.x;
+        const endY = targetSnap.id === heroId ? shipY : targetSnap.y;
 
         const duration = (typeof SAB_SHOT_DURATION_MS !== "undefined") ? SAB_SHOT_DURATION_MS : 500;
 
