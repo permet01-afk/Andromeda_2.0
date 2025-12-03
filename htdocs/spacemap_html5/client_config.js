@@ -618,8 +618,13 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
     let heroGrade = "";
     let heroInvisible = false;
     let heroConfig = 1;
-    let currentAmmoId = null;    
-    let currentRocketId = null;  
+    let currentAmmoId = null;
+    let primaryAmmoId = null; // Munition principale (hors RSB) sélectionnée par le joueur
+    let currentRocketId = null;
+    let rsbPreviousAmmoId = null;
+    let rsbReturnTimer = null;
+    const RSB_AMMO_ID = 6;
+    const RSB_BURST_DURATION_MS = 800; // Durée de la rafale RSB (visuel + fenêtre de retour)
 let setting_show_drones = true;
 let setting_play_sfx = true;
 let setting_play_music = true;
@@ -1610,6 +1615,53 @@ loadQuickbarLayout();
     function isActionBlacklisted(code) {
         return code ? actionBlacklist.has(code) : false;
     }
+
+    function updateLocalAmmoSelection(ammoId, { temporary = false } = {}) {
+        currentAmmoId = ammoId;
+        if (!temporary && ammoId != null && ammoId !== RSB_AMMO_ID) {
+            primaryAmmoId = ammoId;
+        }
+        if (actionDrawerCategory === "laser") {
+            renderActionDrawerItems();
+        }
+    }
+
+    function getRsbFallbackAmmoId() {
+        if (currentAmmoId && currentAmmoId !== RSB_AMMO_ID) return currentAmmoId;
+        if (primaryAmmoId && primaryAmmoId !== RSB_AMMO_ID) return primaryAmmoId;
+        return null;
+    }
+
+    function scheduleRsbReturn(delayMs = RSB_BURST_DURATION_MS) {
+        clearTimeout(rsbReturnTimer);
+        rsbReturnTimer = setTimeout(() => {
+            const fallbackAmmo = rsbPreviousAmmoId || primaryAmmoId || 1;
+            if (fallbackAmmo === RSB_AMMO_ID) return;
+
+            // Si le joueur a déjà quitté le RSB manuellement, on ne force rien
+            if (currentAmmoId !== RSB_AMMO_ID) return;
+
+            sendSelectAmmo(fallbackAmmo);
+            rsbPreviousAmmoId = null;
+        }, delayMs);
+    }
+
+    function triggerRsbBurst() {
+        rsbPreviousAmmoId = getRsbFallbackAmmoId();
+
+        // Sélection temporaire du RSB
+        sendSelectAmmo(RSB_AMMO_ID, { temporary: true });
+
+        // Retour automatique après la rafale
+        scheduleRsbReturn();
+    }
+
+    function forceRsbReturnAfterCooldown() {
+        if (currentAmmoId === RSB_AMMO_ID) {
+            if (!rsbPreviousAmmoId) rsbPreviousAmmoId = primaryAmmoId;
+            scheduleRsbReturn(0);
+        }
+    }
 	
 	    // -------------------------------------------------
     // UI HTML POUR SELECTIONNER LES ITEMS DE LA QUICKBAR
@@ -2175,17 +2227,21 @@ loadQuickbarLayout();
         if (!item) return;
 
         if (item.type === "ammo") {
-            if (currentAmmoId !== item.id) {
+            if (item.id === RSB_AMMO_ID) {
+                if (isActionOnCooldown("RSB")) {
+                    addInfoMessage("RSB en cooldown.");
+                    return;
+                }
+                triggerRsbBurst();
+            } else if (currentAmmoId !== item.id) {
                 sendSelectAmmo(item.id);
-                currentAmmoId = item.id;
             }
-        } 
+        }
         else if (item.type === "rocket") {
              if (currentRocketId !== item.id) {
                 sendSelectRocket(item.id);
-                currentRocketId = item.id;
             }
-        } 
+        }
         else if (item.type === "tech") {
             sendTechActivation(item.id);
         } 

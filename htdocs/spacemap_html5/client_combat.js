@@ -309,16 +309,14 @@
         }
     }
 
-    function sendSelectAmmo(ammoId) {
+    function sendSelectAmmo(ammoId, options = {}) {
         if (!ws || ws.readyState !== WebSocket.OPEN) return;
         if (ammoId == null) return;
         const packet = `u|${ammoId}`;
         sendRaw(packet);
         addInfoMessage("Laser ammo = " + ammoId);
-        currentAmmoId = ammoId; 
-		if (actionDrawerCategory === "laser") {
-            renderActionDrawerItems();
-        }
+        const temporary = options.temporary === true;
+        updateLocalAmmoSelection(ammoId, { temporary });
     }
 
     function sendSelectRocket(rocketId) {
