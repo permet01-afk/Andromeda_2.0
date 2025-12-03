@@ -24,6 +24,16 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
     let MAP_WIDTH  = MAP_MAX_X - MAP_MIN_X;
     let MAP_HEIGHT = MAP_MAX_Y - MAP_MIN_Y;
 
+    const STARFIELD_TILE_SIZE = 50;
+    const STARFIELD_TILE_VARIANTS = 10;
+    const STARFIELD_LAYER_CONFIG = [
+        { basePath: "graphics/backgrounds/stars1-50x50", speed: 0.7, alpha: 1 },
+        { basePath: "graphics/backgrounds/stars2-50x50", speed: 1.1, alpha: 0.85 }
+    ];
+    const STARFIELD_IDLE_SPEED = 0.2;
+    const STARFIELD_DEFAULT_COLOR = 0xffffff;
+    const DEFAULT_STARFIELD_ENABLED = true;
+
     // --- Fonds de carte (correspondance mapID -> typeID -> dossier backgroundX) ---
     const MAP_BACKGROUND_TYPES = {
         1: 15,
@@ -62,6 +72,11 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
     let currentMapId = null;
     let currentBackgroundLayers = [];
     let mapBackgroundLayersById = {};
+    let mapStarfieldSettingsById = {};
+    let starfieldEnabled = false;
+    let starfieldColor = STARFIELD_DEFAULT_COLOR;
+    let starfieldLayersState = [];
+    let lastStarfieldCamera = { x: 0, y: 0 };
     let mapsXmlPromise = null;
          // Centre logique de la map (utile pour les futurs paquets "m")
     let mapCenterX = (MAP_MIN_X + MAP_MAX_X) / 2;
@@ -367,6 +382,30 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
         1002: "graphics/backgrounds/layer2/1_background.png"
     };
 
+    function parseBooleanValue(value, fallback = false) {
+        if (value == null) return fallback;
+        const normalized = String(value).trim().toLowerCase();
+        if (!normalized) return fallback;
+        return normalized === "true" || normalized === "1" || normalized === "yes";
+    }
+
+    function parseColorValue(raw, fallback = STARFIELD_DEFAULT_COLOR) {
+        if (raw == null) return fallback;
+        let normalized = String(raw).trim();
+        if (!normalized) return fallback;
+
+        const isHexHint = normalized.startsWith("#") || normalized.toLowerCase().startsWith("0x");
+        if (normalized.startsWith("#")) normalized = normalized.slice(1);
+        if (normalized.toLowerCase().startsWith("0x")) normalized = normalized.slice(2);
+
+        const primaryRadix = isHexHint ? 16 : 10;
+        const primary = parseInt(normalized, primaryRadix);
+        if (!Number.isNaN(primary)) return primary;
+
+        const fallbackParsed = parseInt(normalized, 16);
+        return Number.isNaN(fallbackParsed) ? fallback : fallbackParsed;
+    }
+
     function normalizeBackgroundType(rawType) {
         if (rawType == null) return null;
         const asNumber = parseInt(rawType, 10);
@@ -392,10 +431,20 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
             const xml = parser.parseFromString(text, "text/xml");
             const mapNodes = xml.getElementsByTagName("map");
             const parsed = {};
+            mapStarfieldSettingsById = {};
 
             Array.from(mapNodes).forEach((mapNode) => {
                 const mapId = parseInt(mapNode.getAttribute("id"), 10);
                 if (Number.isNaN(mapId)) return;
+
+                const starfieldNode = mapNode.getElementsByTagName("starfield")[0];
+                if (starfieldNode) {
+                    const enabled = parseBooleanValue(starfieldNode.textContent, DEFAULT_STARFIELD_ENABLED);
+                    const color = parseColorValue(starfieldNode.getAttribute("color"), STARFIELD_DEFAULT_COLOR);
+                    mapStarfieldSettingsById[mapId] = { enabled, color };
+                } else {
+                    mapStarfieldSettingsById[mapId] = { enabled: DEFAULT_STARFIELD_ENABLED, color: STARFIELD_DEFAULT_COLOR };
+                }
 
                 const backgroundsNode = mapNode.getElementsByTagName("backgrounds")[0];
                 if (!backgroundsNode) return;
@@ -511,12 +560,31 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
         return [{ typeId: fallbackType, layer: 0, parallax: getBackgroundParallaxForMap(mapId), shiftX: 0, shiftY: 0 }];
     }
 
+    function getStarfieldSettingsForMap(mapId) {
+        if (mapStarfieldSettingsById && mapStarfieldSettingsById[mapId]) {
+            return mapStarfieldSettingsById[mapId];
+        }
+        return { enabled: DEFAULT_STARFIELD_ENABLED, color: STARFIELD_DEFAULT_COLOR };
+    }
+
+    function applyMapStarfield(mapId) {
+        const settings = getStarfieldSettingsForMap(mapId);
+        starfieldEnabled = settings.enabled;
+        starfieldColor = settings.color;
+
+        if (typeof setStarfieldStateFromMap === "function") {
+            setStarfieldStateFromMap(mapId, settings);
+        }
+    }
+
     function applyMapBackground(mapId, options = {}) {
         currentMapId = mapId;
         updateMapDimensions(getMapScaleFactor(mapId));
 
         const layers = getBackgroundLayersForMap(mapId);
         setBackgroundLayers(mapId, layers);
+
+        applyMapStarfield(mapId);
 
         if (!options.skipLoadXml) {
             ensureMapsXmlLoaded();
