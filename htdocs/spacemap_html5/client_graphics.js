@@ -175,6 +175,8 @@
         const startCellY = Math.floor(layerState.offsetY / tileSize);
 
         ctx.save();
+        const previousComposite = ctx.globalCompositeOperation;
+        ctx.globalCompositeOperation = "lighter";
         if (typeof layerState.alpha === "number") {
             ctx.globalAlpha = layerState.alpha;
         }
@@ -193,6 +195,7 @@
         }
 
         ctx.imageSmoothingEnabled = previousSmoothing;
+        ctx.globalCompositeOperation = previousComposite;
         ctx.restore();
     }
 
