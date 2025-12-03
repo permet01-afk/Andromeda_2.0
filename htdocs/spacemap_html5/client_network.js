@@ -1672,27 +1672,34 @@ function handlePacket_N(parts, i) {
 
         if (isNaN(attackerId) || isNaN(targetId)) return;
 
-        const beamAngle = computeShieldImpactAngle(attackerId, targetId);
+        const attackerSnap = snapshotEntityById(attackerId);
         const targetSnap = snapshotEntityById(targetId);
+        if (!attackerSnap || !targetSnap) return;
+
+        const visual = resolveLaserVisual(patternId, skilledLaser);
+        const { angle: renderedAngle, segments } = buildLaserSegments(attackerSnap, targetSnap, patternId, skilledLaser);
+        const impactAngle = Math.atan2(targetSnap.y - attackerSnap.y, targetSnap.x - attackerSnap.x);
 
         laserBeams.push({
             attackerId,
             targetId,
             patternId,
+            spriteId: visual.spriteId,
             showShieldDamage,
             skilledLaser,
-            angle: beamAngle,
+            angle: visual.absorber ? impactAngle : renderedAngle,
+            segments,
             createdAt: performance.now()
         });
 
-        if (showShieldDamage && targetSnap && targetSnap.kind === "player" && beamAngle != null) {
+        if (showShieldDamage && targetSnap && targetSnap.kind === "player" && impactAngle != null) {
             const radius = computeShieldImpactRadius(targetSnap);
             setTimeout(() => {
                 const current = snapshotEntityById(targetId);
                 if (!current || current.kind !== "player") return;
                 const hasShield = (current.maxShield && current.maxShield > 0) || (current.shield && current.shield > 0);
                 if (!hasShield) return;
-                spawnShieldBurstAt(current.x, current.y, "hit", { angle: beamAngle, radius, targetId });
+                spawnShieldBurstAt(current.x, current.y, "hit", { angle: impactAngle, radius, targetId });
             }, LASER_BEAM_DURATION);
         }
     }

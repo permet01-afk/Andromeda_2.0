@@ -709,6 +709,51 @@
     // 8. EFFETS VISUELS
     // -------------------------------------------------
 
+    const LASER_SPRITE_CACHE = {};
+    const LASER_PATTERN_META = {
+        0: { spriteId: 0, absorber: false, allowOffsets: true }, // fallback (NPC basic)
+        1: { spriteId: 1, absorber: false, allowOffsets: true }, // LCB-10
+        2: { spriteId: 2, absorber: false, allowOffsets: true }, // MCB-25
+        3: { spriteId: 3, absorber: false, allowOffsets: true }, // MCB-50
+        4: { spriteId: 4, absorber: false, allowOffsets: true }, // UCB-100
+        5: { spriteId: 5, absorber: true,  allowOffsets: false }, // SAB-50 (absorber)
+        6: { spriteId: 6, absorber: false, allowOffsets: true }, // RSB-75 / skill lasers
+        7: { spriteId: 5, absorber: true,  allowOffsets: false }  // energy leech / PET absorber
+    };
+
+    function resolveLaserVisual(patternId, skilledLaser) {
+        const meta = LASER_PATTERN_META[patternId] || LASER_PATTERN_META[0];
+        const spriteId = skilledLaser && LASER_PATTERN_META[patternId]?.skillSpriteId !== undefined
+            ? LASER_PATTERN_META[patternId].skillSpriteId
+            : meta.spriteId;
+        return {
+            spriteId: Math.max(0, Math.min(6, spriteId || 0)),
+            absorber: !!meta.absorber,
+            allowOffsets: meta.allowOffsets !== false
+        };
+    }
+
+    function getLaserSpriteFrame(spriteId, skilledLaser = false) {
+        const id = Number.isFinite(spriteId) ? Math.max(0, Math.min(6, spriteId)) : 0;
+        const suffix = skilledLaser ? "-skill" : "";
+        const key = `laser-${id}${suffix}`;
+        if (!LASER_SPRITE_CACHE[key]) {
+            const img = new Image();
+            const basePath = skilledLaser ? `graphics/lasers/skillLaser${id}/1.png` : `graphics/lasers/laser${id}/1.png`;
+            img.src = basePath;
+            img.onerror = () => {
+                const fallbackPath = skilledLaser
+                    ? `graphics/lasers/skillLaser${id}.png`
+                    : `graphics/lasers/laser${id}.png`;
+                if (img.src !== fallbackPath) {
+                    img.src = fallbackPath;
+                }
+            };
+            LASER_SPRITE_CACHE[key] = img;
+        }
+        return LASER_SPRITE_CACHE[key];
+    }
+
     function updateLaserBeams(now) {
         for (let i = laserBeams.length - 1; i >= 0; i--) {
             const beam = laserBeams[i];
@@ -725,7 +770,7 @@
             }
         }
     }
-	
+
     function getLaserOffsetsForShip(entityId) {
         let size = 10;
         const snap = snapshotEntityById(entityId);
@@ -738,71 +783,69 @@
         return Math.max(6, Math.min(18, size));
     }
 
+    function buildLaserSegments(attackerSnap, targetSnap, patternId, skilledLaser) {
+        if (!attackerSnap || !targetSnap) return { segments: [], angle: null };
+
+        const visual = resolveLaserVisual(patternId, skilledLaser);
+        const origin = visual.absorber ? targetSnap : attackerSnap;
+        const destination = visual.absorber ? attackerSnap : targetSnap;
+
+        const angle = Math.atan2(destination.y - origin.y, destination.x - origin.x);
+        const offsetMag = visual.allowOffsets ? getLaserOffsetsForShip(attackerSnap.id) : 0;
+        const perpX = Math.cos(angle + Math.PI / 2) * offsetMag;
+        const perpY = Math.sin(angle + Math.PI / 2) * offsetMag;
+
+        if (offsetMag === 0) {
+            return {
+                angle,
+                segments: [{ ax: origin.x, ay: origin.y, tx: destination.x, ty: destination.y }]
+            };
+        }
+
+        return {
+            angle,
+            segments: [
+                { ax: origin.x + perpX, ay: origin.y + perpY, tx: destination.x + perpX, ty: destination.y + perpY },
+                { ax: origin.x - perpX, ay: origin.y - perpY, tx: destination.x - perpX, ty: destination.y - perpY }
+            ]
+        };
+    }
+
     function drawLaserBeams() {
         const now = performance.now();
 
         for (const beam of laserBeams) {
-            let ax, ay, tx, ty;
-
-            if (heroId !== null && beam.attackerId === heroId) {
-                ax = shipX; ay = shipY;
-            } else if (entities[beam.attackerId]) {
-                ax = entities[beam.attackerId].x;
-                ay = entities[beam.attackerId].y;
-            } else continue;
-
-            if (heroId !== null && beam.targetId === heroId) {
-                tx = shipX; ty = shipY;
-            } else if (entities[beam.targetId]) {
-                tx = entities[beam.targetId].x;
-                ty = entities[beam.targetId].y;
-            } else continue;
-
-            const startScreenX = mapToScreenX(ax);
-            const startScreenY = mapToScreenY(ay);
-            const endScreenX = mapToScreenX(tx);
-            const endScreenY = mapToScreenY(ty);
-
-            let color = "#ff0000";
-            let width = 2;
-
-            switch(beam.patternId) {
-                case 1: color = "#ff0000"; break;
-                case 2: color = "#0000ff"; break;
-                case 3: color = "#00ff00"; break;
-                case 4: color = "#ffffff"; width = 3; break;
-                case 5: color = "#aaaaaa"; break;
-                case 6: color = "#ffff00"; width = 3; break;
-                default: color = "#ff0000"; break;
-            }
+            const sprite = getLaserSpriteFrame(beam.spriteId, beam.skilledLaser);
+            if (!sprite || !sprite.complete || sprite.width <= 0 || sprite.height <= 0) continue;
 
             const life = (now - beam.createdAt) / LASER_BEAM_DURATION;
             const alpha = Math.max(0, 1 - life);
 
-            const angle = Math.atan2(ty - ay, tx - ax);
-            const perpX = Math.cos(angle + Math.PI / 2);
-            const perpY = Math.sin(angle + Math.PI / 2);
-            const offsetMag = (beam.patternId === 5) ? 0 : getLaserOffsetsForShip(beam.attackerId);
+            for (const seg of beam.segments || []) {
+                const startScreenX = mapToScreenX(seg.ax);
+                const startScreenY = mapToScreenY(seg.ay);
+                const endScreenX = mapToScreenX(seg.tx);
+                const endScreenY = mapToScreenY(seg.ty);
 
-            const drawSegments = offsetMag === 0 ? [{ ox: 0, oy: 0 }] : [
-                { ox: perpX * offsetMag, oy: perpY * offsetMag },
-                { ox: -perpX * offsetMag, oy: -perpY * offsetMag }
-            ];
+                const dx = endScreenX - startScreenX;
+                const dy = endScreenY - startScreenY;
+                const dist = Math.hypot(dx, dy);
+                if (dist <= 0 || dist < sprite.width) continue;
 
-            ctx.save();
-            ctx.globalAlpha = 0.6 * alpha;
-            ctx.strokeStyle = color;
-            ctx.lineWidth = width;
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = color;
+                const scaleX = dist / sprite.width;
 
-            for (const seg of drawSegments) {
-                ctx.beginPath();
-                ctx.moveTo(startScreenX + seg.ox, startScreenY + seg.oy);
-                ctx.lineTo(endScreenX + seg.ox, endScreenY + seg.oy);
-                ctx.stroke();
+                ctx.save();
+                ctx.translate(startScreenX, startScreenY);
+                ctx.rotate(Math.atan2(dy, dx));
+                ctx.globalAlpha = alpha;
+
+                const previousSmoothing = ctx.imageSmoothingEnabled;
+                ctx.imageSmoothingEnabled = true;
+                ctx.drawImage(sprite, 0, -sprite.height / 2, sprite.width * scaleX, sprite.height);
+                ctx.imageSmoothingEnabled = previousSmoothing;
+
+                ctx.restore();
             }
-            ctx.restore();
         }
     }
 
