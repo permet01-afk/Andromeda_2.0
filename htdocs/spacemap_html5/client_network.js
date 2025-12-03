@@ -1642,8 +1642,6 @@ function handlePacket_N(parts, i) {
     function handlePacket_sabShot(parts, i) {
         if (parts.length < i + 2) return;
 
-        // Flash packet order: first value = attacker, second value = target.
-        // Visual effect: the beam still starts on the target and travels toward the attacker (absorber).
         const attackerId = parseInt(parts[i], 10);
         const targetId = parseInt(parts[i + 1], 10);
 
@@ -1653,12 +1651,12 @@ function handlePacket_N(parts, i) {
         const targetSnap = snapshotEntityById(targetId);
         if (!attackerSnap || !targetSnap) return;
 
-        const startX = targetSnap.id === heroId ? shipX : targetSnap.x;
-        const startY = targetSnap.id === heroId ? shipY : targetSnap.y;
-        const endX = attackerSnap.id === heroId ? shipX : attackerSnap.x;
-        const endY = attackerSnap.id === heroId ? shipY : attackerSnap.y;
+        const startX = attackerSnap.id === heroId ? shipX : attackerSnap.x;
+        const startY = attackerSnap.id === heroId ? shipY : attackerSnap.y;
+        const endX = targetSnap.id === heroId ? shipX : targetSnap.x;
+        const endY = targetSnap.id === heroId ? shipY : targetSnap.y;
 
-        const duration = (typeof SAB_SHOT_DURATION_MS !== "undefined") ? SAB_SHOT_DURATION_MS : 150;
+        const duration = (typeof SAB_SHOT_DURATION_MS !== "undefined") ? SAB_SHOT_DURATION_MS : 1000;
 
         sabShots.push({
             attackerId,
@@ -1667,8 +1665,8 @@ function handlePacket_N(parts, i) {
             startY,
             endX,
             endY,
-            startScale: 0.1,
-            endScale: 0.1,
+            startScale: 1,
+            endScale: 1,
             duration,
             createdAt: performance.now()
         });
