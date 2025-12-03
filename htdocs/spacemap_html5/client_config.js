@@ -24,14 +24,12 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
     let MAP_WIDTH  = MAP_MAX_X - MAP_MIN_X;
     let MAP_HEIGHT = MAP_MAX_Y - MAP_MIN_Y;
 
-    const STARFIELD_TILE_SIZE = 50;
-    const STARFIELD_TILE_VARIANTS = 10;
-    const STARFIELD_LAYER_CONFIG = [
-        { basePath: "graphics/backgrounds/stars1-50x50", speed: 0.12, alpha: 1 },
-        { basePath: "graphics/backgrounds/stars2-50x50", speed: 0.2, alpha: 0.85 }
-    ];
     const STARFIELD_IDLE_SPEED = 0.2;
     const STARFIELD_DEFAULT_COLOR = 0xffffff;
+    const STARFIELD_DEFAULT_COUNT = 100;
+    const STARFIELD_SPEED_MIN = 0.5;
+    const STARFIELD_SPEED_MAX = 3.5;
+    const STARFIELD_FPS = 40;
     const DEFAULT_STARFIELD_ENABLED = true;
 
     // --- Fonds de carte (correspondance mapID -> typeID -> dossier backgroundX) ---
@@ -75,7 +73,7 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
     let mapStarfieldSettingsById = {};
     let starfieldEnabled = false;
     let starfieldColor = STARFIELD_DEFAULT_COLOR;
-    let starfieldLayersState = [];
+    let starfieldState = null;
     let lastStarfieldAnchor = { x: 0, y: 0 };
     let mapsXmlPromise = null;
          // Centre logique de la map (utile pour les futurs paquets "m")
