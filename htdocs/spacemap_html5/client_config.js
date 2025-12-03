@@ -656,7 +656,7 @@ function updateLocalSetting(key, value) {
     // État map
     let mapPvpAllowed  = 1; // 1 = PVP ON
     let mapHomeFaction = 0; // 0 = neutre
-    let currentMapId   = cfg.mapID || 0;
+    currentMapId   = cfg.mapID || 0;
     let lastNoAttackZoneTime = 0;
     let lastDemilitarizedState = false;
     let lastTradeZoneState = false;
