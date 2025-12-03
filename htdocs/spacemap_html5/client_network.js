@@ -570,6 +570,9 @@ function handlePacket_N(parts, i) {
 
         for (const id in entities) delete entities[id];
         for (const id in portals) delete portals[id];
+        if (Array.isArray(stations)) {
+            stations.length = 0;
+        }
 
         laserBeams.length = 0;
         rocketAttacks.length = 0;
