@@ -74,6 +74,70 @@
         drawBeamSprite(img, startX, startY, endX, endY, alpha, scale);
     }
 
+    function drawMapBackground() {
+        const bg = currentBackgroundImage;
+
+        // Clear the full viewport every frame to avoid ghosting / repetition when the
+        // background image is smaller than the canvas.
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        if (!bg || !bg.complete || bg.width === 0 || bg.height === 0) return;
+
+        const viewportWorld = getViewportWorldSize();
+
+        const pixelsPerWorldX = bg.width / MAP_WIDTH;
+        const pixelsPerWorldY = bg.height / MAP_HEIGHT;
+
+        const srcWidth = viewportWorld.width * pixelsPerWorldX;
+        const srcHeight = viewportWorld.height * pixelsPerWorldY;
+
+        let srcX = (cameraX - viewportWorld.width / 2) * pixelsPerWorldX + currentBackgroundOffsets.x;
+        let srcY = (cameraY - viewportWorld.height / 2) * pixelsPerWorldY + currentBackgroundOffsets.y;
+
+        let drawWidth = canvas.width;
+        let drawHeight = canvas.height;
+        let drawX = 0;
+        let drawY = 0;
+
+        let clampedSrcX = Math.max(0, Math.min(bg.width - srcWidth, srcX));
+        let clampedSrcY = Math.max(0, Math.min(bg.height - srcHeight, srcY));
+        let clampedSrcWidth = Math.min(srcWidth, bg.width);
+        let clampedSrcHeight = Math.min(srcHeight, bg.height);
+
+        // If the requested source rectangle exceeds the image bounds, shift the destination
+        // so the camera stays centered on the visible portion without stretching.
+        if (srcX < 0) {
+            const missingWorld = (-srcX) / pixelsPerWorldX;
+            const offsetPx = (missingWorld * drawWidth) / viewportWorld.width;
+            drawX += offsetPx;
+            drawWidth -= offsetPx;
+        }
+        if (srcY < 0) {
+            const missingWorld = (-srcY) / pixelsPerWorldY;
+            const offsetPx = (missingWorld * drawHeight) / viewportWorld.height;
+            drawY += offsetPx;
+            drawHeight -= offsetPx;
+        }
+        if (srcX + srcWidth > bg.width) {
+            const overflowWorld = (srcX + srcWidth - bg.width) / pixelsPerWorldX;
+            const offsetPx = (overflowWorld * drawWidth) / viewportWorld.width;
+            drawWidth -= offsetPx;
+            clampedSrcWidth = bg.width - clampedSrcX;
+        }
+        if (srcY + srcHeight > bg.height) {
+            const overflowWorld = (srcY + srcHeight - bg.height) / pixelsPerWorldY;
+            const offsetPx = (overflowWorld * drawHeight) / viewportWorld.height;
+            drawHeight -= offsetPx;
+            clampedSrcHeight = bg.height - clampedSrcY;
+        }
+
+        const previousSmoothing = ctx.imageSmoothingEnabled;
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(bg, clampedSrcX, clampedSrcY, clampedSrcWidth, clampedSrcHeight, drawX, drawY, drawWidth, drawHeight);
+        ctx.imageSmoothingEnabled = previousSmoothing;
+    }
+
     const ENGINE_FRAME_DURATION = 1000 / ((ENGINE_SPRITE_DEFS[DEFAULT_ENGINE_KEY]?.fps) || ENGINE_ANIM_FPS || 20);
     const ENGINE_MOVING_MAX_TICKS = 3;
     const engineAnimationState = {};
