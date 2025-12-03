@@ -1865,6 +1865,8 @@ function handlePacket_N(parts, i) {
             const sy = startY + sinP * o;
             const ex = endX + cosP * o;
             const ey = endY + sinP * o;
+            const offsetX = cosP * o;
+            const offsetY = sinP * o;
 
             entries.push({
                 attackerId: base.attackerId,
@@ -1880,6 +1882,8 @@ function handlePacket_N(parts, i) {
                 startY: sy,
                 endX: ex,
                 endY: ey,
+                offsetX,
+                offsetY,
                 duration: base.duration,
                 endScale: visual.absorber ? 0.1 : 1,
                 createdAt: performance.now(),
