@@ -79,6 +79,27 @@
         return (Math.abs(seed) % STARFIELD_TILE_VARIANTS) + 1;
     }
 
+    function getStarfieldAnchor(cameraXValue, cameraYValue) {
+        const camX = typeof cameraXValue === "number" ? cameraXValue : 0;
+        const camY = typeof cameraYValue === "number" ? cameraYValue : 0;
+        const halfW = canvas ? canvas.width / 2 : 0;
+        const halfH = canvas ? canvas.height / 2 : 0;
+
+        return {
+            x: halfW - camX,
+            y: halfH - camY
+        };
+    }
+
+    function clampStarfieldOffset(value) {
+        const MAX_OFFSET = STARFIELD_TILE_SIZE * 1000;
+        if (!Number.isFinite(value)) return 0;
+        if (value > MAX_OFFSET || value < -MAX_OFFSET) {
+            return value % (STARFIELD_TILE_SIZE * 10);
+        }
+        return value;
+    }
+
     function getStarfieldTileImage(layerState, variantIndex) {
         const clampedIndex = ((variantIndex - 1 + STARFIELD_TILE_VARIANTS) % STARFIELD_TILE_VARIANTS) + 1;
         if (!layerState.tileCache[clampedIndex]) {
@@ -106,19 +127,13 @@
         }
 
         if (initialized) {
-            lastStarfieldCamera = {
-                x: typeof cameraX === "number" ? cameraX : 0,
-                y: typeof cameraY === "number" ? cameraY : 0
-            };
+            lastStarfieldAnchor = getStarfieldAnchor(cameraX, cameraY);
         }
     }
 
     function resetStarfieldState() {
         starfieldLayersState = [];
-        lastStarfieldCamera = {
-            x: typeof cameraX === "number" ? cameraX : 0,
-            y: typeof cameraY === "number" ? cameraY : 0
-        };
+        lastStarfieldAnchor = getStarfieldAnchor(cameraX, cameraY);
 
         ensureStarfieldLayersInitialized();
     }
@@ -143,11 +158,12 @@
         ensureStarfieldLayersInitialized();
         if (!starfieldLayersState.length) return;
 
-        const deltaX = cameraXValue - lastStarfieldCamera.x;
-        const deltaY = cameraYValue - lastStarfieldCamera.y;
+        const targetAnchor = getStarfieldAnchor(cameraXValue, cameraYValue);
+        const deltaX = targetAnchor.x - lastStarfieldAnchor.x;
+        const deltaY = targetAnchor.y - lastStarfieldAnchor.y;
 
-        let moveX = -(deltaX || 0);
-        let moveY = -(deltaY || 0);
+        let moveX = deltaX || 0;
+        let moveY = deltaY || 0;
 
         if (moveX === 0 && moveY === 0) {
             moveX = STARFIELD_IDLE_SPEED;
@@ -156,12 +172,11 @@
 
         starfieldLayersState.forEach((layer) => {
             const speed = layer.speed || 1;
-            layer.offsetX += moveX * speed;
-            layer.offsetY += moveY * speed;
+            layer.offsetX = clampStarfieldOffset(layer.offsetX + moveX * speed);
+            layer.offsetY = clampStarfieldOffset(layer.offsetY + moveY * speed);
         });
 
-        lastStarfieldCamera.x = cameraXValue;
-        lastStarfieldCamera.y = cameraYValue;
+        lastStarfieldAnchor = targetAnchor;
     }
 
     function drawStarfieldLayer(layerState) {
@@ -173,8 +188,11 @@
         const offsetY = ((layerState.offsetY % tileSize) + tileSize) % tileSize;
         const startCellX = Math.floor(layerState.offsetX / tileSize);
         const startCellY = Math.floor(layerState.offsetY / tileSize);
+        const startX = Math.floor(-offsetX);
+        const startY = Math.floor(-offsetY);
 
         ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
         const previousComposite = ctx.globalCompositeOperation;
         ctx.globalCompositeOperation = "lighter";
         if (typeof layerState.alpha === "number") {
@@ -184,12 +202,14 @@
         const previousSmoothing = ctx.imageSmoothingEnabled;
         ctx.imageSmoothingEnabled = false;
 
-        for (let drawY = -offsetY, cellY = startCellY; drawY < height + tileSize; drawY += tileSize, cellY++) {
-            for (let drawX = -offsetX, cellX = startCellX; drawX < width + tileSize; drawX += tileSize, cellX++) {
+        for (let drawY = startY, cellY = startCellY; drawY < height + tileSize; drawY += tileSize, cellY++) {
+            const yPos = Math.floor(drawY);
+            for (let drawX = startX, cellX = startCellX; drawX < width + tileSize; drawX += tileSize, cellX++) {
+                const xPos = Math.floor(drawX);
                 const variantIndex = getStarfieldVariantForCell(cellX, cellY);
                 const img = getStarfieldTileImage(layerState, variantIndex);
                 if (img && img.complete && img.width > 0 && img.height > 0) {
-                    ctx.drawImage(img, drawX, drawY, tileSize, tileSize);
+                    ctx.drawImage(img, xPos, yPos, tileSize, tileSize);
                 }
             }
         }

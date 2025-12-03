@@ -27,8 +27,8 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
     const STARFIELD_TILE_SIZE = 50;
     const STARFIELD_TILE_VARIANTS = 10;
     const STARFIELD_LAYER_CONFIG = [
-        { basePath: "graphics/backgrounds/stars1-50x50", speed: 0.7, alpha: 1 },
-        { basePath: "graphics/backgrounds/stars2-50x50", speed: 1.1, alpha: 0.85 }
+        { basePath: "graphics/backgrounds/stars1-50x50", speed: 0.12, alpha: 1 },
+        { basePath: "graphics/backgrounds/stars2-50x50", speed: 0.2, alpha: 0.85 }
     ];
     const STARFIELD_IDLE_SPEED = 0.2;
     const STARFIELD_DEFAULT_COLOR = 0xffffff;
@@ -76,7 +76,7 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
     let starfieldEnabled = false;
     let starfieldColor = STARFIELD_DEFAULT_COLOR;
     let starfieldLayersState = [];
-    let lastStarfieldCamera = { x: 0, y: 0 };
+    let lastStarfieldAnchor = { x: 0, y: 0 };
     let mapsXmlPromise = null;
          // Centre logique de la map (utile pour les futurs paquets "m")
     let mapCenterX = (MAP_MIN_X + MAP_MAX_X) / 2;
