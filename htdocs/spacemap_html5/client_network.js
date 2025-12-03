@@ -1677,8 +1677,31 @@ function handlePacket_N(parts, i) {
         if (!attackerSnap || !targetSnap) return;
 
         const visual = resolveLaserVisual(patternId, skilledLaser);
-        const { angle: renderedAngle, segments } = buildLaserSegments(attackerSnap, targetSnap, patternId, skilledLaser);
-        const impactAngle = Math.atan2(targetSnap.y - attackerSnap.y, targetSnap.x - attackerSnap.x);
+        const spriteInfo = getLaserSpriteFrame(visual.spriteId, skilledLaser);
+        const laserLength = spriteInfo?.width || LASER_SPRITE_INFO[visual.spriteId]?.width || 0;
+        const origin = visual.absorber ? targetSnap : attackerSnap;
+        const destination = visual.absorber ? attackerSnap : targetSnap;
+
+        const startX = origin.x;
+        const startY = origin.y;
+        let endX = destination.x;
+        let endY = destination.y;
+
+        const dx = startX - endX;
+        const dy = startY - endY;
+        const distSq = dx * dx + dy * dy;
+
+        if (!visual.absorber && laserLength > 0) {
+            if (distSq < laserLength * laserLength) return;
+            const dist = Math.sqrt(distSq);
+            const nx = dx / dist;
+            const ny = dy / dist;
+            endX += nx * laserLength;
+            endY += ny * laserLength;
+        }
+
+        const angle = Math.atan2(endY - startY, endX - startX);
+        const duration = visual.speedMs || DEFAULT_LASER_SPEED_MS;
 
         laserBeams.push({
             attackerId,
@@ -1687,21 +1710,19 @@ function handlePacket_N(parts, i) {
             spriteId: visual.spriteId,
             showShieldDamage,
             skilledLaser,
-            angle: visual.absorber ? impactAngle : renderedAngle,
-            segments,
-            createdAt: performance.now()
+            absorber: visual.absorber,
+            rotation: visual.playLoop ? null : angle,
+            angle,
+            startX,
+            startY,
+            endX,
+            endY,
+            duration,
+            endScale: visual.absorber ? 0.1 : 1,
+            createdAt: performance.now(),
+            playLoop: visual.playLoop,
+            hitHandled: false
         });
-
-        if (showShieldDamage && targetSnap && targetSnap.kind === "player" && impactAngle != null) {
-            const radius = computeShieldImpactRadius(targetSnap);
-            setTimeout(() => {
-                const current = snapshotEntityById(targetId);
-                if (!current || current.kind !== "player") return;
-                const hasShield = (current.maxShield && current.maxShield > 0) || (current.shield && current.shield > 0);
-                if (!hasShield) return;
-                spawnShieldBurstAt(current.x, current.y, "hit", { angle: impactAngle, radius, targetId });
-            }, LASER_BEAM_DURATION);
-        }
     }
 
     // Y (Attack Info - Nettoyé)
