@@ -82,8 +82,10 @@
             return;
         }
 
-        const drawWidth = MAP_WIDTH * gameScale;
-        const drawHeight = MAP_HEIGHT * gameScale;
+        const parallax = currentBackgroundParallax || DEFAULT_BACKGROUND_PARALLAX;
+        const scale = gameScale || 1;
+        const drawWidth = bg.width * scale;
+        const drawHeight = bg.height * scale;
 
         if (drawWidth < 1 || drawHeight < 1) {
             ctx.fillStyle = "black";
@@ -91,11 +93,13 @@
             return;
         }
 
-        const screenX = mapToScreenX(MAP_MIN_X);
-        const screenY = mapToScreenY(MAP_MIN_Y);
+        const screenX = canvas.width / 2 - (cameraX / parallax) * scale + currentBackgroundOffsets.x * scale;
+        const screenY = canvas.height / 2 - (cameraY / parallax) * scale + currentBackgroundOffsets.y * scale;
 
-        // Dessine l'image complète de la map, alignée sur l'origine monde et déplacée avec la caméra
+        const previousSmoothing = ctx.imageSmoothingEnabled;
+        ctx.imageSmoothingEnabled = false;
         ctx.drawImage(bg, screenX, screenY, drawWidth, drawHeight);
+        ctx.imageSmoothingEnabled = previousSmoothing;
     }
 
     const ENGINE_FRAME_DURATION = 1000 / ((ENGINE_SPRITE_DEFS[DEFAULT_ENGINE_KEY]?.fps) || ENGINE_ANIM_FPS || 20);

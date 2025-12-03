@@ -13,13 +13,16 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
     const cfg = window.ANDROMEDA_CONFIG || {};
 
     // Bornes de la map (comme côté serveur)
-    const MAP_MIN_X = 0;
-    const MAP_MAX_X = 21000;
-    const MAP_MIN_Y = 0;
-    const MAP_MAX_Y = 13200;
+    const STD_MAP_WIDTH = 21000;
+    const STD_MAP_HEIGHT = 13100;
 
-    const MAP_WIDTH  = MAP_MAX_X - MAP_MIN_X;
-    const MAP_HEIGHT = MAP_MAX_Y - MAP_MIN_Y;
+    const MAP_MIN_X = 0;
+    let MAP_MAX_X = STD_MAP_WIDTH;
+    const MAP_MIN_Y = 0;
+    let MAP_MAX_Y = STD_MAP_HEIGHT;
+
+    let MAP_WIDTH  = MAP_MAX_X - MAP_MIN_X;
+    let MAP_HEIGHT = MAP_MAX_Y - MAP_MIN_Y;
 
     // --- Fonds de carte (correspondance mapID -> typeID -> dossier backgroundX) ---
     const MAP_BACKGROUND_TYPES = {
@@ -44,8 +47,24 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
         81: 61
     };
 
+    const MAP_SCALE_FACTORS = {
+        16: 2
+    };
+
+    const DEFAULT_BACKGROUND_PARALLAX = 10;
+
+    const MAP_BACKGROUND_PARALLAX = {
+        1: 10,
+        9: 10
+    };
+
+    let mapScaleFactor = 1;
     let currentBackgroundTypeId = null;
     let currentBackgroundImage = null;
+    let currentBackgroundParallax = DEFAULT_BACKGROUND_PARALLAX;
+    let currentBackgroundShiftX = 0;
+    let currentBackgroundShiftY = 0;
+    let currentBackgroundOffsets = { x: 0, y: 0 };
 	 // Centre logique de la map (utile pour les futurs paquets "m")
     let mapCenterX = (MAP_MIN_X + MAP_MAX_X) / 2;
     let mapCenterY = (MAP_MIN_Y + MAP_MAX_Y) / 2;
@@ -309,12 +328,35 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
         refreshCanvasScale();
     }
 
+    function updateMapDimensions(scale = 1) {
+        mapScaleFactor = scale || 1;
+
+        MAP_MAX_X = STD_MAP_WIDTH * mapScaleFactor;
+        MAP_MAX_Y = STD_MAP_HEIGHT * mapScaleFactor;
+        MAP_WIDTH  = MAP_MAX_X - MAP_MIN_X;
+        MAP_HEIGHT = MAP_MAX_Y - MAP_MIN_Y;
+
+        mapCenterX = (MAP_MIN_X + MAP_MAX_X) / 2;
+        mapCenterY = (MAP_MIN_Y + MAP_MAX_Y) / 2;
+
+        updateMinimapSize();
+    }
+
     refreshCanvasScale();
     window.addEventListener("resize", refreshCanvasScale);
+
+    function getMapScaleFactor(mapId) {
+        return MAP_SCALE_FACTORS[mapId] || 1;
+    }
 
     function getBackgroundTypeForMap(mapId) {
         if (mapId == null) return null;
         return MAP_BACKGROUND_TYPES[mapId] || null;
+    }
+
+    function getBackgroundParallaxForMap(mapId) {
+        if (mapId == null) return DEFAULT_BACKGROUND_PARALLAX;
+        return MAP_BACKGROUND_PARALLAX[mapId] || DEFAULT_BACKGROUND_PARALLAX;
     }
 
     function getBackgroundImagePath(typeId) {
@@ -322,23 +364,53 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
         return `graphics/backgrounds/background${typeId}/1_background.png`;
     }
 
+    function getBackgroundShiftForMap(mapId) {
+        return { x: 0, y: 0 };
+    }
+
+    function recomputeBackgroundOffsets(img) {
+        if (!img || !img.complete || img.width === 0 || img.height === 0) return;
+
+        const expectedWidth = MAP_WIDTH / currentBackgroundParallax;
+        const expectedHeight = MAP_HEIGHT / currentBackgroundParallax;
+
+        const offsetX = Math.round((expectedWidth - img.width) / 2) + currentBackgroundShiftX;
+        const offsetY = Math.round((expectedHeight - img.height) / 2) + currentBackgroundShiftY;
+
+        currentBackgroundOffsets = { x: offsetX, y: offsetY };
+    }
+
     function loadBackgroundImage(typeId) {
         const path = getBackgroundImagePath(typeId);
         if (!path) {
             currentBackgroundImage = null;
+            currentBackgroundOffsets = { x: currentBackgroundShiftX, y: currentBackgroundShiftY };
             return;
         }
 
-        if (currentBackgroundImage && currentBackgroundImage.__bgPath === path) return;
+        if (!currentBackgroundImage || currentBackgroundImage.__bgPath !== path) {
+            const img = new Image();
+            img.src = path;
+            img.__bgPath = path;
+            img.onload = () => recomputeBackgroundOffsets(img);
+            currentBackgroundImage = img;
+        }
 
-        const img = new Image();
-        img.src = path;
-        img.__bgPath = path;
-        currentBackgroundImage = img;
+        if (currentBackgroundImage && currentBackgroundImage.complete) {
+            recomputeBackgroundOffsets(currentBackgroundImage);
+        }
     }
 
     function applyMapBackground(mapId) {
+        updateMapDimensions(getMapScaleFactor(mapId));
+
         currentBackgroundTypeId = getBackgroundTypeForMap(mapId);
+        currentBackgroundParallax = getBackgroundParallaxForMap(mapId);
+        const shift = getBackgroundShiftForMap(mapId);
+        currentBackgroundShiftX = shift.x || 0;
+        currentBackgroundShiftY = shift.y || 0;
+        currentBackgroundOffsets = { x: currentBackgroundShiftX, y: currentBackgroundShiftY };
+
         loadBackgroundImage(currentBackgroundTypeId);
     }
 
