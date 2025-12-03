@@ -357,8 +357,28 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
         return MAP_BACKGROUND_PARALLAX[mapId] || DEFAULT_BACKGROUND_PARALLAX;
     }
 
+    const BACKGROUND_TYPE_ALIASES = {
+        layer1: 1001,
+        layer2: 1002
+    };
+
+    const BACKGROUND_PATH_OVERRIDES = {
+        1001: "graphics/backgrounds/layer1/1_background.png",
+        1002: "graphics/backgrounds/layer2/1_background.png"
+    };
+
+    function normalizeBackgroundType(rawType) {
+        if (rawType == null) return null;
+        const asNumber = parseInt(rawType, 10);
+        if (!Number.isNaN(asNumber)) return asNumber;
+
+        const aliasKey = String(rawType);
+        return BACKGROUND_TYPE_ALIASES[aliasKey] || null;
+    }
+
     function getBackgroundImagePath(typeId) {
         if (!typeId) return null;
+        if (BACKGROUND_PATH_OVERRIDES[typeId]) return BACKGROUND_PATH_OVERRIDES[typeId];
         return `graphics/backgrounds/background${typeId}/1_background.png`;
     }
 
@@ -382,8 +402,9 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
 
                 const layers = [];
                 Array.from(backgroundsNode.getElementsByTagName("background")).forEach((bgNode) => {
-                    const typeId = parseInt(bgNode.getAttribute("typeID") || bgNode.getAttribute("type"), 10);
-                    if (Number.isNaN(typeId)) return;
+                    const rawType = bgNode.getAttribute("typeID") || bgNode.getAttribute("type");
+                    const typeId = normalizeBackgroundType(rawType);
+                    if (typeId == null) return;
 
                     const layerIndex = parseInt(bgNode.getAttribute("layer"), 10);
                     const pFactorRaw = parseFloat(bgNode.getAttribute("pFactor"));
