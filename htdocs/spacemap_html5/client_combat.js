@@ -710,15 +710,26 @@
     // -------------------------------------------------
 
     const LASER_SPRITE_CACHE = {};
+    const LASER_SPRITE_INFO = {
+        0: { path: "graphics/lasers/laser0/1.png", width: 87, height: 21 },
+        1: { path: "graphics/lasers/laser1/1.png", width: 87, height: 21 },
+        2: { path: "graphics/lasers/laser2/1.png", width: 83, height: 14 },
+        3: { path: "graphics/lasers/laser3/1.png", width: 83, height: 14 },
+        4: { path: "graphics/lasers/laser4/1.png", width: 64, height: 24 },
+        5: { path: "graphics/lasers/laser5/1.png", width: 83, height: 18 },
+        6: { path: "graphics/lasers/laser6/1.png", width: 60, height: 14 }
+    };
+
+    const DEFAULT_LASER_SPEED_MS = (typeof LASER_BEAM_DURATION !== "undefined") ? LASER_BEAM_DURATION : 150;
     const LASER_PATTERN_META = {
-        0: { spriteId: 0, absorber: false, allowOffsets: true }, // fallback (NPC basic)
-        1: { spriteId: 1, absorber: false, allowOffsets: true }, // LCB-10
-        2: { spriteId: 2, absorber: false, allowOffsets: true }, // MCB-25
-        3: { spriteId: 3, absorber: false, allowOffsets: true }, // MCB-50
-        4: { spriteId: 4, absorber: false, allowOffsets: true }, // UCB-100
-        5: { spriteId: 5, absorber: true,  allowOffsets: false }, // SAB-50 (absorber)
-        6: { spriteId: 6, absorber: false, allowOffsets: true }, // RSB-75 / skill lasers
-        7: { spriteId: 5, absorber: true,  allowOffsets: false }  // energy leech / PET absorber
+        0: { spriteId: 0, absorber: false, allowOffsets: true,  speed: 0.15, playLoop: false, playLoopRotated: false },
+        1: { spriteId: 1, absorber: false, allowOffsets: true,  speed: 0.15, playLoop: false, playLoopRotated: false },
+        2: { spriteId: 2, absorber: false, allowOffsets: true,  speed: 0.15, playLoop: false, playLoopRotated: false },
+        3: { spriteId: 3, absorber: false, allowOffsets: true,  speed: 0.15, playLoop: false, playLoopRotated: false },
+        4: { spriteId: 4, absorber: false, allowOffsets: true,  speed: 0.15, playLoop: false, playLoopRotated: false },
+        5: { spriteId: 5, absorber: true,  allowOffsets: false, speed: 0.15, playLoop: false, playLoopRotated: false },
+        6: { spriteId: 6, absorber: false, allowOffsets: true,  speed: 0.15, playLoop: false, playLoopRotated: false },
+        7: { spriteId: 5, absorber: true,  allowOffsets: false, speed: 0.15, playLoop: false, playLoopRotated: false }
     };
 
     function resolveLaserVisual(patternId, skilledLaser) {
@@ -729,27 +740,21 @@
         return {
             spriteId: Math.max(0, Math.min(6, spriteId || 0)),
             absorber: !!meta.absorber,
-            allowOffsets: meta.allowOffsets !== false
+            allowOffsets: meta.allowOffsets !== false,
+            playLoop: !!meta.playLoop,
+            playLoopRotated: !!meta.playLoopRotated,
+            speedMs: Math.max(1, Math.round((meta.speed ?? 0.15) * 1000))
         };
     }
 
     function getLaserSpriteFrame(spriteId, skilledLaser = false) {
         const id = Number.isFinite(spriteId) ? Math.max(0, Math.min(6, spriteId)) : 0;
-        const suffix = skilledLaser ? "-skill" : "";
-        const key = `laser-${id}${suffix}`;
+        const key = `laser-${id}${skilledLaser ? "-skill" : ""}`;
         if (!LASER_SPRITE_CACHE[key]) {
+            const info = LASER_SPRITE_INFO[id] || LASER_SPRITE_INFO[0];
             const img = new Image();
-            const basePath = skilledLaser ? `graphics/lasers/skillLaser${id}/1.png` : `graphics/lasers/laser${id}/1.png`;
-            img.src = basePath;
-            img.onerror = () => {
-                const fallbackPath = skilledLaser
-                    ? `graphics/lasers/skillLaser${id}.png`
-                    : `graphics/lasers/laser${id}.png`;
-                if (img.src !== fallbackPath) {
-                    img.src = fallbackPath;
-                }
-            };
-            LASER_SPRITE_CACHE[key] = img;
+            img.src = info.path;
+            LASER_SPRITE_CACHE[key] = { img, width: info.width, height: info.height };
         }
         return LASER_SPRITE_CACHE[key];
     }
@@ -757,10 +762,29 @@
     function updateLaserBeams(now) {
         for (let i = laserBeams.length - 1; i >= 0; i--) {
             const beam = laserBeams[i];
-            if (now - beam.createdAt > LASER_BEAM_DURATION) {
+            const elapsed = now - beam.createdAt;
+            if (elapsed >= beam.duration) {
+                if (!beam.hitHandled) {
+                    handleLaserImpact(beam);
+                    beam.hitHandled = true;
+                }
                 laserBeams.splice(i, 1);
             }
         }
+    }
+
+    function handleLaserImpact(beam) {
+        if (!beam.showShieldDamage) return;
+        const targetSnap = snapshotEntityById(beam.targetId);
+        if (!targetSnap || targetSnap.kind !== "player") return;
+
+        const radius = computeShieldImpactRadius(targetSnap);
+        const angle = beam.rotation ?? beam.angle;
+        if (angle == null) return;
+
+        const sx = heroId !== null && targetSnap.id === heroId ? shipX : targetSnap.x;
+        const sy = heroId !== null && targetSnap.id === heroId ? shipY : targetSnap.y;
+        spawnShieldBurstAt(sx, sy, "hit", { angle, radius, targetId: targetSnap.id });
     }
 
     function updateRocketAttacks(now) {
@@ -771,81 +795,34 @@
         }
     }
 
-    function getLaserOffsetsForShip(entityId) {
-        let size = 10;
-        const snap = snapshotEntityById(entityId);
-        if (snap && snap.shipId && SHIP_SPRITE_DEFS[snap.shipId]) {
-            const img = getShipSpriteFrame(snap.shipId, 0);
-            if (img && img.complete && img.width > 0) {
-                size = img.width / 4;
-            }
-        }
-        return Math.max(6, Math.min(18, size));
-    }
-
-    function buildLaserSegments(attackerSnap, targetSnap, patternId, skilledLaser) {
-        if (!attackerSnap || !targetSnap) return { segments: [], angle: null };
-
-        const visual = resolveLaserVisual(patternId, skilledLaser);
-        const origin = visual.absorber ? targetSnap : attackerSnap;
-        const destination = visual.absorber ? attackerSnap : targetSnap;
-
-        const angle = Math.atan2(destination.y - origin.y, destination.x - origin.x);
-        const offsetMag = visual.allowOffsets ? getLaserOffsetsForShip(attackerSnap.id) : 0;
-        const perpX = Math.cos(angle + Math.PI / 2) * offsetMag;
-        const perpY = Math.sin(angle + Math.PI / 2) * offsetMag;
-
-        if (offsetMag === 0) {
-            return {
-                angle,
-                segments: [{ ax: origin.x, ay: origin.y, tx: destination.x, ty: destination.y }]
-            };
-        }
-
-        return {
-            angle,
-            segments: [
-                { ax: origin.x + perpX, ay: origin.y + perpY, tx: destination.x + perpX, ty: destination.y + perpY },
-                { ax: origin.x - perpX, ay: origin.y - perpY, tx: destination.x - perpX, ty: destination.y - perpY }
-            ]
-        };
-    }
-
     function drawLaserBeams() {
         const now = performance.now();
 
         for (const beam of laserBeams) {
-            const sprite = getLaserSpriteFrame(beam.spriteId, beam.skilledLaser);
-            if (!sprite || !sprite.complete || sprite.width <= 0 || sprite.height <= 0) continue;
+            const spriteData = getLaserSpriteFrame(beam.spriteId, beam.skilledLaser);
+            const sprite = spriteData?.img || spriteData;
+            const width = spriteData?.width || sprite?.width || 0;
+            const height = spriteData?.height || sprite?.height || 0;
 
-            const life = (now - beam.createdAt) / LASER_BEAM_DURATION;
-            const alpha = Math.max(0, 1 - life);
+            if (!sprite || !sprite.complete || width <= 0 || height <= 0) continue;
 
-            for (const seg of beam.segments || []) {
-                const startScreenX = mapToScreenX(seg.ax);
-                const startScreenY = mapToScreenY(seg.ay);
-                const endScreenX = mapToScreenX(seg.tx);
-                const endScreenY = mapToScreenY(seg.ty);
+            const progress = Math.min(1, (now - beam.createdAt) / beam.duration);
+            const posX = beam.startX + (beam.endX - beam.startX) * progress;
+            const posY = beam.startY + (beam.endY - beam.startY) * progress;
+            const scale = beam.absorber ? 1 + (beam.endScale - 1) * progress : 1;
 
-                const dx = endScreenX - startScreenX;
-                const dy = endScreenY - startScreenY;
-                const dist = Math.hypot(dx, dy);
-                if (dist <= 0 || dist < sprite.width) continue;
-
-                const scaleX = dist / sprite.width;
-
-                ctx.save();
-                ctx.translate(startScreenX, startScreenY);
-                ctx.rotate(Math.atan2(dy, dx));
-                ctx.globalAlpha = alpha;
-
-                const previousSmoothing = ctx.imageSmoothingEnabled;
-                ctx.imageSmoothingEnabled = true;
-                ctx.drawImage(sprite, 0, -sprite.height / 2, sprite.width * scaleX, sprite.height);
-                ctx.imageSmoothingEnabled = previousSmoothing;
-
-                ctx.restore();
+            ctx.save();
+            ctx.translate(mapToScreenX(posX), mapToScreenY(posY));
+            if (beam.rotation != null) {
+                ctx.rotate(beam.rotation);
             }
+            ctx.scale(scale, scale);
+
+            const previousSmoothing = ctx.imageSmoothingEnabled;
+            ctx.imageSmoothingEnabled = true;
+            ctx.drawImage(sprite, -width / 2, -height / 2, width, height);
+            ctx.imageSmoothingEnabled = previousSmoothing;
+            ctx.restore();
         }
     }
 
