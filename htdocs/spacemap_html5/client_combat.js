@@ -977,12 +977,12 @@
             const dist = Math.hypot(dx, dy);
             if (dist <= 0) continue;
 
-            // In the SWF, the laser4 ring is rotated 90° from the shot vector so the
-            // ellipse faces the beam direction (side view of the ring).
-            const angle = Math.atan2(dy, dx) + Math.PI / 2;
+            // SWF logic: angle = atan2(endY - startY, endX - startX) + 180° (param1=start,target / param3=end,attacker)
+            // Applied after translating to the start point, matching the MovieClip rotation.
+            const angle = Math.atan2(dy, dx) + Math.PI;
 
             // Effet de cône (scale qui se réduit sur la trajectoire comme dans le SWF)
-            const scale = (shot.startScale ?? 1) + ((shot.endScale ?? 0.1) - (shot.startScale ?? 1)) * lifeProgress;
+            const scale = (shot.startScale ?? 0.1) + ((shot.endScale ?? 0.1) - (shot.startScale ?? 0.1)) * lifeProgress;
 
             const repetitions = Math.ceil(dist / spriteWidth) + 1;
             const scrollSpeed = 500;
