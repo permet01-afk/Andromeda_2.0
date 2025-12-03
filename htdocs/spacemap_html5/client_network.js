@@ -1641,6 +1641,9 @@ function handlePacket_N(parts, i) {
 
     function handlePacket_sabShot(parts, i) {
         if (parts.length < i + 2) return;
+
+        // Flash packet order: first value = attacker, second value = target.
+        // Visual effect: the beam still starts on the target and travels toward the attacker (absorber).
         const attackerId = parseInt(parts[i], 10);
         const targetId = parseInt(parts[i + 1], 10);
 
