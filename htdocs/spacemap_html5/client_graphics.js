@@ -76,22 +76,20 @@
 
     function drawMapBackground() {
         const bg = currentBackgroundImage;
-        if (!bg || !bg.complete || bg.width === 0 || bg.height === 0) {
-            ctx.fillStyle = "black";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            return;
-        }
+
+        // Clear the full viewport every frame to avoid ghosting / repetition when the
+        // background image is smaller than the canvas.
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        if (!bg || !bg.complete || bg.width === 0 || bg.height === 0) return;
 
         const parallax = currentBackgroundParallax || DEFAULT_BACKGROUND_PARALLAX;
         const scale = gameScale || 1;
         const drawWidth = bg.width * scale;
         const drawHeight = bg.height * scale;
 
-        if (drawWidth < 1 || drawHeight < 1) {
-            ctx.fillStyle = "black";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            return;
-        }
+        if (drawWidth < 1 || drawHeight < 1) return;
 
         const screenX = canvas.width / 2 - (cameraX / parallax) * scale + currentBackgroundOffsets.x * scale;
         const screenY = canvas.height / 2 - (cameraY / parallax) * scale + currentBackgroundOffsets.y * scale;
