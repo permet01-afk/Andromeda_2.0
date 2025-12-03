@@ -721,7 +721,6 @@
     };
 
     const DEFAULT_LASER_SPEED_MS = (typeof LASER_BEAM_DURATION !== "undefined") ? LASER_BEAM_DURATION : 150;
-    const SAB_SHOT_DURATION_MS = Math.max(1, Math.round((LASER_PATTERN_META[5]?.speed ?? 0.15) * 1000));
     const LASER_PATTERN_META = {
         0: { spriteId: 0, absorber: false, allowOffsets: true,  speed: 0.15, playLoop: false, playLoopRotated: false },
         1: { spriteId: 1, absorber: false, allowOffsets: true,  speed: 0.15, playLoop: false, playLoopRotated: false },
@@ -732,6 +731,8 @@
         6: { spriteId: 6, absorber: false, allowOffsets: true,  speed: 0.15, playLoop: false, playLoopRotated: false },
         7: { spriteId: 5, absorber: true,  allowOffsets: false, speed: 0.15, playLoop: false, playLoopRotated: false }
     };
+
+    const SAB_SHOT_DURATION_MS = Math.max(1, Math.round((LASER_PATTERN_META[5]?.speed ?? 0.15) * 1000));
 
     function resolveLaserVisual(patternId, skilledLaser) {
         const meta = LASER_PATTERN_META[patternId] || LASER_PATTERN_META[0];
