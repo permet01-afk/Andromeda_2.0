@@ -1,3 +1,4 @@
+
     function render(now) {
         const dt = (now - lastTime) / 1000;
         lastTime = now;

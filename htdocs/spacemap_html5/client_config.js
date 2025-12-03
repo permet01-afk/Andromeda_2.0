@@ -414,21 +414,6 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
         loadBackgroundImage(currentBackgroundTypeId);
     }
 
-    function getViewportLogicalSize() {
-        return {
-            width: (clientResolution && clientResolution.width) || DEFAULT_LOGICAL_WIDTH,
-            height: (clientResolution && clientResolution.height) || DEFAULT_LOGICAL_HEIGHT
-        };
-    }
-
-    function getViewportWorldSize() {
-        const logical = getViewportLogicalSize();
-        return {
-            width: logical.width / BASE_GAME_SCALE,
-            height: logical.height / BASE_GAME_SCALE
-        };
-    }
-
     // Désactiver le menu contextuel
     canvas.addEventListener("contextmenu", (e) => e.preventDefault());
 

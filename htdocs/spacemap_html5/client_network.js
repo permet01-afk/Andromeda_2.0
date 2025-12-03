@@ -1,3 +1,4 @@
+
     // 2. WEBSOCKET
     // -------------------------------------------------
 
@@ -1124,7 +1125,7 @@ function handlePacket_N(parts, i) {
             addInfoMessage("Inventaire de munitions et objets chargé.");
             break;
         }
-        case "RS": { 
+        case "RS": { 
             const mode = parts[i + 1] || "0";
             if (mode === "1") addInfoMessage("Réparation rapide démarrée (30k).");
             else addInfoMessage("Réparation démarrée.");
@@ -1164,10 +1165,10 @@ function handlePacket_N(parts, i) {
             break;
         }
         case "SHD": {
-            const shStr     = parts[i + 1] || "0";
-            const maxShStr  = parts[i + 2] || "0";
+            const shStr     = parts[i + 1] || "0";
+            const maxShStr  = parts[i + 2] || "0";
             const newShield = parseInt(shStr, 10);
-            const newMaxSh  = parseInt(maxShStr, 10);
+            const newMaxSh  = parseInt(maxShStr, 10);
             if (!isNaN(newShield)) heroShield = newShield;
             if (!isNaN(newMaxSh) && newMaxSh > 0) heroMaxShield = newMaxSh;
             break;
