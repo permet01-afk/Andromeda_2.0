@@ -732,7 +732,7 @@
         7: { spriteId: 5, absorber: true,  allowOffsets: false, speed: 0.15, playLoop: false, playLoopRotated: false }
     };
 
-    const SAB_SHOT_DURATION_MS = Math.max(1, Math.round((LASER_PATTERN_META[5]?.speed ?? 0.15) * 1000));
+    const SAB_SHOT_DURATION_MS = 1000;
 
     function resolveLaserVisual(patternId, skilledLaser) {
         const meta = LASER_PATTERN_META[patternId] || LASER_PATTERN_META[0];
@@ -977,17 +977,16 @@
             const dist = Math.hypot(dx, dy);
             if (dist <= 0) continue;
 
-            // SWF logic: angle = atan2(endY - startY, endX - startX) + 180° (param1=start,target / param3=end,attacker)
-            // Applied after translating to the start point, matching the MovieClip rotation.
-            const angle = Math.atan2(dy, dx) + Math.PI;
+            // SWF logic (sab_shot.swf): the clip is placed on the attacker and tweens toward the target without extra rotation.
+            // We rotate to align the textured beam with the attacker -> target vector.
+            const angle = Math.atan2(dy, dx);
 
             // Effet de cône (scale qui se réduit sur la trajectoire comme dans le SWF)
-            const scale = (shot.startScale ?? 0.1) + ((shot.endScale ?? 0.1) - (shot.startScale ?? 0.1)) * lifeProgress;
+            const scale = (shot.startScale ?? 1) + ((shot.endScale ?? 1) - (shot.startScale ?? 1)) * lifeProgress;
 
             const repetitions = Math.ceil(dist / spriteWidth) + 1;
             const scrollSpeed = 500;
-            // Negative offset so the ring visually travels from the target back to the attacker.
-            const scrollOffset = -((now % scrollSpeed) / scrollSpeed * spriteWidth);
+            const scrollOffset = (now % scrollSpeed) / scrollSpeed * spriteWidth;
 
             ctx.save();
             ctx.translate(startScreenX, startScreenY);
