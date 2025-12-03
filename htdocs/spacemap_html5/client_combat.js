@@ -977,14 +977,17 @@
             const dist = Math.hypot(dx, dy);
             if (dist <= 0) continue;
 
-            const angle = Math.atan2(dy, dx);
+            // In the SWF, the laser4 ring is rotated 90° from the shot vector so the
+            // ellipse faces the beam direction (side view of the ring).
+            const angle = Math.atan2(dy, dx) + Math.PI / 2;
 
             // Effet de cône (scale qui se réduit sur la trajectoire comme dans le SWF)
             const scale = (shot.startScale ?? 1) + ((shot.endScale ?? 0.1) - (shot.startScale ?? 1)) * lifeProgress;
 
             const repetitions = Math.ceil(dist / spriteWidth) + 1;
             const scrollSpeed = 500;
-            const scrollOffset = (now % scrollSpeed) / scrollSpeed * spriteWidth;
+            // Negative offset so the ring visually travels from the target back to the attacker.
+            const scrollOffset = -((now % scrollSpeed) / scrollSpeed * spriteWidth);
 
             ctx.save();
             ctx.translate(startScreenX, startScreenY);
