@@ -721,7 +721,7 @@
     };
 
     const DEFAULT_LASER_SPEED_MS = (typeof LASER_BEAM_DURATION !== "undefined") ? LASER_BEAM_DURATION : 150;
-    const SAB_SHOT_DURATION_MS = 500;
+    const SAB_SHOT_DURATION_MS = 1000;
     const LASER_PATTERN_META = {
         0: { spriteId: 0, absorber: false, allowOffsets: true,  speed: 0.15, playLoop: false, playLoopRotated: false },
         1: { spriteId: 1, absorber: false, allowOffsets: true,  speed: 0.15, playLoop: false, playLoopRotated: false },
@@ -899,21 +899,17 @@
             const duration = shot.duration || SAB_SHOT_DURATION_MS;
             const progress = Math.min(1, (now - shot.createdAt) / duration);
 
-            const endX = shot.endX ?? (attacker.id === heroId ? shipX : attacker.x);
-            const endY = shot.endY ?? (attacker.id === heroId ? shipY : attacker.y);
-            const startX = shot.startX ?? (target.id === heroId ? shipX : target.x);
-            const startY = shot.startY ?? (target.id === heroId ? shipY : target.y);
+            const startX = shot.startX ?? (attacker.id === heroId ? shipX : attacker.x);
+            const startY = shot.startY ?? (attacker.id === heroId ? shipY : attacker.y);
+
+            const endX = (target.id === heroId ? shipX : target.x);
+            const endY = (target.id === heroId ? shipY : target.y);
 
             const posX = startX + (endX - startX) * progress;
             const posY = startY + (endY - startY) * progress;
 
-            const scale = 1 - 0.9 * progress;
-            const angle = Math.atan2(endY - startY, endX - startX);
-
             ctx.save();
             ctx.translate(mapToScreenX(posX), mapToScreenY(posY));
-            ctx.rotate(angle);
-            ctx.scale(scale, scale);
             ctx.drawImage(sprite, -width / 2, -height / 2, width, height);
             ctx.restore();
         }
