@@ -1145,6 +1145,7 @@ function handlePacket_N(parts, i) {
             if (code === "ISH")      label = "Insta-shield";
             else if (code === "SMB") label = "Smartbomb";
             else if (code === "ROK") label = "Rockets";
+            else if (code === "RSB") label = "RSB-75";
             else if (code === "EMP") label = "EMP";
             else if (code === "SBU") label = "Shield Backup";
             else if (code === "BRB") label = "Battle Repair Bot";
@@ -1767,76 +1768,98 @@ function handlePacket_N(parts, i) {
         // pour éviter toute coupure visuelle entre deux rafraîchissements.
         const duration = visual.playLoop ? (visual.attackLengthMs || LASER_ATTACK_LENGTH_MS) : baseDuration;
 
-        const shouldDouble = shouldDrawDoubleLaser(attackerId, visual, patternId, attackerSnap);
-        const now = performance.now();
+        const spawnBeamEntries = (createdAt, flagShowShield = showShieldDamage) => {
+            const shouldDouble = shouldDrawDoubleLaser(attackerId, visual, patternId, attackerSnap);
 
-        if (visual.playLoop) {
-            let reused = false;
-            for (let idx = laserBeams.length - 1; idx >= 0; idx--) {
-                const beam = laserBeams[idx];
-                if (beam.playLoop && beam.attackerId === attackerId && beam.targetId === targetId && beam.patternId === patternId && beam.skilledLaser === skilledLaser) {
-                    if (!reused) {
-                        beam.startX = startX;
-                        beam.startY = startY;
-                        beam.endX = endX;
-                        beam.endY = endY;
-                        beam.duration = duration;
-                        beam.createdAt = now;
-                        beam.absorber = visual.absorber;
-                        beam.showShieldDamage = showShieldDamage;
-                        beam.angle = angle;
-                        beam.rotation = null;
-                        beam.endScale = visual.absorber ? 0.1 : 1;
-                        beam.hitHandled = false;
-                        reused = true;
-                    } else {
-                        laserBeams.splice(idx, 1);
+            if (visual.playLoop) {
+                let reused = false;
+                for (let idx = laserBeams.length - 1; idx >= 0; idx--) {
+                    const beam = laserBeams[idx];
+                    if (beam.playLoop && beam.attackerId === attackerId && beam.targetId === targetId && beam.patternId === patternId && beam.skilledLaser === skilledLaser) {
+                        if (!reused) {
+                            beam.startX = startX;
+                            beam.startY = startY;
+                            beam.endX = endX;
+                            beam.endY = endY;
+                            beam.duration = duration;
+                            beam.createdAt = createdAt;
+                            beam.absorber = visual.absorber;
+                            beam.showShieldDamage = flagShowShield;
+                            beam.angle = angle;
+                            beam.rotation = null;
+                            beam.endScale = visual.absorber ? 0.1 : 1;
+                            beam.hitHandled = false;
+                            reused = true;
+                        } else {
+                            laserBeams.splice(idx, 1);
+                        }
                     }
                 }
+                if (reused) return;
             }
-            if (reused) return;
+
+            const beamEntries = shouldDouble
+                ? buildDoubleLaserEntries({
+                    attackerId,
+                    targetId,
+                    patternId,
+                    spriteId: visual.spriteId,
+                    showShieldDamage: flagShowShield,
+                    skilledLaser,
+                    angle,
+                    startX,
+                    startY,
+                    endX,
+                    endY,
+                    duration,
+                    visual
+                })
+                : [{
+                    attackerId,
+                    targetId,
+                    patternId,
+                    spriteId: visual.spriteId,
+                    showShieldDamage: flagShowShield,
+                    skilledLaser,
+                    absorber: visual.absorber,
+                    rotation: visual.playLoop ? null : angle,
+                    angle,
+                    startX,
+                    startY,
+                    endX,
+                    endY,
+                    duration,
+                    endScale: visual.absorber ? 0.1 : 1,
+                    createdAt,
+                    playLoop: visual.playLoop,
+                    hitHandled: false
+                }];
+
+            for (const entry of beamEntries) {
+                laserBeams.push(entry);
+            }
+        };
+
+        const now = performance.now();
+
+        // FULL_MERGE_AS : le RSB-75 déclenche une rafale de tirs très rapprochés avec
+        // un seul impact visuel de bouclier sur le premier tir. On reproduit cette
+        // cadence en multipliant les faisceaux sur quelques centaines de millisecondes.
+        if (visual.spriteId === 6) {
+            const burstCount = 5;
+            const burstSpacing = 120;
+            let firstShot = true;
+            for (let b = 0; b < burstCount; b++) {
+                const delay = b * burstSpacing;
+                setTimeout(() => {
+                    spawnBeamEntries(performance.now(), firstShot);
+                }, delay);
+                firstShot = false;
+            }
+            return;
         }
 
-        const beamEntries = shouldDouble
-            ? buildDoubleLaserEntries({
-                attackerId,
-                targetId,
-                patternId,
-                spriteId: visual.spriteId,
-                showShieldDamage,
-                skilledLaser,
-                angle,
-                startX,
-                startY,
-                endX,
-                endY,
-                duration,
-                visual
-            })
-            : [{
-                attackerId,
-                targetId,
-                patternId,
-                spriteId: visual.spriteId,
-                showShieldDamage,
-                skilledLaser,
-                absorber: visual.absorber,
-                rotation: visual.playLoop ? null : angle,
-                angle,
-                startX,
-                startY,
-                endX,
-                endY,
-                duration,
-                endScale: visual.absorber ? 0.1 : 1,
-                createdAt: now,
-                playLoop: visual.playLoop,
-                hitHandled: false
-            }];
-
-        for (const entry of beamEntries) {
-            laserBeams.push(entry);
-        }
+        spawnBeamEntries(now, showShieldDamage);
     }
 
     function shouldDrawDoubleLaser(attackerId, visual, patternId, attackerSnap) {
