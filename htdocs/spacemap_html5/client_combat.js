@@ -826,52 +826,75 @@
         ctx.save();
 
         // --- CAS 1 : LASER EN BOUCLE (SAB, RSB...) ---
-        // Si 'playLoop' est activé dans la config, on dessine un rayon continu
         if (beam.playLoop) {
-            // 1. On se place au point de départ (Target pour le SAB)
-            const startScreenX = mapToScreenX(beam.startX);
-            const startScreenY = mapToScreenY(beam.startY);
-            const endScreenX = mapToScreenX(beam.endX);
-            const endScreenY = mapToScreenY(beam.endY);
+            // 1. INVERSION DES COORDONNÉES (SAB : Cible -> Attaquant)
+            // (Ne touchez pas à ce bloc, il garantit que le laser "regarde" dans le bon sens)
+            let worldStartX = beam.startX;
+            let worldStartY = beam.startY;
+            let worldEndX = beam.endX;
+            let worldEndY = beam.endY;
+
+            if (beam.absorber) {
+                worldStartX = beam.endX; 
+                worldStartY = beam.endY;
+                worldEndX = beam.startX; 
+                worldEndY = beam.startY;
+            }
+
+            const startScreenX = mapToScreenX(worldStartX);
+            const startScreenY = mapToScreenY(worldStartY);
+            const endScreenX = mapToScreenX(worldEndX);
+            const endScreenY = mapToScreenY(worldEndY);
 
             ctx.translate(startScreenX, startScreenY);
 
-            // 2. Rotation vers le point d'arrivée
             const dx = endScreenX - startScreenX;
             const dy = endScreenY - startScreenY;
             const dist = Math.hypot(dx, dy);
-            ctx.rotate(Math.atan2(dy, dx));
+            
+            // Rotation : Axe Y vers l'arrivée (Vous)
+            ctx.rotate(Math.atan2(dy, dx) - Math.PI / 2);
 
-            // 3. Effet "Entonnoir" pour le SAB (rétrécissement)
-            // On écrase légèrement la hauteur (Y) vers la fin ou selon le temps
-            if (beam.absorber) {
-                // Variation légère de la largeur du flux
-                const scaleY = 1.0 - (progress * 0.2); 
-                ctx.scale(1, scaleY);
-            }
-
-            // 4. Dessin en boucle (Tiling)
-            // On calcule combien de fois l'image rentre dans la distance
-            const repetitions = Math.ceil(dist / width) + 1;
-
-            // Masque (Clip) pour ne pas dessiner plus loin que la cible
+            // 2. MASQUE DE DÉCOUPE
             ctx.beginPath();
-            ctx.rect(0, -height / 2, dist, height);
+            ctx.rect(-dist, 0, dist * 2, dist);
             ctx.clip();
 
-            // Vitesse de défilement de la texture (Animation du flux)
-            // 'speed' vient de ta config (0.45s), on l'utilise pour rythmer
-            const scrollSpeed = 500; // Plus c'est bas, plus ça va vite
-            const scrollOffset = (now % scrollSpeed) / scrollSpeed * width;
+            // --- CORRECTION CI-DESSOUS ---
 
-            // On dessine l'image plusieurs fois pour créer le rayon
-            for (let i = -1; i < repetitions; i++) {
-                // Le "+ scrollOffset" fait avancer le flux vers la source (effet aspiration)
-                const drawPos = (i * width) + scrollOffset;
-                ctx.drawImage(sprite, drawPos, -height / 2, width, height);
+            // 3. Espacement (On le calcule AVANT l'animation)
+            const densityFactor = 5.0; 
+            const step = height * densityFactor; 
+
+            // 4. Animation Corrigée
+            // On augmente le temps de cycle (1500ms au lieu de 300ms) car la distance 'step' est plus grande.
+            // Cela rétablit une vitesse visuelle normale et corrige l'illusion d'optique de "retour en arrière".
+            const scrollSpeed = 1500; 
+            
+            // On boucle sur 'step' (la distance entre deux cercles) pour une fluidité parfaite sans coupure
+            const scrollOffset = (now % scrollSpeed) / scrollSpeed * step;
+
+            // 5. Calcul du nombre de cercles nécessaires
+            const count = Math.ceil(dist / step) + 1;
+
+            // --- FIN CORRECTION ---
+
+            // 6. DESSIN DES CERCLES
+            for (let i = -1; i < count; i++) {
+                // ... (le reste de la boucle for reste identique)
+                const currentY = (i * step) + scrollOffset;
+
+                if (currentY > -height && currentY < dist + height) {
+                    // ...
+                    const ratio = Math.max(0, Math.min(1, currentY / dist));
+                    const currentScale = 0.4 + (0.9 * ratio);
+                    const w = width * currentScale;
+                    const h = height * currentScale;
+
+                    ctx.drawImage(sprite, -w / 2, currentY - h / 2, w, h);
+                }
             }
-
-        } 
+        }
         // --- CAS 2 : LASER PROJECTILE (X1, X2, X3, X4...) ---
         else {
             // Calcul de la position actuelle du projectile
