@@ -815,6 +815,20 @@
     const now = performance.now();
 
     for (const beam of laserBeams) {
+		if (beam.attackerId) {
+            const attacker = snapshotEntityById(beam.attackerId);
+            if (attacker) {
+                beam.startX = attacker.x;
+                beam.startY = attacker.y;
+            }
+        }
+        if (beam.targetId) {
+            const target = snapshotEntityById(beam.targetId);
+            if (target) {
+                beam.endX = target.x;
+                beam.endY = target.y;
+            }
+        }
         const spriteData = getLaserSpriteFrame(beam.spriteId, beam.skilledLaser);
         const sprite = spriteData?.img || spriteData;
         const width = spriteData?.width || sprite?.width || 0;
@@ -836,7 +850,7 @@
             let worldEndX = beam.endX;
             let worldEndY = beam.endY;
 
-            if (beam.absorber) {
+            if (beam.absorber && beam.spriteId != 4) {
                 worldStartX = beam.endX; 
                 worldStartY = beam.endY;
                 worldEndX = beam.startX; 
@@ -884,7 +898,8 @@
             // 6. DESSIN DES CERCLES
             for (let i = -1; i < count; i++) {
                 // ... (le reste de la boucle for reste identique)
-                const currentY = (i * step) + scrollOffset;
+                const direction = (beam.spriteId == 4) ? -1 : 1;
+const currentY = (i * step) + (scrollOffset * direction);
 
                 if (currentY > -height && currentY < dist + height) {
                     // ...
