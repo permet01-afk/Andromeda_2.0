@@ -721,7 +721,7 @@
     };
 
     const DEFAULT_LASER_SPEED_MS = (typeof LASER_BEAM_DURATION !== "undefined") ? LASER_BEAM_DURATION : 150;
-    const SAB_SHOT_DURATION_MS = 1000;
+    const SAB_SHOT_DURATION_MS = Math.max(1, Math.round((LASER_PATTERN_META[5]?.speed ?? 0.15) * 1000));
     const LASER_PATTERN_META = {
         0: { spriteId: 0, absorber: false, allowOffsets: true,  speed: 0.15, playLoop: false, playLoopRotated: false },
         1: { spriteId: 1, absorber: false, allowOffsets: true,  speed: 0.15, playLoop: false, playLoopRotated: false },
@@ -909,14 +909,14 @@
             const posY = startY + (endY - startY) * progress;
 
             const startScale = shot.startScale || 1;
-            const endScale = shot.endScale || 1;
+            const endScale = shot.endScale || 0.1;
             const scale = startScale + (endScale - startScale) * progress;
 
             ctx.save();
 
             // Large absorption ring anchored on the target side
             ctx.translate(mapToScreenX(startX), mapToScreenY(startY));
-            ctx.globalAlpha = 0.6 * (1 - progress);
+            ctx.globalAlpha = 0.7 * (1 - progress);
             ctx.drawImage(
                 sprite,
                 -(width * startScale) / 2,
@@ -929,7 +929,7 @@
             // Traveling core ring that shrinks as it approaches the attacker
             ctx.save();
             ctx.translate(mapToScreenX(posX), mapToScreenY(posY));
-            ctx.globalAlpha = 0.8;
+            ctx.globalAlpha = 0.9;
             ctx.drawImage(sprite, -(width * scale) / 2, -(height * scale) / 2, width * scale, height * scale);
             ctx.restore();
         }
