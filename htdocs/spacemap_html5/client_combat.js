@@ -949,78 +949,59 @@
         if (!sabShots || sabShots.length === 0) return;
 
         const now = performance.now();
-        
-        ctx.save();
-        // --- STYLE DU SAB ---
-        ctx.strokeStyle = "#ffffff"; // Anneaux blancs
-        ctx.lineWidth = 2;
-        ctx.shadowBlur = 6;          // Lueur
-        ctx.shadowColor = "#0088ff"; // Couleur lueur (bleu)
 
-        // --- PARAMETRES DE L'EFFET ---
-        const baseRadius = 18; // Taille MAX (sur la cible)
-        const minScale = 0.3;  // Taille MIN (30% sur l'attaquant)
-        const spacing = 45;    // Espace entre les anneaux
-        const animSpeed = 0.005; // Vitesse de défilement
+        const spriteData = getLaserSpriteFrame(4);
+        const sprite = spriteData?.img || spriteData;
+        const spriteWidth = spriteData?.width || sprite?.width || 0;
+        const spriteHeight = spriteData?.height || sprite?.height || 0;
+        if (!sprite || !sprite.complete || spriteWidth <= 0 || spriteHeight <= 0) return;
 
         for (let i = sabShots.length - 1; i >= 0; i--) {
             const shot = sabShots[i];
-            
-            // On récupère les positions via ta fonction utilitaire
-            const attacker = snapshotEntityById(shot.attackerId);
-            const target = snapshotEntityById(shot.targetId);
+            const duration = shot.duration || 1000;
+            const lifeProgress = Math.min(1, (now - shot.createdAt) / duration);
 
-            // Si l'un des deux n'existe plus, on passe
-            if (!attacker || !target) continue;
+            // Positions au moment du tir (pour rester fidèle au clip Flash)
+            const startWorldX = shot.startX ?? 0;
+            const startWorldY = shot.startY ?? 0;
+            const endWorldX = shot.endX ?? 0;
+            const endWorldY = shot.endY ?? 0;
 
-            // Vérification de la durée
-            const duration = shot.duration || 1000; // Valeur par défaut si non définie
-            if (now - shot.createdAt > duration) continue;
+            const startScreenX = mapToScreenX(startWorldX);
+            const startScreenY = mapToScreenY(startWorldY);
+            const endScreenX = mapToScreenX(endWorldX);
+            const endScreenY = mapToScreenY(endWorldY);
 
-            const sx = attacker.x;
-            const sy = attacker.y;
-            const tx = target.x;
-            const ty = target.y;
+            const dx = endScreenX - startScreenX;
+            const dy = endScreenY - startScreenY;
+            const dist = Math.hypot(dx, dy);
+            if (dist <= 0) continue;
 
-            // Distance et vecteur
-            const dx = tx - sx;
-            const dy = ty - sy;
-            const dist = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
 
-            // Nombre d'anneaux nécessaires
-            const count = Math.floor(dist / spacing);
+            // Effet de cône (scale qui se réduit sur la trajectoire comme dans le SWF)
+            const scale = (shot.startScale ?? 1) + ((shot.endScale ?? 0.1) - (shot.startScale ?? 1)) * lifeProgress;
 
-            // Animation (décalage temporel)
-            const timeDelta = now - shot.createdAt;
-            const animOffset = timeDelta * animSpeed;
+            const repetitions = Math.ceil(dist / spriteWidth) + 1;
+            const scrollSpeed = 500;
+            const scrollOffset = (now % scrollSpeed) / scrollSpeed * spriteWidth;
 
-            for (let j = 0; j < count; j++) {
-                // Calcul de la progression (t) de 0 (Attaquant) à 1 (Cible)
-                // (j + animOffset) % count permet de faire boucler l'animation
-                let loopProgress = (j + animOffset) % count;
-                let t = loopProgress / count;
+            ctx.save();
+            ctx.translate(startScreenX, startScreenY);
+            ctx.rotate(angle);
+            ctx.scale(scale, scale);
 
-                // 1. Position interpolée sur la ligne de tir
-                let worldX = sx + dx * t;
-                let worldY = sy + dy * t;
+            ctx.beginPath();
+            ctx.rect(0, -spriteHeight / 2, dist, spriteHeight);
+            ctx.clip();
 
-                // 2. Conversion en écran
-                let screenX = mapToScreenX(worldX);
-                let screenY = mapToScreenY(worldY);
-
-                // 3. Calcul de la taille (Cône)
-                // t=0 (Attaquant) -> minScale (petit)
-                // t=1 (Cible) -> 1.0 (gros)
-                let currentScale = minScale + (1 - minScale) * t;
-                let r = baseRadius * currentScale;
-
-                // 4. Dessin de l'anneau
-                ctx.beginPath();
-                ctx.arc(screenX, screenY, r, 0, Math.PI * 2);
-                ctx.stroke();
+            for (let j = -1; j < repetitions; j++) {
+                const drawPos = (j * spriteWidth) + scrollOffset;
+                ctx.drawImage(sprite, drawPos, -spriteHeight / 2, spriteWidth, spriteHeight);
             }
+
+            ctx.restore();
         }
-        ctx.restore();
     }
 
     function snapshotEntityById(id) {
