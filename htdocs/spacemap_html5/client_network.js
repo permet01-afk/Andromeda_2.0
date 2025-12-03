@@ -1651,10 +1651,13 @@ function handlePacket_N(parts, i) {
         const targetSnap = snapshotEntityById(targetId);
         if (!attackerSnap || !targetSnap) return;
 
-        const startX = attackerSnap.id === heroId ? shipX : attackerSnap.x;
-        const startY = attackerSnap.id === heroId ? shipY : attackerSnap.y;
-        const endX = targetSnap.id === heroId ? shipX : targetSnap.x;
-        const endY = targetSnap.id === heroId ? shipY : targetSnap.y;
+        // FULL_MERGE_AS : laser4 (SAB-50) est un laser absorbeur "playLoop".
+        // Le clip part de la cible vers l'attaquant, sans rotation supplémentaire,
+        // et se resserre progressivement (scale -> 0.1).
+        const startX = targetSnap.id === heroId ? shipX : targetSnap.x;
+        const startY = targetSnap.id === heroId ? shipY : targetSnap.y;
+        const endX = attackerSnap.id === heroId ? shipX : attackerSnap.x;
+        const endY = attackerSnap.id === heroId ? shipY : attackerSnap.y;
 
         const duration = (typeof SAB_SHOT_DURATION_MS !== "undefined") ? SAB_SHOT_DURATION_MS : 1000;
 
@@ -1666,7 +1669,7 @@ function handlePacket_N(parts, i) {
             endX,
             endY,
             startScale: 1,
-            endScale: 1,
+            endScale: 0.1,
             duration,
             createdAt: performance.now()
         });

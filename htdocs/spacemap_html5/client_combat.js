@@ -961,47 +961,23 @@
             const duration = shot.duration || 1000;
             const lifeProgress = Math.min(1, (now - shot.createdAt) / duration);
 
-            // Positions au moment du tir (pour rester fidèle au clip Flash)
+            // laser4.swf (SAB-50) : le clip part de la cible vers l'attaquant, sans rotation,
+            // et se resserre (scaleX/scaleY -> 0.1) pendant le déplacement.
             const startWorldX = shot.startX ?? 0;
             const startWorldY = shot.startY ?? 0;
             const endWorldX = shot.endX ?? 0;
             const endWorldY = shot.endY ?? 0;
 
-            const startScreenX = mapToScreenX(startWorldX);
-            const startScreenY = mapToScreenY(startWorldY);
-            const endScreenX = mapToScreenX(endWorldX);
-            const endScreenY = mapToScreenY(endWorldY);
+            const currentWorldX = startWorldX + (endWorldX - startWorldX) * lifeProgress;
+            const currentWorldY = startWorldY + (endWorldY - startWorldY) * lifeProgress;
 
-            const dx = endScreenX - startScreenX;
-            const dy = endScreenY - startScreenY;
-            const dist = Math.hypot(dx, dy);
-            if (dist <= 0) continue;
-
-            // SWF logic (sab_shot.swf): the clip is placed on the attacker and tweens toward the target without extra rotation.
-            // We rotate to align the textured beam with the attacker -> target vector.
-            const angle = Math.atan2(dy, dx);
-
-            // Effet de cône (scale qui se réduit sur la trajectoire comme dans le SWF)
-            const scale = (shot.startScale ?? 1) + ((shot.endScale ?? 1) - (shot.startScale ?? 1)) * lifeProgress;
-
-            const repetitions = Math.ceil(dist / spriteWidth) + 1;
-            const scrollSpeed = 500;
-            const scrollOffset = (now % scrollSpeed) / scrollSpeed * spriteWidth;
+            const scale = (shot.startScale ?? 1) + ((shot.endScale ?? 0.1) - (shot.startScale ?? 1)) * lifeProgress;
 
             ctx.save();
-            ctx.translate(startScreenX, startScreenY);
-            ctx.rotate(angle);
+            ctx.translate(mapToScreenX(currentWorldX), mapToScreenY(currentWorldY));
             ctx.scale(scale, scale);
 
-            ctx.beginPath();
-            ctx.rect(0, -spriteHeight / 2, dist, spriteHeight);
-            ctx.clip();
-
-            for (let j = -1; j < repetitions; j++) {
-                const drawPos = (j * spriteWidth) + scrollOffset;
-                ctx.drawImage(sprite, drawPos, -spriteHeight / 2, spriteWidth, spriteHeight);
-            }
-
+            ctx.drawImage(sprite, -spriteWidth / 2, -spriteHeight / 2, spriteWidth, spriteHeight);
             ctx.restore();
         }
     }
