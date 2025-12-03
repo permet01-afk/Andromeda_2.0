@@ -158,6 +158,7 @@
         "O":   handlePacket_O,
         "X":   handlePacket_X,
         "a":   handlePacket_laserAttack,
+        "SAB_SHOT": handlePacket_sabShot,
         "v":   handlePacket_rocketAttack,
         "Y":   handlePacket_attackInfo,
         "2":   handlePacket_remove,
@@ -1638,6 +1639,32 @@ function handlePacket_N(parts, i) {
         if (resumeId != null && rangeProtectedTargetId === resumeId) rangeProtectedTargetId = null;
     }
 
+    function handlePacket_sabShot(parts, i) {
+        if (parts.length < i + 2) return;
+        const attackerId = parseInt(parts[i], 10);
+        const targetId = parseInt(parts[i + 1], 10);
+
+        if (isNaN(attackerId) || isNaN(targetId)) return;
+
+        const attackerSnap = snapshotEntityById(attackerId);
+        const targetSnap = snapshotEntityById(targetId);
+        if (!attackerSnap || !targetSnap) return;
+
+        const startX = attackerSnap.id === heroId ? shipX : attackerSnap.x;
+        const startY = attackerSnap.id === heroId ? shipY : attackerSnap.y;
+
+        const duration = (typeof SAB_SHOT_DURATION_MS !== "undefined") ? SAB_SHOT_DURATION_MS : 1000;
+
+        sabShots.push({
+            attackerId,
+            targetId,
+            startX,
+            startY,
+            duration,
+            createdAt: performance.now()
+        });
+    }
+
     function handlePacket_rocketAttack(parts, i) {
         if (parts.length < i + 6) return;
         const attackerId = parseInt(parts[i], 10);
@@ -1752,7 +1779,7 @@ function handlePacket_N(parts, i) {
 
         // FULL_MERGE_AS : les doubles lasers ne concernent que certains types côté joueur
         // (gestion via ExpansionPattern). On les borne aux patterns standards non-absorbeurs.
-        const heroDoublePatterns = new Set([0, 1, 2, 3, 4, 6]);
+        const heroDoublePatterns = new Set([0, 1, 2, 3, 6]);
         return heroDoublePatterns.has(patternId);
     }
 
@@ -2051,6 +2078,15 @@ function handlePacket_s(parts, i) {
                 // On supprime si le laser vient de cette cible OU va vers cette cible
                 if (b.attackerId === targetId || b.targetId === targetId) {
                     laserBeams.splice(i, 1);
+                }
+            }
+        }
+
+        if (typeof sabShots !== 'undefined') {
+             for (let i = sabShots.length - 1; i >= 0; i--) {
+                const s = sabShots[i];
+                if (s.attackerId === targetId || s.targetId === targetId) {
+                    sabShots.splice(i, 1);
                 }
             }
         }
