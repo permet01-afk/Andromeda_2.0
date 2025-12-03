@@ -721,12 +721,13 @@
     };
 
     const DEFAULT_LASER_SPEED_MS = (typeof LASER_BEAM_DURATION !== "undefined") ? LASER_BEAM_DURATION : 150;
+    const LASER_ATTACK_LENGTH_MS = 1350; // FULL_MERGE_AS : LaserPattern.attackLength par défaut (durée d'un tir continu)
     const LASER_PATTERN_META = {
         0: { spriteId: 0, absorber: false, allowOffsets: true,  speed: 0.15, playLoop: false, playLoopRotated: false },
         1: { spriteId: 1, absorber: false, allowOffsets: true,  speed: 0.15, playLoop: false, playLoopRotated: false },
         2: { spriteId: 2, absorber: false, allowOffsets: true,  speed: 0.15, playLoop: false, playLoopRotated: false },
         3: { spriteId: 3, absorber: false, allowOffsets: true,  speed: 0.15, playLoop: false, playLoopRotated: false },
-        4: { spriteId: 4, absorber: true, allowOffsets: false, speed: 0.45, playLoop: true, playLoopRotated: true },
+        4: { spriteId: 4, absorber: true, allowOffsets: false, speed: 0.45, playLoop: true, playLoopRotated: true, attackLengthMs: LASER_ATTACK_LENGTH_MS },
         5: { spriteId: 5, absorber: true,  allowOffsets: false, speed: 0.15, playLoop: false, playLoopRotated: false },
         6: { spriteId: 6, absorber: false, allowOffsets: true,  speed: 0.15, playLoop: false, playLoopRotated: false },
         7: { spriteId: 5, absorber: true,  allowOffsets: false, speed: 0.15, playLoop: false, playLoopRotated: false }
@@ -745,7 +746,8 @@
             allowOffsets: meta.allowOffsets !== false,
             playLoop: !!meta.playLoop,
             playLoopRotated: !!meta.playLoopRotated,
-            speedMs: Math.max(1, Math.round((meta.speed ?? 0.15) * 1000))
+            speedMs: Math.max(1, Math.round((meta.speed ?? 0.15) * 1000)),
+            attackLengthMs: Math.max(1, Math.round(meta.attackLengthMs || LASER_ATTACK_LENGTH_MS))
         };
     }
 
@@ -986,10 +988,13 @@
 
             // laser4.swf (SAB-50) : le clip part de la cible vers l'attaquant, sans rotation,
             // et se resserre (scaleX/scaleY -> 0.1) pendant le déplacement.
-            const startWorldX = shot.startX ?? 0;
-            const startWorldY = shot.startY ?? 0;
-            const endWorldX = shot.endX ?? 0;
-            const endWorldY = shot.endY ?? 0;
+            const targetSnap = snapshotEntityById(shot.targetId);
+            const attackerSnap = snapshotEntityById(shot.attackerId);
+
+            const startWorldX = targetSnap?.x ?? shot.startX ?? 0;
+            const startWorldY = targetSnap?.y ?? shot.startY ?? 0;
+            const endWorldX = attackerSnap?.x ?? shot.endX ?? 0;
+            const endWorldY = attackerSnap?.y ?? shot.endY ?? 0;
 
             const currentWorldX = startWorldX + (endWorldX - startWorldX) * lifeProgress;
             const currentWorldY = startWorldY + (endWorldY - startWorldY) * lifeProgress;
