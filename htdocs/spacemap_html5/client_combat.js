@@ -988,10 +988,13 @@
 
             // laser4.swf (SAB-50) : le clip part de la cible vers l'attaquant, sans rotation,
             // et se resserre (scaleX/scaleY -> 0.1) pendant le déplacement.
-            const startWorldX = shot.startX ?? 0;
-            const startWorldY = shot.startY ?? 0;
-            const endWorldX = shot.endX ?? 0;
-            const endWorldY = shot.endY ?? 0;
+            const targetSnap = snapshotEntityById(shot.targetId);
+            const attackerSnap = snapshotEntityById(shot.attackerId);
+
+            const startWorldX = targetSnap?.x ?? shot.startX ?? 0;
+            const startWorldY = targetSnap?.y ?? shot.startY ?? 0;
+            const endWorldX = attackerSnap?.x ?? shot.endX ?? 0;
+            const endWorldY = attackerSnap?.y ?? shot.endY ?? 0;
 
             const currentWorldX = startWorldX + (endWorldX - startWorldX) * lifeProgress;
             const currentWorldY = startWorldY + (endWorldY - startWorldY) * lifeProgress;
