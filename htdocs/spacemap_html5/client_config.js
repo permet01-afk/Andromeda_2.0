@@ -59,13 +59,11 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
     };
 
     let mapScaleFactor = 1;
-    let currentBackgroundTypeId = null;
-    let currentBackgroundImage = null;
-    let currentBackgroundParallax = DEFAULT_BACKGROUND_PARALLAX;
-    let currentBackgroundShiftX = 0;
-    let currentBackgroundShiftY = 0;
-    let currentBackgroundOffsets = { x: 0, y: 0 };
-	 // Centre logique de la map (utile pour les futurs paquets "m")
+    let currentMapId = null;
+    let currentBackgroundLayers = [];
+    let mapBackgroundLayersById = {};
+    let mapsXmlPromise = null;
+         // Centre logique de la map (utile pour les futurs paquets "m")
     let mapCenterX = (MAP_MIN_X + MAP_MAX_X) / 2;
     let mapCenterY = (MAP_MIN_Y + MAP_MAX_Y) / 2;
 
@@ -368,50 +366,140 @@ console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
         return { x: 0, y: 0 };
     }
 
-    function recomputeBackgroundOffsets(img) {
-        if (!img || !img.complete || img.width === 0 || img.height === 0) return;
+    function parseMapsXml(text) {
+        try {
+            const parser = new DOMParser();
+            const xml = parser.parseFromString(text, "text/xml");
+            const mapNodes = xml.getElementsByTagName("map");
+            const parsed = {};
 
-        const expectedWidth = MAP_WIDTH / currentBackgroundParallax;
-        const expectedHeight = MAP_HEIGHT / currentBackgroundParallax;
+            Array.from(mapNodes).forEach((mapNode) => {
+                const mapId = parseInt(mapNode.getAttribute("id"), 10);
+                if (Number.isNaN(mapId)) return;
 
-        const offsetX = Math.round((expectedWidth - img.width) / 2) + currentBackgroundShiftX;
-        const offsetY = Math.round((expectedHeight - img.height) / 2) + currentBackgroundShiftY;
+                const backgroundsNode = mapNode.getElementsByTagName("backgrounds")[0];
+                if (!backgroundsNode) return;
 
-        currentBackgroundOffsets = { x: offsetX, y: offsetY };
+                const layers = [];
+                Array.from(backgroundsNode.getElementsByTagName("background")).forEach((bgNode) => {
+                    const typeId = parseInt(bgNode.getAttribute("typeID") || bgNode.getAttribute("type"), 10);
+                    if (Number.isNaN(typeId)) return;
+
+                    const layerIndex = parseInt(bgNode.getAttribute("layer"), 10);
+                    const pFactorRaw = parseFloat(bgNode.getAttribute("pFactor"));
+                    const shiftX = parseFloat(bgNode.getAttribute("shiftX")) || 0;
+                    const shiftY = parseFloat(bgNode.getAttribute("shiftY")) || 0;
+
+                    layers.push({
+                        typeId,
+                        layer: Number.isNaN(layerIndex) ? 0 : layerIndex,
+                        parallax: Number.isNaN(pFactorRaw) ? null : pFactorRaw,
+                        shiftX,
+                        shiftY
+                    });
+                });
+
+                if (layers.length) {
+                    parsed[mapId] = layers;
+                }
+            });
+
+            return parsed;
+        } catch (err) {
+            console.warn("Impossible de parser maps.php pour les layers", err);
+            return {};
+        }
     }
 
-    function loadBackgroundImage(typeId) {
-        const path = getBackgroundImagePath(typeId);
+    function ensureMapsXmlLoaded() {
+        if (mapsXmlPromise) return mapsXmlPromise;
+        if (typeof fetch !== "function") return Promise.resolve();
+
+        mapsXmlPromise = fetch("../spacemap/xml/maps.php")
+            .then((resp) => (resp.ok ? resp.text() : Promise.reject(new Error(resp.statusText))))
+            .then((text) => {
+                mapBackgroundLayersById = parseMapsXml(text);
+                if (currentMapId != null) {
+                    applyMapBackground(currentMapId, { force: true });
+                }
+            })
+            .catch((err) => {
+                console.warn("Chargement maps.php échoué, fallback statique", err);
+            });
+
+        return mapsXmlPromise;
+    }
+
+    function recomputeBackgroundOffsets(layer) {
+        const { image, parallax, shiftX, shiftY } = layer;
+        if (!image || !image.complete || image.width === 0 || image.height === 0) return;
+
+        const effectiveParallax = parallax || DEFAULT_BACKGROUND_PARALLAX;
+        const expectedWidth = MAP_WIDTH / effectiveParallax;
+        const expectedHeight = MAP_HEIGHT / effectiveParallax;
+
+        const offsetX = Math.round((expectedWidth - image.width) / 2) + shiftX;
+        const offsetY = Math.round((expectedHeight - image.height) / 2) + shiftY;
+
+        layer.offsets = { x: offsetX, y: offsetY };
+    }
+
+    function loadBackgroundLayer(layer) {
+        const path = getBackgroundImagePath(layer.typeId);
         if (!path) {
-            currentBackgroundImage = null;
-            currentBackgroundOffsets = { x: currentBackgroundShiftX, y: currentBackgroundShiftY };
+            layer.image = null;
+            layer.offsets = { x: layer.shiftX || 0, y: layer.shiftY || 0 };
             return;
         }
 
-        if (!currentBackgroundImage || currentBackgroundImage.__bgPath !== path) {
+        if (!layer.image || layer.image.__bgPath !== path) {
             const img = new Image();
             img.src = path;
             img.__bgPath = path;
-            img.onload = () => recomputeBackgroundOffsets(img);
-            currentBackgroundImage = img;
+            img.onload = () => recomputeBackgroundOffsets(layer);
+            layer.image = img;
         }
 
-        if (currentBackgroundImage && currentBackgroundImage.complete) {
-            recomputeBackgroundOffsets(currentBackgroundImage);
+        if (layer.image && layer.image.complete) {
+            recomputeBackgroundOffsets(layer);
         }
     }
 
-    function applyMapBackground(mapId) {
+    function setBackgroundLayers(mapId, layers) {
+        const shift = getBackgroundShiftForMap(mapId);
+        currentBackgroundLayers = layers.map((layer) => ({
+            typeId: layer.typeId,
+            layer: layer.layer ?? 0,
+            parallax: layer.parallax || getBackgroundParallaxForMap(mapId),
+            shiftX: (layer.shiftX || 0) + (shift.x || 0),
+            shiftY: (layer.shiftY || 0) + (shift.y || 0),
+            offsets: { x: 0, y: 0 },
+            image: null
+        }));
+
+        currentBackgroundLayers.forEach(loadBackgroundLayer);
+    }
+
+    function getBackgroundLayersForMap(mapId) {
+        const fromXml = mapBackgroundLayersById[mapId];
+        if (fromXml && fromXml.length) return fromXml;
+
+        const fallbackType = getBackgroundTypeForMap(mapId);
+        if (!fallbackType) return [];
+
+        return [{ typeId: fallbackType, layer: 0, parallax: getBackgroundParallaxForMap(mapId), shiftX: 0, shiftY: 0 }];
+    }
+
+    function applyMapBackground(mapId, options = {}) {
+        currentMapId = mapId;
         updateMapDimensions(getMapScaleFactor(mapId));
 
-        currentBackgroundTypeId = getBackgroundTypeForMap(mapId);
-        currentBackgroundParallax = getBackgroundParallaxForMap(mapId);
-        const shift = getBackgroundShiftForMap(mapId);
-        currentBackgroundShiftX = shift.x || 0;
-        currentBackgroundShiftY = shift.y || 0;
-        currentBackgroundOffsets = { x: currentBackgroundShiftX, y: currentBackgroundShiftY };
+        const layers = getBackgroundLayersForMap(mapId);
+        setBackgroundLayers(mapId, layers);
 
-        loadBackgroundImage(currentBackgroundTypeId);
+        if (!options.skipLoadXml) {
+            ensureMapsXmlLoaded();
+        }
     }
 
     // Désactiver le menu contextuel
