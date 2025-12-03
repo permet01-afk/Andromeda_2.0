@@ -899,18 +899,38 @@
             const duration = shot.duration || SAB_SHOT_DURATION_MS;
             const progress = Math.min(1, (now - shot.createdAt) / duration);
 
-            const startX = shot.startX ?? (attacker.id === heroId ? shipX : attacker.x);
-            const startY = shot.startY ?? (attacker.id === heroId ? shipY : attacker.y);
+            const startX = shot.startX ?? (target.id === heroId ? shipX : target.x);
+            const startY = shot.startY ?? (target.id === heroId ? shipY : target.y);
 
-            const endX = (target.id === heroId ? shipX : target.x);
-            const endY = (target.id === heroId ? shipY : target.y);
+            const endX = shot.endX ?? (attacker.id === heroId ? shipX : attacker.x);
+            const endY = shot.endY ?? (attacker.id === heroId ? shipY : attacker.y);
 
             const posX = startX + (endX - startX) * progress;
             const posY = startY + (endY - startY) * progress;
 
+            const startScale = shot.startScale || 1;
+            const endScale = shot.endScale || 1;
+            const scale = startScale + (endScale - startScale) * progress;
+
+            ctx.save();
+
+            // Large absorption ring anchored on the target side
+            ctx.translate(mapToScreenX(startX), mapToScreenY(startY));
+            ctx.globalAlpha = 0.6 * (1 - progress);
+            ctx.drawImage(
+                sprite,
+                -(width * startScale) / 2,
+                -(height * startScale) / 2,
+                width * startScale,
+                height * startScale
+            );
+            ctx.restore();
+
+            // Traveling core ring that shrinks as it approaches the attacker
             ctx.save();
             ctx.translate(mapToScreenX(posX), mapToScreenY(posY));
-            ctx.drawImage(sprite, -width / 2, -height / 2, width, height);
+            ctx.globalAlpha = 0.8;
+            ctx.drawImage(sprite, -(width * scale) / 2, -(height * scale) / 2, width * scale, height * scale);
             ctx.restore();
         }
     }
