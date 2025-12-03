@@ -1672,8 +1672,11 @@ function handlePacket_N(parts, i) {
 
         if (isNaN(attackerId) || isNaN(targetId)) return;
 
-        const beamAngle = computeShieldImpactAngle(attackerId, targetId);
+        const attackerSnap = snapshotEntityById(attackerId);
         const targetSnap = snapshotEntityById(targetId);
+        if (!attackerSnap || !targetSnap) return;
+
+        const { angle: beamAngle, segments } = buildLaserSegments(attackerSnap, targetSnap, patternId);
 
         laserBeams.push({
             attackerId,
@@ -1682,6 +1685,7 @@ function handlePacket_N(parts, i) {
             showShieldDamage,
             skilledLaser,
             angle: beamAngle,
+            segments,
             createdAt: performance.now()
         });
 
