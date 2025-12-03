@@ -1677,31 +1677,122 @@ function handlePacket_N(parts, i) {
         if (!attackerSnap || !targetSnap) return;
 
         const visual = resolveLaserVisual(patternId, skilledLaser);
-        const { angle: renderedAngle, segments } = buildLaserSegments(attackerSnap, targetSnap, patternId, skilledLaser);
-        const impactAngle = Math.atan2(targetSnap.y - attackerSnap.y, targetSnap.x - attackerSnap.x);
+        const spriteInfo = getLaserSpriteFrame(visual.spriteId, skilledLaser);
+        const laserLength = spriteInfo?.width || LASER_SPRITE_INFO[visual.spriteId]?.width || 0;
+        const origin = visual.absorber ? targetSnap : attackerSnap;
+        const destination = visual.absorber ? attackerSnap : targetSnap;
 
-        laserBeams.push({
-            attackerId,
-            targetId,
-            patternId,
-            spriteId: visual.spriteId,
-            showShieldDamage,
-            skilledLaser,
-            angle: visual.absorber ? impactAngle : renderedAngle,
-            segments,
-            createdAt: performance.now()
-        });
+        const startX = origin.x;
+        const startY = origin.y;
+        let endX = destination.x;
+        let endY = destination.y;
 
-        if (showShieldDamage && targetSnap && targetSnap.kind === "player" && impactAngle != null) {
-            const radius = computeShieldImpactRadius(targetSnap);
-            setTimeout(() => {
-                const current = snapshotEntityById(targetId);
-                if (!current || current.kind !== "player") return;
-                const hasShield = (current.maxShield && current.maxShield > 0) || (current.shield && current.shield > 0);
-                if (!hasShield) return;
-                spawnShieldBurstAt(current.x, current.y, "hit", { angle: impactAngle, radius, targetId });
-            }, LASER_BEAM_DURATION);
+        const dx = startX - endX;
+        const dy = startY - endY;
+        const distSq = dx * dx + dy * dy;
+
+        if (!visual.absorber && laserLength > 0) {
+            if (distSq < laserLength * laserLength) return;
+            const dist = Math.sqrt(distSq);
+            const nx = dx / dist;
+            const ny = dy / dist;
+            endX += nx * laserLength;
+            endY += ny * laserLength;
         }
+
+        const angle = Math.atan2(endY - startY, endX - startX);
+        const duration = visual.speedMs || DEFAULT_LASER_SPEED_MS;
+
+        const shouldDouble = shouldDrawDoubleLaser(attackerId, visual, patternId);
+        const beamEntries = shouldDouble && !visual.absorber
+            ? buildDoubleLaserEntries({
+                attackerId,
+                targetId,
+                patternId,
+                spriteId: visual.spriteId,
+                showShieldDamage,
+                skilledLaser,
+                angle,
+                startX,
+                startY,
+                endX,
+                endY,
+                duration,
+                visual
+            })
+            : [{
+                attackerId,
+                targetId,
+                patternId,
+                spriteId: visual.spriteId,
+                showShieldDamage,
+                skilledLaser,
+                absorber: visual.absorber,
+                rotation: visual.playLoop ? null : angle,
+                angle,
+                startX,
+                startY,
+                endX,
+                endY,
+                duration,
+                endScale: visual.absorber ? 0.1 : 1,
+                createdAt: performance.now(),
+                playLoop: visual.playLoop,
+                hitHandled: false
+            }];
+
+        for (const entry of beamEntries) {
+            laserBeams.push(entry);
+        }
+    }
+
+    function shouldDrawDoubleLaser(attackerId, visual, patternId) {
+        if (heroId === null || attackerId !== heroId) return false;
+        if (!visual?.allowOffsets) return false;
+
+        // FULL_MERGE_AS : les doubles lasers ne concernent que certains types côté joueur
+        // (gestion via ExpansionPattern). On les borne aux patterns standards non-absorbeurs.
+        const heroDoublePatterns = new Set([0, 1, 2, 3, 4, 6]);
+        return heroDoublePatterns.has(patternId);
+    }
+
+    function buildDoubleLaserEntries(base) {
+        const entries = [];
+        const offset = 12;
+        const { angle, startX, startY, endX, endY, visual } = base;
+        const perpendicular = angle + Math.PI / 2;
+        const cosP = Math.cos(perpendicular);
+        const sinP = Math.sin(perpendicular);
+
+        const offsets = [-offset, offset];
+        for (const o of offsets) {
+            const sx = startX + cosP * o;
+            const sy = startY + sinP * o;
+            const ex = endX + cosP * o;
+            const ey = endY + sinP * o;
+
+            entries.push({
+                attackerId: base.attackerId,
+                targetId: base.targetId,
+                patternId: base.patternId,
+                spriteId: base.spriteId,
+                showShieldDamage: base.showShieldDamage,
+                skilledLaser: base.skilledLaser,
+                absorber: visual.absorber,
+                rotation: visual.playLoop ? null : angle,
+                angle,
+                startX: sx,
+                startY: sy,
+                endX: ex,
+                endY: ey,
+                duration: base.duration,
+                endScale: visual.absorber ? 0.1 : 1,
+                createdAt: performance.now(),
+                playLoop: visual.playLoop,
+                hitHandled: false
+            });
+        }
+        return entries;
     }
 
     // Y (Attack Info - Nettoyé)
