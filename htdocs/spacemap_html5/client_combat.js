@@ -709,6 +709,8 @@
 
     const LASER_SPRITE_CACHE = {};
     const NETTEL_SPRITE_ID = 7;
+    const CRYSTAL_LASER_SPRITE_ID = 8;
+    const CRYSTAL_LASER_FRAMES = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23];
     const LASER_SPRITE_INFO = {
         0: { path: "graphics/lasers/laser0/1.png", width: 87, height: 21 },
         1: { path: "graphics/lasers/laser1/1.png", width: 87, height: 21 },
@@ -717,7 +719,14 @@
         4: { path: "graphics/lasers/laser4/1.png", width: 64, height: 24 },
         5: { path: "graphics/lasers/laser5/1.png", width: 83, height: 18 },
         6: { path: "graphics/lasers/laser6/1.png", width: 60, height: 14 },
-        [NETTEL_SPRITE_ID]: { path: "graphics/lasers/nettel/1.png", width: 55, height: 17 }
+        [NETTEL_SPRITE_ID]: { path: "graphics/lasers/nettel/1.png", width: 55, height: 17 },
+        [CRYSTAL_LASER_SPRITE_ID]: {
+            basePath: "graphics/lasers/crystal1/",
+            frames: CRYSTAL_LASER_FRAMES,
+            width: 20,
+            height: 15,
+            frameDuration: 50
+        }
     };
 
     const MAX_LASER_SPRITE_ID = Math.max(...Object.keys(LASER_SPRITE_INFO).map(Number));
@@ -758,11 +767,39 @@
         const key = `laser-${id}${skilledLaser ? "-skill" : ""}`;
         if (!LASER_SPRITE_CACHE[key]) {
             const info = LASER_SPRITE_INFO[id] || LASER_SPRITE_INFO[0];
-            const img = new Image();
-            img.src = info.path;
-            LASER_SPRITE_CACHE[key] = { img, width: info.width, height: info.height };
+
+            if (info.frames && info.frames.length > 0) {
+                const frames = info.frames.map(frame => {
+                    const img = new Image();
+                    const suffix = typeof frame === "number" ? `${frame}.png` : frame;
+                    img.src = `${info.basePath || ""}${suffix}`;
+                    return img;
+                });
+                LASER_SPRITE_CACHE[key] = {
+                    frames,
+                    frameDuration: Math.max(1, info.frameDuration || 50),
+                    width: info.width,
+                    height: info.height
+                };
+            } else {
+                const img = new Image();
+                img.src = info.path;
+                LASER_SPRITE_CACHE[key] = { img, width: info.width, height: info.height };
+            }
         }
-        return LASER_SPRITE_CACHE[key];
+
+        const cached = LASER_SPRITE_CACHE[key];
+        if (cached.frames && cached.frames.length > 0) {
+            const idx = Math.floor(performance.now() / cached.frameDuration) % cached.frames.length;
+            const img = cached.frames[idx];
+            return {
+                img,
+                width: cached.width || img.width,
+                height: cached.height || img.height
+            };
+        }
+
+        return cached;
     }
 
     function updateLaserBeams(now) {

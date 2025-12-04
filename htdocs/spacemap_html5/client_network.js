@@ -1739,6 +1739,23 @@ function handlePacket_N(parts, i) {
     const NETTEL_SPRITE_ID_LOCAL = (typeof NETTEL_SPRITE_ID !== "undefined") ? NETTEL_SPRITE_ID : 7;
     const NETTEL_SHIP_IDS = new Set([36, 37, 71, 75, 76]);
 
+    const CRYSTAL_LASER_SPRITE_ID_LOCAL = (typeof CRYSTAL_LASER_SPRITE_ID !== "undefined") ? CRYSTAL_LASER_SPRITE_ID : 8;
+    const CRYSTAL_NPC_TYPES = new Set([78, 29]);
+
+    function shouldUseCrystalLaser(attacker) {
+        if (!attacker || attacker.kind !== "npc") return false;
+
+        // Le type NPC (shipId logique) correspond aux Kristallin
+        if (CRYSTAL_NPC_TYPES.has(attacker.type)) return true;
+
+        // Sécurité : certains NPC n'ont pas toujours "type" bien renseigné,
+        // on recoupe avec le shipId et le nom pour garantir l'usage du laser cristal.
+        if (CRYSTAL_NPC_TYPES.has(attacker.shipId)) return true;
+
+        const name = (attacker.name || "").toLowerCase();
+        return name.includes("kristallin");
+    }
+
     function shouldUseNettelLaser(attacker) {
         if (!attacker || attacker.kind !== "npc") return false;
 
@@ -1766,6 +1783,10 @@ function handlePacket_N(parts, i) {
 
         if (shouldUseNettelLaser(attackerSnap)) {
             visual = { ...visual, spriteId: NETTEL_SPRITE_ID_LOCAL, flipX: true };
+        }
+
+        if (shouldUseCrystalLaser(attackerSnap)) {
+            visual = { ...visual, spriteId: CRYSTAL_LASER_SPRITE_ID_LOCAL, flipX: false };
         }
         const spriteInfo = getLaserSpriteFrame(visual.spriteId, skilledLaser);
         const laserLength = spriteInfo?.width || LASER_SPRITE_INFO[visual.spriteId]?.width || 0;
