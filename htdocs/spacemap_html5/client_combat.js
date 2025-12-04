@@ -713,6 +713,7 @@
     const CRYSTAL2_LASER_SPRITE_ID = 9;
     const DEVOLARIUM_LASER_SPRITE_ID = 10;
     const LORDAKIUM_LASER_SPRITE_ID = 11;
+    const PROTEGIT_LASER_SPRITE_ID = 12;
     const CRYSTAL_LASER_FRAMES = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23];
     const DEVOLARIUM_LASER_FRAMES = Array.from({ length: 100 }, (_, idx) => `${idx + 1}.png`);
     const LORDAKIUM_LASER_FRAMES = [1, 3, 5, 7];
@@ -725,6 +726,7 @@
         5: { path: "graphics/lasers/laser5/1.png", width: 83, height: 18 },
         6: { path: "graphics/lasers/laser6/1.png", width: 60, height: 14 },
         [NETTEL_SPRITE_ID]: { path: "graphics/lasers/nettel/1.png", width: 55, height: 17 },
+        [PROTEGIT_LASER_SPRITE_ID]: { path: "graphics/lasers/protegitShot/1.png", width: 19, height: 12 },
         [CRYSTAL_LASER_SPRITE_ID]: {
             basePath: "graphics/lasers/crystal1/",
             frames: CRYSTAL_LASER_FRAMES,
