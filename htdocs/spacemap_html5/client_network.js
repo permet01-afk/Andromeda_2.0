@@ -1736,6 +1736,18 @@ function handlePacket_N(parts, i) {
         });
     }
 
+    const NETTEL_SPRITE_ID_LOCAL = (typeof NETTEL_SPRITE_ID !== "undefined") ? NETTEL_SPRITE_ID : 7;
+    const NETTEL_SHIP_IDS = new Set([36, 37, 71, 75, 76]);
+
+    function shouldUseNettelLaser(attacker) {
+        if (!attacker || attacker.kind !== "npc") return false;
+
+        if (attacker.shipId != null && NETTEL_SHIP_IDS.has(attacker.shipId)) return true;
+
+        const name = (attacker.name || "").toLowerCase();
+        return name.includes("lordakia") || name.includes("saimon") || name.includes("sibelonit");
+    }
+
     function handlePacket_laserAttack(parts, i) {
         if (parts.length < i + 5) return;
         const attackerId = parseInt(parts[i], 10);
@@ -1750,7 +1762,11 @@ function handlePacket_N(parts, i) {
         const targetSnap = snapshotEntityById(targetId);
         if (!attackerSnap || !targetSnap) return;
 
-        const visual = resolveLaserVisual(patternId, skilledLaser);
+        let visual = resolveLaserVisual(patternId, skilledLaser);
+
+        if (shouldUseNettelLaser(attackerSnap)) {
+            visual = { ...visual, spriteId: NETTEL_SPRITE_ID_LOCAL, flipX: true };
+        }
         const spriteInfo = getLaserSpriteFrame(visual.spriteId, skilledLaser);
         const laserLength = spriteInfo?.width || LASER_SPRITE_INFO[visual.spriteId]?.width || 0;
         const origin = visual.absorber ? targetSnap : attackerSnap;
@@ -1782,6 +1798,7 @@ function handlePacket_N(parts, i) {
 
         const spawnBeamEntries = (createdAt, flagShowShield = showShieldDamage) => {
             const shouldDouble = shouldDrawDoubleLaser(attackerId, visual, patternId, attackerSnap);
+            const flipX = visual.flipX === true;
 
             if (visual.playLoop) {
                 let reused = false;
@@ -1800,6 +1817,7 @@ function handlePacket_N(parts, i) {
                             beam.angle = angle;
                             beam.rotation = null;
                             beam.endScale = visual.absorber ? 0.1 : 1;
+                            beam.flipX = flipX;
                             beam.hitHandled = false;
                             reused = true;
                         } else {
@@ -1842,6 +1860,7 @@ function handlePacket_N(parts, i) {
                     endY,
                     duration,
                     endScale: visual.absorber ? 0.1 : 1,
+                    flipX,
                     createdAt,
                     playLoop: visual.playLoop,
                     hitHandled: false
@@ -1921,6 +1940,7 @@ function handlePacket_N(parts, i) {
                 offsetY,
                 duration: base.duration,
                 endScale: visual.absorber ? 0.1 : 1,
+                flipX: visual.flipX === true,
                 createdAt: performance.now(),
                 playLoop: visual.playLoop,
                 hitHandled: false

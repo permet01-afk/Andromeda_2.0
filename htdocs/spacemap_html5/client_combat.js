@@ -708,6 +708,7 @@
     // -------------------------------------------------
 
     const LASER_SPRITE_CACHE = {};
+    const NETTEL_SPRITE_ID = 7;
     const LASER_SPRITE_INFO = {
         0: { path: "graphics/lasers/laser0/1.png", width: 87, height: 21 },
         1: { path: "graphics/lasers/laser1/1.png", width: 87, height: 21 },
@@ -715,8 +716,11 @@
         3: { path: "graphics/lasers/laser3/1.png", width: 83, height: 14 },
         4: { path: "graphics/lasers/laser4/1.png", width: 64, height: 24 },
         5: { path: "graphics/lasers/laser5/1.png", width: 83, height: 18 },
-        6: { path: "graphics/lasers/laser6/1.png", width: 60, height: 14 }
+        6: { path: "graphics/lasers/laser6/1.png", width: 60, height: 14 },
+        [NETTEL_SPRITE_ID]: { path: "graphics/lasers/nettel/1.png", width: 55, height: 17 }
     };
+
+    const MAX_LASER_SPRITE_ID = Math.max(...Object.keys(LASER_SPRITE_INFO).map(Number));
 
     const DEFAULT_LASER_SPEED_MS = (typeof LASER_BEAM_DURATION !== "undefined") ? LASER_BEAM_DURATION : 150;
     const LASER_ATTACK_LENGTH_MS = 1350; // FULL_MERGE_AS : LaserPattern.attackLength par défaut (durée d'un tir continu)
@@ -739,7 +743,7 @@
             ? LASER_PATTERN_META[patternId].skillSpriteId
             : meta.spriteId;
         return {
-            spriteId: Math.max(0, Math.min(6, spriteId || 0)),
+            spriteId: Math.max(0, Math.min(MAX_LASER_SPRITE_ID, spriteId || 0)),
             absorber: !!meta.absorber,
             allowOffsets: meta.allowOffsets !== false,
             playLoop: !!meta.playLoop,
@@ -750,7 +754,7 @@
     }
 
     function getLaserSpriteFrame(spriteId, skilledLaser = false) {
-        const id = Number.isFinite(spriteId) ? Math.max(0, Math.min(6, spriteId)) : 0;
+        const id = Number.isFinite(spriteId) ? Math.max(0, Math.min(MAX_LASER_SPRITE_ID, spriteId)) : 0;
         const key = `laser-${id}${skilledLaser ? "-skill" : ""}`;
         if (!LASER_SPRITE_CACHE[key]) {
             const info = LASER_SPRITE_INFO[id] || LASER_SPRITE_INFO[0];
@@ -938,7 +942,8 @@ const currentY = (i * step) + (scrollOffset * direction);
             // Gestion de la taille (Scale)
             // Les lasers classiques gardent leur taille, ou changent selon l'effet
             const scale = beam.absorber ? 1 + (beam.endScale - 1) * progress : 1;
-            ctx.scale(scale, scale);
+            const scaleX = (beam.flipX ? -1 : 1) * scale;
+            ctx.scale(scaleX, scale);
 
             // Dessin simple centré
             ctx.drawImage(sprite, -width / 2, -height / 2, width, height);
