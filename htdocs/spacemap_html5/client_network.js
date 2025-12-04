@@ -1746,6 +1746,9 @@ function handlePacket_N(parts, i) {
     const DEVOLARIUM_LASER_SPRITE_ID_LOCAL = (typeof DEVOLARIUM_LASER_SPRITE_ID !== "undefined") ? DEVOLARIUM_LASER_SPRITE_ID : 10;
     const DEVOLARIUM_NPC_TYPES = new Set([26, 72, 74, 46]);
     const DEVOLARIUM_LASER_SPEED_MS = 750;
+    const LORDAKIUM_LASER_SPRITE_ID_LOCAL = (typeof LORDAKIUM_LASER_SPRITE_ID !== "undefined") ? LORDAKIUM_LASER_SPRITE_ID : 11;
+    const LORDAKIUM_NPC_TYPES = new Set([77, 28]);
+    const LORDAKIUM_LASER_SPEED_MS = 1000;
 
     function shouldUseCrystalLaser(attacker) {
         if (!attacker || attacker.kind !== "npc") return false;
@@ -1790,6 +1793,16 @@ function handlePacket_N(parts, i) {
         return name.includes("devolarium") || name.includes("sibelon");
     }
 
+    function shouldUseLordakiumLaser(attacker) {
+        if (!attacker || attacker.kind !== "npc") return false;
+
+        if (attacker.type != null && LORDAKIUM_NPC_TYPES.has(attacker.type)) return true;
+        if (attacker.shipId != null && LORDAKIUM_NPC_TYPES.has(attacker.shipId)) return true;
+
+        const name = (attacker.name || "").toLowerCase();
+        return name.includes("lordakium");
+    }
+
     function handlePacket_laserAttack(parts, i) {
         if (parts.length < i + 5) return;
         const attackerId = parseInt(parts[i], 10);
@@ -1815,6 +1828,15 @@ function handlePacket_N(parts, i) {
                 absorber: false,
                 speedMs: DEVOLARIUM_LASER_SPEED_MS,
                 attackLengthMs: (typeof LASER_ATTACK_LENGTH_MS !== "undefined") ? LASER_ATTACK_LENGTH_MS : 1350
+            };
+        } else if (shouldUseLordakiumLaser(attackerSnap)) {
+            visual = {
+                ...visual,
+                spriteId: LORDAKIUM_LASER_SPRITE_ID_LOCAL,
+                playLoop: false,
+                playLoopRotated: true,
+                absorber: false,
+                speedMs: LORDAKIUM_LASER_SPEED_MS
             };
         } else if (shouldUseNettelLaser(attackerSnap)) {
             visual = { ...visual, spriteId: NETTEL_SPRITE_ID_LOCAL, flipX: true };
@@ -1856,6 +1878,13 @@ function handlePacket_N(parts, i) {
             for (let idx = laserBeams.length - 1; idx >= 0; idx--) {
                 const beam = laserBeams[idx];
                 if (beam.attackerId === attackerId && beam.spriteId !== DEVOLARIUM_LASER_SPRITE_ID_LOCAL) {
+                    laserBeams.splice(idx, 1);
+                }
+            }
+        } else if (shouldUseLordakiumLaser(attackerSnap)) {
+            for (let idx = laserBeams.length - 1; idx >= 0; idx--) {
+                const beam = laserBeams[idx];
+                if (beam.attackerId === attackerId && beam.spriteId !== LORDAKIUM_LASER_SPRITE_ID_LOCAL) {
                     laserBeams.splice(idx, 1);
                 }
             }
