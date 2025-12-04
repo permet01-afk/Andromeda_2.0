@@ -710,6 +710,7 @@
     const LASER_SPRITE_CACHE = {};
     const NETTEL_SPRITE_ID = 7;
     const CRYSTAL_LASER_SPRITE_ID = 8;
+    const CRYSTAL2_LASER_SPRITE_ID = 9;
     const CRYSTAL_LASER_FRAMES = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23];
     const LASER_SPRITE_INFO = {
         0: { path: "graphics/lasers/laser0/1.png", width: 87, height: 21 },
@@ -725,6 +726,13 @@
             frames: CRYSTAL_LASER_FRAMES,
             width: 20,
             height: 15,
+            frameDuration: 50
+        },
+        [CRYSTAL2_LASER_SPRITE_ID]: {
+            basePath: "graphics/lasers/crystal2/",
+            frames: CRYSTAL_LASER_FRAMES,
+            width: 40,
+            height: 30,
             frameDuration: 50
         }
     };

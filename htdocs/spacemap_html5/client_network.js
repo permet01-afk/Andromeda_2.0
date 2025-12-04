@@ -1741,6 +1741,8 @@ function handlePacket_N(parts, i) {
 
     const CRYSTAL_LASER_SPRITE_ID_LOCAL = (typeof CRYSTAL_LASER_SPRITE_ID !== "undefined") ? CRYSTAL_LASER_SPRITE_ID : 8;
     const CRYSTAL_NPC_TYPES = new Set([78, 29]);
+    const CRYSTAL2_LASER_SPRITE_ID_LOCAL = (typeof CRYSTAL2_LASER_SPRITE_ID !== "undefined") ? CRYSTAL2_LASER_SPRITE_ID : 9;
+    const CRYSTAL2_NPC_TYPES = new Set([79, 35, 45]);
 
     function shouldUseCrystalLaser(attacker) {
         if (!attacker || attacker.kind !== "npc") return false;
@@ -1754,6 +1756,16 @@ function handlePacket_N(parts, i) {
 
         const name = (attacker.name || "").toLowerCase();
         return name.includes("kristallin");
+    }
+
+    function shouldUseCrystal2Laser(attacker) {
+        if (!attacker || attacker.kind !== "npc") return false;
+
+        if (CRYSTAL2_NPC_TYPES.has(attacker.type)) return true;
+        if (attacker.shipId != null && CRYSTAL2_NPC_TYPES.has(attacker.shipId)) return true;
+
+        const name = (attacker.name || "").toLowerCase();
+        return name.includes("kristallon");
     }
 
     function shouldUseNettelLaser(attacker) {
@@ -1783,6 +1795,10 @@ function handlePacket_N(parts, i) {
 
         if (shouldUseNettelLaser(attackerSnap)) {
             visual = { ...visual, spriteId: NETTEL_SPRITE_ID_LOCAL, flipX: true };
+        }
+
+        if (shouldUseCrystal2Laser(attackerSnap)) {
+            visual = { ...visual, spriteId: CRYSTAL2_LASER_SPRITE_ID_LOCAL, flipX: false };
         }
 
         if (shouldUseCrystalLaser(attackerSnap)) {
