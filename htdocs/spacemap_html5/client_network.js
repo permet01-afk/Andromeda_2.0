@@ -1782,7 +1782,12 @@ function handlePacket_N(parts, i) {
 
     function shouldUseDevolariumLaser(attacker) {
         if (!attacker || attacker.kind !== "npc") return false;
-        return DEVOLARIUM_NPC_TYPES.has(attacker.type);
+
+        if (attacker.type != null && DEVOLARIUM_NPC_TYPES.has(attacker.type)) return true;
+        if (attacker.shipId != null && DEVOLARIUM_NPC_TYPES.has(attacker.shipId)) return true;
+
+        const name = (attacker.name || "").toLowerCase();
+        return name.includes("devolarium") || name.includes("sibelon");
     }
 
     function handlePacket_laserAttack(parts, i) {
@@ -1811,17 +1816,11 @@ function handlePacket_N(parts, i) {
                 speedMs: DEVOLARIUM_LASER_SPEED_MS,
                 attackLengthMs: (typeof LASER_ATTACK_LENGTH_MS !== "undefined") ? LASER_ATTACK_LENGTH_MS : 1350
             };
-        }
-
-        if (shouldUseNettelLaser(attackerSnap)) {
+        } else if (shouldUseNettelLaser(attackerSnap)) {
             visual = { ...visual, spriteId: NETTEL_SPRITE_ID_LOCAL, flipX: true };
-        }
-
-        if (shouldUseCrystal2Laser(attackerSnap)) {
+        } else if (shouldUseCrystal2Laser(attackerSnap)) {
             visual = { ...visual, spriteId: CRYSTAL2_LASER_SPRITE_ID_LOCAL, flipX: false };
-        }
-
-        if (shouldUseCrystalLaser(attackerSnap)) {
+        } else if (shouldUseCrystalLaser(attackerSnap)) {
             visual = { ...visual, spriteId: CRYSTAL_LASER_SPRITE_ID_LOCAL, flipX: false };
         }
         const spriteInfo = getLaserSpriteFrame(visual.spriteId, skilledLaser);
