@@ -1743,6 +1743,9 @@ function handlePacket_N(parts, i) {
     const CRYSTAL_NPC_TYPES = new Set([78, 29]);
     const CRYSTAL2_LASER_SPRITE_ID_LOCAL = (typeof CRYSTAL2_LASER_SPRITE_ID !== "undefined") ? CRYSTAL2_LASER_SPRITE_ID : 9;
     const CRYSTAL2_NPC_TYPES = new Set([79, 35, 45]);
+    const DEVOLARIUM_LASER_SPRITE_ID_LOCAL = (typeof DEVOLARIUM_LASER_SPRITE_ID !== "undefined") ? DEVOLARIUM_LASER_SPRITE_ID : 10;
+    const DEVOLARIUM_NPC_TYPES = new Set([26, 72, 74, 46]);
+    const DEVOLARIUM_LASER_SPEED_MS = 750;
 
     function shouldUseCrystalLaser(attacker) {
         if (!attacker || attacker.kind !== "npc") return false;
@@ -1777,6 +1780,16 @@ function handlePacket_N(parts, i) {
         return name.includes("lordakia") || name.includes("saimon") || name.includes("sibelonit");
     }
 
+    function shouldUseDevolariumLaser(attacker) {
+        if (!attacker || attacker.kind !== "npc") return false;
+
+        if (attacker.type != null && DEVOLARIUM_NPC_TYPES.has(attacker.type)) return true;
+        if (attacker.shipId != null && DEVOLARIUM_NPC_TYPES.has(attacker.shipId)) return true;
+
+        const name = (attacker.name || "").toLowerCase();
+        return name.includes("devolarium") || name.includes("sibelon");
+    }
+
     function handlePacket_laserAttack(parts, i) {
         if (parts.length < i + 5) return;
         const attackerId = parseInt(parts[i], 10);
@@ -1793,15 +1806,21 @@ function handlePacket_N(parts, i) {
 
         let visual = resolveLaserVisual(patternId, skilledLaser);
 
-        if (shouldUseNettelLaser(attackerSnap)) {
+        if (shouldUseDevolariumLaser(attackerSnap)) {
+            visual = {
+                ...visual,
+                spriteId: DEVOLARIUM_LASER_SPRITE_ID_LOCAL,
+                playLoop: true,
+                playLoopRotated: false,
+                absorber: false,
+                speedMs: DEVOLARIUM_LASER_SPEED_MS,
+                attackLengthMs: (typeof LASER_ATTACK_LENGTH_MS !== "undefined") ? LASER_ATTACK_LENGTH_MS : 1350
+            };
+        } else if (shouldUseNettelLaser(attackerSnap)) {
             visual = { ...visual, spriteId: NETTEL_SPRITE_ID_LOCAL, flipX: true };
-        }
-
-        if (shouldUseCrystal2Laser(attackerSnap)) {
+        } else if (shouldUseCrystal2Laser(attackerSnap)) {
             visual = { ...visual, spriteId: CRYSTAL2_LASER_SPRITE_ID_LOCAL, flipX: false };
-        }
-
-        if (shouldUseCrystalLaser(attackerSnap)) {
+        } else if (shouldUseCrystalLaser(attackerSnap)) {
             visual = { ...visual, spriteId: CRYSTAL_LASER_SPRITE_ID_LOCAL, flipX: false };
         }
         const spriteInfo = getLaserSpriteFrame(visual.spriteId, skilledLaser);
@@ -1832,6 +1851,15 @@ function handlePacket_N(parts, i) {
         // FULL_MERGE_AS : les lasers "playLoop" (SAB-50 / laser4.swf) restent actifs pendant attackLength
         // pour éviter toute coupure visuelle entre deux rafraîchissements.
         const duration = visual.playLoop ? (visual.attackLengthMs || LASER_ATTACK_LENGTH_MS) : baseDuration;
+
+        if (shouldUseDevolariumLaser(attackerSnap)) {
+            for (let idx = laserBeams.length - 1; idx >= 0; idx--) {
+                const beam = laserBeams[idx];
+                if (beam.attackerId === attackerId && beam.spriteId !== DEVOLARIUM_LASER_SPRITE_ID_LOCAL) {
+                    laserBeams.splice(idx, 1);
+                }
+            }
+        }
 
         const spawnBeamEntries = (createdAt, flagShowShield = showShieldDamage) => {
             const shouldDouble = shouldDrawDoubleLaser(attackerId, visual, patternId, attackerSnap);

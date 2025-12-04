@@ -711,7 +711,9 @@
     const NETTEL_SPRITE_ID = 7;
     const CRYSTAL_LASER_SPRITE_ID = 8;
     const CRYSTAL2_LASER_SPRITE_ID = 9;
+    const DEVOLARIUM_LASER_SPRITE_ID = 10;
     const CRYSTAL_LASER_FRAMES = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23];
+    const DEVOLARIUM_LASER_FRAMES = Array.from({ length: 100 }, (_, idx) => `${idx + 1}.png`);
     const LASER_SPRITE_INFO = {
         0: { path: "graphics/lasers/laser0/1.png", width: 87, height: 21 },
         1: { path: "graphics/lasers/laser1/1.png", width: 87, height: 21 },
@@ -734,6 +736,11 @@
             width: 40,
             height: 30,
             frameDuration: 50
+        },
+        [DEVOLARIUM_LASER_SPRITE_ID]: {
+            basePath: "graphics/lasers/devolariumShot/",
+            frames: DEVOLARIUM_LASER_FRAMES,
+            frameDuration: 30
         }
     };
 
