@@ -1765,7 +1765,7 @@ function handlePacket_N(parts, i) {
         let visual = resolveLaserVisual(patternId, skilledLaser);
 
         if (shouldUseNettelLaser(attackerSnap)) {
-            visual = { ...visual, spriteId: NETTEL_SPRITE_ID_LOCAL };
+            visual = { ...visual, spriteId: NETTEL_SPRITE_ID_LOCAL, flipX: true };
         }
         const spriteInfo = getLaserSpriteFrame(visual.spriteId, skilledLaser);
         const laserLength = spriteInfo?.width || LASER_SPRITE_INFO[visual.spriteId]?.width || 0;
@@ -1798,6 +1798,7 @@ function handlePacket_N(parts, i) {
 
         const spawnBeamEntries = (createdAt, flagShowShield = showShieldDamage) => {
             const shouldDouble = shouldDrawDoubleLaser(attackerId, visual, patternId, attackerSnap);
+            const flipX = visual.flipX === true;
 
             if (visual.playLoop) {
                 let reused = false;
@@ -1816,6 +1817,7 @@ function handlePacket_N(parts, i) {
                             beam.angle = angle;
                             beam.rotation = null;
                             beam.endScale = visual.absorber ? 0.1 : 1;
+                            beam.flipX = flipX;
                             beam.hitHandled = false;
                             reused = true;
                         } else {
@@ -1858,6 +1860,7 @@ function handlePacket_N(parts, i) {
                     endY,
                     duration,
                     endScale: visual.absorber ? 0.1 : 1,
+                    flipX,
                     createdAt,
                     playLoop: visual.playLoop,
                     hitHandled: false
@@ -1937,6 +1940,7 @@ function handlePacket_N(parts, i) {
                 offsetY,
                 duration: base.duration,
                 endScale: visual.absorber ? 0.1 : 1,
+                flipX: visual.flipX === true,
                 createdAt: performance.now(),
                 playLoop: visual.playLoop,
                 hitHandled: false

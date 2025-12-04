@@ -942,7 +942,8 @@ const currentY = (i * step) + (scrollOffset * direction);
             // Gestion de la taille (Scale)
             // Les lasers classiques gardent leur taille, ou changent selon l'effet
             const scale = beam.absorber ? 1 + (beam.endScale - 1) * progress : 1;
-            ctx.scale(scale, scale);
+            const scaleX = (beam.flipX ? -1 : 1) * scale;
+            ctx.scale(scaleX, scale);
 
             // Dessin simple centré
             ctx.drawImage(sprite, -width / 2, -height / 2, width, height);
