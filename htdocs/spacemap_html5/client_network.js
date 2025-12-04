@@ -1749,6 +1749,9 @@ function handlePacket_N(parts, i) {
     const LORDAKIUM_LASER_SPRITE_ID_LOCAL = (typeof LORDAKIUM_LASER_SPRITE_ID !== "undefined") ? LORDAKIUM_LASER_SPRITE_ID : 11;
     const LORDAKIUM_NPC_TYPES = new Set([77, 28]);
     const LORDAKIUM_LASER_SPEED_MS = 1000;
+    const PROTEGIT_LASER_SPRITE_ID_LOCAL = (typeof PROTEGIT_LASER_SPRITE_ID !== "undefined") ? PROTEGIT_LASER_SPRITE_ID : 12;
+    const PROTEGIT_NPC_TYPES = new Set([81]);
+    const PROTEGIT_LASER_SPEED_MS = 500;
 
     function shouldUseCrystalLaser(attacker) {
         if (!attacker || attacker.kind !== "npc") return false;
@@ -1803,6 +1806,16 @@ function handlePacket_N(parts, i) {
         return name.includes("lordakium");
     }
 
+    function shouldUseProtegitLaser(attacker) {
+        if (!attacker || attacker.kind !== "npc") return false;
+
+        if (attacker.type != null && PROTEGIT_NPC_TYPES.has(attacker.type)) return true;
+        if (attacker.shipId != null && PROTEGIT_NPC_TYPES.has(attacker.shipId)) return true;
+
+        const name = (attacker.name || "").toLowerCase();
+        return name.includes("protegit");
+    }
+
     function handlePacket_laserAttack(parts, i) {
         if (parts.length < i + 5) return;
         const attackerId = parseInt(parts[i], 10);
@@ -1819,7 +1832,16 @@ function handlePacket_N(parts, i) {
 
         let visual = resolveLaserVisual(patternId, skilledLaser);
 
-        if (shouldUseDevolariumLaser(attackerSnap)) {
+        if (shouldUseProtegitLaser(attackerSnap)) {
+            visual = {
+                ...visual,
+                spriteId: PROTEGIT_LASER_SPRITE_ID_LOCAL,
+                playLoop: false,
+                playLoopRotated: false,
+                absorber: false,
+                speedMs: PROTEGIT_LASER_SPEED_MS
+            };
+        } else if (shouldUseDevolariumLaser(attackerSnap)) {
             visual = {
                 ...visual,
                 spriteId: DEVOLARIUM_LASER_SPRITE_ID_LOCAL,
@@ -1874,7 +1896,14 @@ function handlePacket_N(parts, i) {
         // pour éviter toute coupure visuelle entre deux rafraîchissements.
         const duration = visual.playLoop ? (visual.attackLengthMs || LASER_ATTACK_LENGTH_MS) : baseDuration;
 
-        if (shouldUseDevolariumLaser(attackerSnap)) {
+        if (shouldUseProtegitLaser(attackerSnap)) {
+            for (let idx = laserBeams.length - 1; idx >= 0; idx--) {
+                const beam = laserBeams[idx];
+                if (beam.attackerId === attackerId && beam.spriteId !== PROTEGIT_LASER_SPRITE_ID_LOCAL) {
+                    laserBeams.splice(idx, 1);
+                }
+            }
+        } else if (shouldUseDevolariumLaser(attackerSnap)) {
             for (let idx = laserBeams.length - 1; idx >= 0; idx--) {
                 const beam = laserBeams[idx];
                 if (beam.attackerId === attackerId && beam.spriteId !== DEVOLARIUM_LASER_SPRITE_ID_LOCAL) {
