@@ -1739,6 +1739,9 @@ function handlePacket_N(parts, i) {
     const NETTEL_SPRITE_ID_LOCAL = (typeof NETTEL_SPRITE_ID !== "undefined") ? NETTEL_SPRITE_ID : 7;
     const NETTEL_SHIP_IDS = new Set([36, 37, 71, 75, 76]);
 
+    const CRYSTAL_LASER_SPRITE_ID_LOCAL = (typeof CRYSTAL_LASER_SPRITE_ID !== "undefined") ? CRYSTAL_LASER_SPRITE_ID : 8;
+    const CRYSTAL_NPC_TYPES = new Set([78, 29]);
+
     function shouldUseNettelLaser(attacker) {
         if (!attacker || attacker.kind !== "npc") return false;
 
@@ -1766,6 +1769,10 @@ function handlePacket_N(parts, i) {
 
         if (shouldUseNettelLaser(attackerSnap)) {
             visual = { ...visual, spriteId: NETTEL_SPRITE_ID_LOCAL, flipX: true };
+        }
+
+        if (attackerSnap.kind === "npc" && CRYSTAL_NPC_TYPES.has(attackerSnap.type)) {
+            visual = { ...visual, spriteId: CRYSTAL_LASER_SPRITE_ID_LOCAL, flipX: false };
         }
         const spriteInfo = getLaserSpriteFrame(visual.spriteId, skilledLaser);
         const laserLength = spriteInfo?.width || LASER_SPRITE_INFO[visual.spriteId]?.width || 0;
